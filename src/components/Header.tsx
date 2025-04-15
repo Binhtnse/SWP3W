@@ -1,7 +1,6 @@
 import React from 'react';
 import { Layout, Typography, Space, Button } from 'antd';
 import { ShoppingCartOutlined, PhoneOutlined } from '@ant-design/icons';
-import logo from '../assets/logo.png'; // Assuming you have a logo in this path
 
 const { Header: AntHeader } = Layout;
 const { Title } = Typography;
@@ -11,8 +10,7 @@ const Header: React.FC = () => {
     <AntHeader className="bg-gradient-to-r from-amber-100 to-amber-200 px-4 py-2 flex items-center justify-between shadow-md">
       {/* Logo and Shop Name */}
       <div className="flex items-center">
-        <img 
-          src={logo} 
+        <img  
           alt="Logo Trà Sữa" 
           className="h-12 w-12 mr-3"
           onError={(e) => {
