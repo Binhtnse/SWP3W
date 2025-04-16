@@ -1,10 +1,19 @@
 import { Content } from 'antd/es/layout/layout';
-import React from 'react';  
+import React from 'react';
+import styled from 'styled-components';
+
+const StyledContent = styled(Content)`
+  padding: 24px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin: 0 16px;
+`;
 
 export default function MyContent({ children }: { children: React.ReactNode }) {
   return (
-    <Content className='px-3 py-8 ml-4'>
-      <main className='h-full mt-2'>{children}</main>
-    </Content>
+    <StyledContent>
+      <main className='h-full'>{children}</main>
+    </StyledContent>
   );
-}
+} 

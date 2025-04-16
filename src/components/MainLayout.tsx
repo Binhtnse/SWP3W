@@ -8,7 +8,9 @@ const MainLayout = ({children}:{children: React.ReactNode}) => {
         <Layout className="min-h-screen">
          <Header/>
          <Layout className="flex-1">
-            <MyContent>{children}</MyContent>
+            <div className="mx-auto w-full max-w-7xl my-6">
+              <MyContent>{children}</MyContent>
+            </div>
           </Layout>
          <MyFooter />
        </Layout> 

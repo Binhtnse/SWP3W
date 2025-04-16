@@ -4,11 +4,16 @@ import StaffProductScreen from "../screens/StaffProductScreen";
 import StaffProductDetailScreen from "../screens/StaffProductDetailScreen";
 import StaffOrderConfirmScreen from "../screens/StaffOrderConfirmScreen";
 import StaffCartScreen from "../screens/StaffCartScreen";
+import Home from "../screens/home"
 
 const Layout = lazy(() => import("../components/MainLayout"));
 const ProtectedRoute = lazy(() => import("../utils/ProtectedRoutes"));
 
 export const AppRoutes = createBrowserRouter([
+    {
+        path: "/",
+        element: <Home/>
+    },
     {
         path: "/staff/products",
         element: (
