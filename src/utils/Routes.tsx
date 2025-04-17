@@ -5,9 +5,11 @@ import StaffProductDetailScreen from "../screens/StaffProductDetailScreen";
 import StaffOrderConfirmScreen from "../screens/StaffOrderConfirmScreen";
 import StaffCartScreen from "../screens/StaffCartScreen";
 import Home from "../screens/home"
+import LoginScreen from "../screens/LoginScreen";
 
 const Layout = lazy(() => import("../components/MainLayout"));
 const ProtectedRoute = lazy(() => import("../utils/ProtectedRoutes"));
+
 
 export const AppRoutes = createBrowserRouter([
     {
@@ -53,5 +55,9 @@ export const AppRoutes = createBrowserRouter([
                 </ProtectedRoute>
             </Layout>
         ),
-    }
+    },
+    {
+        path: "/login",
+        element: <LoginScreen />,
+      }
 ])
