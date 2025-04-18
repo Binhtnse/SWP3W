@@ -20,7 +20,7 @@ const MilkTeaFooter: React.FC = () => {
         <Row gutter={[32, 24]}>
           <Col xs={24} sm={24} md={8} lg={8}>
             <div className="mb-6">
-              <Title level={3} style={{ color: 'white' }} className="font-bold mb-4">Trà Sữa Ngon Ngon</Title>
+              <Title level={3} style={{ color: 'white' }} className="font-bold mb-4">Trà Sữa Ngọt Ngào</Title>
               <Text style={{ color: '#e5e7eb' }} className="block mb-4">
                 Thưởng thức hương vị trà sữa tuyệt hảo, được làm từ những nguyên liệu tươi ngon nhất.
               </Text>
