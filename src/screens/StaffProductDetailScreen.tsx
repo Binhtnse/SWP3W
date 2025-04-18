@@ -21,15 +21,318 @@ import {
   ShoppingCartOutlined, 
   PlusOutlined, 
   MinusOutlined,
-  HeartOutlined,
   StarFilled,
   InfoCircleOutlined,
   CheckCircleFilled
 } from '@ant-design/icons';
+import styled from 'styled-components';
 
 const { Title, Text, Paragraph } = Typography;
 const { Group: RadioGroup } = Radio;
 const { TextArea } = Input;
+
+const PageContainer = styled.div`
+  padding: 1.5rem !important;
+  background-color: #f9fafb !important;
+  min-height: 100vh !important;
+`;
+
+const BackButton = styled(Button)`
+  margin-bottom: 1.5rem !important;
+  &:hover {
+    background-color: #f3f4f6 !important;
+  }
+  border-color: #d1d5db !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+`;
+
+const ProductCard = styled(Card)`
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
+  border: 0 !important;
+`;
+
+const ProductContainer = styled.div`
+  display: flex !important;
+  flex-direction: column !important;
+  
+  @media (min-width: 768px) {
+    flex-direction: row !important;
+  }
+`;
+
+const ImageSection = styled.div`
+  width: 100% !important;
+  padding: 1rem !important;
+  background-color: #f9fafb !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  
+  @media (min-width: 768px) {
+    width: 40% !important;
+  }
+`;
+
+const ImageWrapper = styled.div`
+  position: relative !important;
+  width: 100% !important;
+`;
+
+const ProductStats = styled.div`
+  margin-top: 1rem !important;
+  width: 100% !important;
+  background-color: white !important;
+  padding: 1rem !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #f0f0f0 !important;
+  transition: all 0.3s ease !important;
+  
+  &:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+    transform: translateY(-2px) !important;
+  }
+`;
+
+const StatsContent = styled.div`
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+`;
+
+const RatingContainer = styled.div`
+  display: flex !important;
+  align-items: center !important;
+`;
+
+const DetailsSection = styled.div`
+  width: 100% !important;
+  padding: 1.5rem !important;
+  background-color: #ffffff !important;
+  border-radius: 0 0.75rem 0.75rem 0 !important;
+  position: relative !important;
+  
+  @media (min-width: 768px) {
+    width: 60% !important;
+    border-left: 1px solid #f0f0f0 !important;
+  }
+  
+  @media (max-width: 767px) {
+    border-top: 1px solid #f0f0f0 !important;
+    border-radius: 0 0 0.75rem 0.75rem !important;
+  }
+`;
+
+const HeaderContainer = styled.div`
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+`;
+
+const ProductInfo = styled.div``;
+
+const TagsContainer = styled.div`
+  display: flex !important;
+  align-items: center !important;
+  margin-bottom: 0.5rem !important;
+`;
+
+const DescriptionBox = styled.div`
+  background-color: #f9fafb !important;
+  padding: 1.25rem !important;
+  border-radius: 0.5rem !important;
+  margin-bottom: 1.25rem !important;
+  border: 1px solid #e5e7eb !important;
+  position: relative !important;
+  overflow: hidden !important;
+  
+  &::before {
+    content: "" !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    height: 100% !important;
+    width: 4px !important;
+    background-color: #3b82f6 !important;
+  }
+  
+  &:hover {
+    background-color: #f3f4f6 !important;
+  }
+`;
+
+const PriceText = styled.div`
+  font-size: 1.75rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 1.25rem !important;
+  color: #ef4444 !important;
+  display: inline-block !important;
+  position: relative !important;
+  padding: 0.25rem 0.5rem !important;
+  
+  &::after {
+    content: "" !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 8px !important;
+    background-color: rgba(239, 68, 68, 0.2) !important;
+    z-index: -1 !important;
+    border-radius: 4px !important;
+  }
+  
+  @media (min-width: 768px) {
+    font-size: 2rem !important;
+  }
+`;
+
+const ComboBox = styled.div`
+  margin-bottom: 1rem !important;
+  background-color: #eff6ff !important;
+  padding: 1rem !important;
+  border-radius: 0.5rem !important;
+`;
+
+const ComboList = styled.ul`
+  list-style: none !important;
+  padding-left: 0 !important;
+`;
+
+const ComboItem = styled.li`
+  margin-bottom: 0.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+`;
+
+const OptionSection = styled.div`
+  background-color: #f9fafb !important;
+  padding: 1rem !important;
+  border-radius: 0.5rem !important;
+  margin-bottom: 1.5rem !important;
+`;
+
+const OptionGrid = styled.div`
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 0.5rem !important;
+  
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+`;
+
+const ToppingGrid = styled.div`
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0.75rem !important;
+  
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+`;
+
+const ToppingItem = styled.div<{ selected: boolean, available: boolean }>`
+  padding: 0.75rem !important;
+  border-radius: 0.5rem !important;
+  border: 1px solid ${props => props.selected ? '#3b82f6' : '#e5e7eb'} !important;
+  background-color: ${props => props.selected ? '#eff6ff' : 'white'} !important;
+  opacity: ${props => props.available ? '1' : '0.6'} !important;
+`;
+
+const ToppingContent = styled.div`
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+`;
+
+const QuantityContainer = styled.div`
+  display: flex !important;
+  align-items: center !important;
+`;
+
+const OrderSummary = styled.div`
+  position: sticky !important;
+  bottom: 0 !important;
+  background-color: white !important;
+  padding: 1rem !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid #f3f4f6 !important;
+`;
+
+const SummaryContent = styled.div`
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  
+  @media (min-width: 768px) {
+    flex-direction: row !important;
+  }
+`;
+
+const TotalPrice = styled.div`
+  margin-bottom: 1rem !important;
+  
+  @media (min-width: 768px) {
+    margin-bottom: 0 !important;
+  }
+`;
+
+const ActionButtons = styled.div`
+  display: flex !important;
+  gap: 0.75rem !important;
+`;
+
+const RecommendationsSection = styled.div`
+  margin-top: 2rem !important;
+`;
+
+const RecommendationsGrid = styled.div`
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 1rem !important;
+  
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+`;
+
+const LoadingContainer = styled.div`
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  height: 100vh !important;
+  background-color: #f9fafb !important;
+`;
+
+const LoadingContent = styled.div`
+  text-align: center !important;
+  padding: 2rem !important;
+  background-color: white !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+`;
+
+const ErrorContainer = styled.div`
+  padding: 2rem !important;
+  text-align: center !important;
+  background-color: #f9fafb !important;
+  min-height: 100vh !important;
+`;
+
+const ErrorContent = styled.div`
+  background-color: white !important;
+  padding: 2rem !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  max-width: 28rem !important;
+  margin: 0 auto !important;
+`;
 
 // Mock data for product
 const mockProduct = {
@@ -216,19 +519,19 @@ const StaffProductDetailScreen: React.FC = () => {
   
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gray-50">
-        <div className="text-center p-8 bg-white rounded-lg shadow-md">
+      <LoadingContainer>
+        <LoadingContent>
           <Spin size="large" tip="Đang tải thông tin sản phẩm..." />
           <p className="mt-4 text-gray-500">Vui lòng đợi trong giây lát...</p>
-        </div>
-      </div>
+        </LoadingContent>
+      </LoadingContainer>
     );
   }
   
   if (!product) {
     return (
-      <div className="p-8 text-center bg-gray-50 min-h-screen">
-        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md mx-auto">
+      <ErrorContainer>
+        <ErrorContent>
           <InfoCircleOutlined style={{ fontSize: '48px', color: '#f5222d' }} />
           <Title level={3} className="mt-4">Không tìm thấy sản phẩm</Title>
           <Text className="block mb-6 text-gray-500">Sản phẩm bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.</Text>
@@ -241,27 +544,26 @@ const StaffProductDetailScreen: React.FC = () => {
           >
             Quay lại danh sách sản phẩm
           </Button>
-        </div>
-      </div>
+        </ErrorContent>
+      </ErrorContainer>
     );
   }
   
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <Button 
+    <PageContainer>
+      <BackButton 
         icon={<ArrowLeftOutlined />} 
         onClick={() => navigate('/staff/products')}
-        className="mb-6 hover:bg-gray-100 border-gray-300 shadow-sm"
         size="large"
       >
         Quay lại danh sách
-      </Button>
+      </BackButton>
       
-      <Card className="shadow-lg rounded-xl overflow-hidden border-0">
-        <div className="flex flex-col md:flex-row">
+      <ProductCard>
+        <ProductContainer>
           {/* Product Image Section */}
-          <div className="md:w-2/5 p-4 bg-gray-50 flex flex-col justify-center items-center">
-            <div className="relative w-full">
+          <ImageSection>
+            <ImageWrapper>
               <Badge.Ribbon 
                 text={product.isCombo ? 'Combo' : 'Đặc biệt'} 
                 color={product.isCombo ? 'blue' : 'green'}
@@ -276,16 +578,16 @@ const StaffProductDetailScreen: React.FC = () => {
                   preview={true}
                 />
               </Badge.Ribbon>
-            </div>
+            </ImageWrapper>
             
             {/* Product stats */}
-            <div className="mt-4 w-full bg-white p-4 rounded-lg shadow-sm">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
+            <ProductStats>
+              <StatsContent>
+                <RatingContainer>
                   <StarFilled className="text-yellow-400 mr-1" />
                   <span className="font-medium">{product.rating || 4.5}</span>
                   <span className="text-gray-500 ml-1">({product.soldCount || 0} đã bán)</span>
-                </div>
+                </RatingContainer>
                 <Tag 
                   color={product.remainingAmount > 10 ? 'green' : product.remainingAmount > 0 ? 'orange' : 'red'}
                   className="text-sm px-2 py-1"
@@ -294,67 +596,61 @@ const StaffProductDetailScreen: React.FC = () => {
                     ? `Còn lại: ${product.remainingAmount}` 
                     : 'Hết hàng'}
                 </Tag>
-              </div>
-            </div>
-          </div>
+              </StatsContent>
+            </ProductStats>
+          </ImageSection>
           
           {/* Product Details */}
-          <div className="md:w-3/5 p-6">
-            <div className="flex justify-between items-start">
-              <div>
+          <DetailsSection>
+            <HeaderContainer>
+              <ProductInfo>
                 <Title level={2} className="text-3xl font-bold mb-1">{product.name}</Title>
-                <div className="flex items-center mb-2">
+                <TagsContainer>
                   <Tag color="cyan" className="mr-2">{product.category}</Tag>
                   {product.status === 'active' ? (
                     <Tag color="success">Đang bán</Tag>
                   ) : (
                     <Tag color="error">Ngừng bán</Tag>
                   )}
-                </div>
-              </div>
-              <Button 
-                icon={<HeartOutlined />} 
-                shape="circle" 
-                size="large"
-                className="flex items-center justify-center border-gray-300 hover:text-red-500 hover:border-red-500"
-              />
-            </div>
+                </TagsContainer>
+              </ProductInfo>
+            </HeaderContainer>
             
-            <div className="bg-gray-50 p-4 rounded-lg mb-4">
+            <DescriptionBox>
               <Paragraph className="text-base mb-0">
                 {product.description}
               </Paragraph>
-            </div>
+            </DescriptionBox>
             
-            <div className="text-2xl font-bold mb-4 text-red-500">
+            <PriceText>
               {formatCurrency(product.price)}
-            </div>
+            </PriceText>
             
             {product.isCombo && product.comboItems && (
-              <div className="mb-4 bg-blue-50 p-4 rounded-lg">
+              <ComboBox>
                 <Title level={4} className="mb-2 flex items-center">
                   <span className="mr-2">Sản phẩm trong combo</span>
                 </Title>
-                <ul className="list-none pl-0">
+                <ComboList>
                   {product.comboItems.map((item, index) => (
-                    <li key={index} className="mb-2 flex items-center">
+                    <ComboItem key={index}>
                       <CheckCircleFilled className="text-blue-500 mr-2" />
                       <span className="font-medium">{item.name}</span>
                       <Tag className="ml-2 bg-blue-100 text-blue-800 border-0">x{item.quantity}</Tag>
-                    </li>
+                    </ComboItem>
                   ))}
-                </ul>
-              </div>
+                </ComboList>
+              </ComboBox>
             )}
             
             <Divider className="my-6" />
             
             {/* Order Options */}
             <div className="space-y-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <OptionSection>
                 <Title level={4} className="mb-3">Kích cỡ:</Title>
                 <RadioGroup onChange={handleSizeChange} value={selectedSize} className="w-full">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <OptionGrid>
                     <Radio.Button value="S" className="text-center h-10 flex items-center justify-center">
                       S {sizeAdjustments.S > 0 ? `+${formatCurrency(sizeAdjustments.S)}` : formatCurrency(sizeAdjustments.S)}
                     </Radio.Button>
@@ -367,14 +663,14 @@ const StaffProductDetailScreen: React.FC = () => {
                     <Radio.Button value="XL" className="text-center h-10 flex items-center justify-center">
                       XL +{formatCurrency(sizeAdjustments.XL)}
                     </Radio.Button>
-                  </div>
+                  </OptionGrid>
                 </RadioGroup>
-              </div>
+              </OptionSection>
               
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <OptionSection>
                 <Title level={4} className="mb-3">Đá:</Title>
                 <RadioGroup onChange={handleIceChange} value={selectedIce} className="w-full">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <OptionGrid>
                     <Radio.Button value="0%" className="text-center h-10 flex items-center justify-center">
                       Không đá
                     </Radio.Button>
@@ -387,21 +683,18 @@ const StaffProductDetailScreen: React.FC = () => {
                     <Radio.Button value="100%" className="text-center h-10 flex items-center justify-center">
                       Nhiều đá (100%)
                     </Radio.Button>
-                  </div>
+                  </OptionGrid>
                 </RadioGroup>
-              </div>
+              </OptionSection>
               
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <OptionSection>
                 <Title level={4} className="mb-3">Topping:</Title>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <ToppingGrid>
                   {toppings.map(topping => (
-                    <div 
+                    <ToppingItem 
                       key={topping.id} 
-                      className={`p-3 rounded-lg border ${
-                        selectedToppings.includes(topping.id) 
-                          ? 'border-blue-500 bg-blue-50' 
-                          : 'border-gray-200 bg-white'
-                      } ${topping.remainingAmount <= 0 ? 'opacity-60' : ''}`}
+                      selected={selectedToppings.includes(topping.id)}
+                      available={topping.remainingAmount > 0}
                     >
                       <Checkbox 
                         onChange={(e) => handleToppingChange(topping.id, e.target.checked)}
@@ -409,7 +702,7 @@ const StaffProductDetailScreen: React.FC = () => {
                         checked={selectedToppings.includes(topping.id)}
                         className="w-full"
                       >
-                        <div className="flex justify-between items-center">
+                        <ToppingContent>
                           <span className="font-medium">{topping.name}</span>
                           <div className="flex items-center">
                             <span className="text-red-500 font-medium">+{formatCurrency(topping.price)}</span>
@@ -420,14 +713,14 @@ const StaffProductDetailScreen: React.FC = () => {
                               <Tag color="orange" className="ml-2">Sắp hết</Tag>
                             )}
                           </div>
-                        </div>
+                        </ToppingContent>
                       </Checkbox>
-                    </div>
+                    </ToppingItem>
                   ))}
-                </div>
-              </div>
+                </ToppingGrid>
+              </OptionSection>
               
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <OptionSection>
                 <Title level={4} className="mb-3">Ghi chú:</Title>
                 <TextArea 
                   rows={3} 
@@ -438,11 +731,11 @@ const StaffProductDetailScreen: React.FC = () => {
                   maxLength={200}
                   showCount
                 />
-              </div>
+              </OptionSection>
               
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <OptionSection>
                 <Title level={4} className="mb-3">Số lượng:</Title>
-                <div className="flex items-center">
+                <QuantityContainer>
                   <Button 
                     icon={<MinusOutlined />} 
                     onClick={() => handleQuantityChange(quantity - 1)}
@@ -469,28 +762,21 @@ const StaffProductDetailScreen: React.FC = () => {
                   <Text className="ml-4 text-gray-500">
                     Còn lại: {product.remainingAmount}
                   </Text>
-                </div>
-              </div>
+                </QuantityContainer>
+              </OptionSection>
             </div>
             
             <Divider className="my-6" />
             
-            <div className="sticky bottom-0 bg-white p-4 rounded-lg shadow-lg border border-gray-100">
-              <div className="flex flex-col md:flex-row justify-between items-center">
-                <div className="mb-4 md:mb-0">
+            <OrderSummary>
+              <SummaryContent>
+                <TotalPrice>
                   <Text className="text-gray-500 block">Tổng tiền:</Text>
                   <div className="text-2xl font-bold text-red-500">
                     {formatCurrency(calculateTotalPrice())}
                   </div>
-                </div>
-                <div className="flex space-x-3">
-                  <Button 
-                    size="large"
-                    icon={<HeartOutlined />}
-                    className="border-gray-300 hover:text-red-500 hover:border-red-500"
-                  >
-                    Lưu
-                  </Button>
+                </TotalPrice>
+                <ActionButtons>
                   <Button 
                     type="primary" 
                     icon={<ShoppingCartOutlined />} 
@@ -501,17 +787,17 @@ const StaffProductDetailScreen: React.FC = () => {
                   >
                     Thêm vào đơn hàng
                   </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
+                </ActionButtons>
+              </SummaryContent>
+            </OrderSummary>
+          </DetailsSection>
+        </ProductContainer>
+      </ProductCard>
       
       {/* Recommendations Section */}
-      <div className="mt-8">
+      <RecommendationsSection>
         <Title level={3} className="mb-4">Sản phẩm tương tự</Title>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <RecommendationsGrid>
           {/* This would be populated with actual recommendation data */}
           {[1, 2, 3, 4].map(item => (
             <Card 
@@ -529,7 +815,7 @@ const StaffProductDetailScreen: React.FC = () => {
                 </div>
               }
             >
-              <Card.Meta
+               <Card.Meta
                 title="Sản phẩm gợi ý"
                 description={
                   <div className="mt-2">
@@ -544,9 +830,9 @@ const StaffProductDetailScreen: React.FC = () => {
               />
             </Card>
           ))}
-        </div>
-      </div>
-    </div>
+        </RecommendationsGrid>
+      </RecommendationsSection>
+    </PageContainer>
   );
 };
 

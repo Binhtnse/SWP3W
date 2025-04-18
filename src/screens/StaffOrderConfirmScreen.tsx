@@ -23,12 +23,197 @@ import {
   DeleteOutlined,
   ExclamationCircleOutlined,
   PlusOutlined,
-  MinusOutlined
+  MinusOutlined,
+  ShoppingCartOutlined
 } from '@ant-design/icons';
+import styled from 'styled-components';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 const { confirm } = Modal;
+
+const StyledHeader = styled.div`
+  background: linear-gradient(to right, #7c3aed, #4f46e5) !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  margin-bottom: 1.5rem !important;
+  padding: 1.5rem !important;
+`;
+
+const HeaderContent = styled.div`
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+
+  @media (min-width: 768px) {
+    flex-direction: row !important;
+  }
+`;
+
+const LogoSection = styled.div`
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  margin-bottom: 1rem !important;
+
+  @media (min-width: 768px) {
+    flex-direction: row !important;
+    margin-bottom: 0 !important;
+  }
+`;
+
+const IconContainer = styled.div`
+  background-color: white !important;
+  padding: 0.75rem !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  margin-right: 1rem !important;
+  margin-bottom: 0.75rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  @media (min-width: 768px) {
+    margin-bottom: 0 !important;
+  }
+
+  .anticon {
+    font-size: 1.875rem !important;
+    color: #7c3aed !important;
+  }
+`;
+
+const TitleContainer = styled.div`
+  h1 {
+    font-size: 1.875rem !important;
+    font-weight: 700 !important;
+    color: white !important;
+    text-align: center !important;
+
+    @media (min-width: 768px) {
+      text-align: left !important;
+    }
+  }
+
+  p {
+    color: #ddd6fe !important;
+    margin-top: 0.25rem !important;
+    display: flex !important;
+    align-items: center !important;
+    text-align: center !important;
+
+    @media (min-width: 768px) {
+      text-align: left !important;
+    }
+  }
+`;
+
+const OrderIdTag = styled(Tag)`
+  font-size: 1rem !important;
+  padding: 0.5rem 0.75rem !important;
+`;
+
+const ContentSection = styled(Card)`
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  margin-bottom: 1.5rem !important;
+`;
+
+const ActionButton = styled(Button)`
+  height: 3rem !important;
+  font-size: 1rem !important;
+  width: 100% !important;
+`;
+
+const GreenButton = styled(ActionButton)`
+  background-color: #10b981 !important;
+  border-color: #10b981 !important;
+  
+  &:hover {
+    background-color: #059669 !important;
+    border-color: #059669 !important;
+  }
+`;
+
+const ProductInfo = styled.div`
+  .product-name {
+    font-weight: 600;
+  }
+  
+  .product-details {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+`;
+
+const PriceText = styled.div`
+  text-align: right;
+  
+  &.total {
+    font-weight: 600;
+  }
+`;
+
+const QuantityText = styled.div`
+  text-align: center;
+`;
+
+const TotalSection = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  
+  .total-label {
+    font-size: 1.125rem;
+  }
+  
+  .total-amount {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-left: 1rem;
+  }
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+`;
+
+const NotFoundContainer = styled.div`
+  padding: 1.5rem;
+  text-align: center;
+  
+  .back-button {
+    margin-top: 1rem;
+    background-color: #3b82f6;
+  }
+`;
+
+const QuantityControl = styled.div`
+  display: flex;
+  align-items: center;
+  margin-top: 0.25rem;
+  
+  .ant-input-number {
+    margin: 0 0.5rem;
+    width: 4rem;
+    text-align: center;
+  }
+`;
+
+const ModalRow = styled.div`
+  margin-bottom: 1rem;
+  
+  &.price-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+  }
+`;
 
 interface OrderItem {
   id: number;
@@ -231,9 +416,9 @@ const StaffOrderConfirmScreen: React.FC = () => {
       dataIndex: 'productName',
       key: 'productName',
       render: (text: string, record: OrderItem) => (
-        <div>
-          <div className="font-semibold">{text}</div>
-          <div className="text-sm text-gray-500">
+        <ProductInfo>
+          <div className="product-name">{text}</div>
+          <div className="product-details">
             <div>Kích cỡ: {record.size}</div>
             <div>Đá: {record.ice}</div>
             {record.toppings.length > 0 && (
@@ -247,7 +432,7 @@ const StaffOrderConfirmScreen: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+        </ProductInfo>
       ),
     },
     {
@@ -256,7 +441,7 @@ const StaffOrderConfirmScreen: React.FC = () => {
       key: 'quantity',
       width: 100,
       render: (quantity: number) => (
-        <div className="text-center">{quantity}</div>
+        <QuantityText>{quantity}</QuantityText>
       ),
     },
     {
@@ -265,7 +450,7 @@ const StaffOrderConfirmScreen: React.FC = () => {
       key: 'unitPrice',
       width: 150,
       render: (price: number) => (
-        <div className="text-right">{formatCurrency(price)}</div>
+        <PriceText>{formatCurrency(price)}</PriceText>
       ),
     },
     {
@@ -274,7 +459,7 @@ const StaffOrderConfirmScreen: React.FC = () => {
       key: 'totalPrice',
       width: 150,
       render: (price: number) => (
-        <div className="text-right font-semibold">{formatCurrency(price)}</div>
+        <PriceText className="total">{formatCurrency(price)}</PriceText>
       ),
     },
     {
@@ -287,13 +472,13 @@ const StaffOrderConfirmScreen: React.FC = () => {
             type="text" 
             icon={<EditOutlined />} 
             onClick={() => handleEditItem(record)}
-            className="text-blue-500"
+            style={{ color: '#3b82f6' }}
           />
           <Button 
             type="text" 
             icon={<DeleteOutlined />} 
             onClick={() => handleRemoveItem(record.id)}
-            className="text-red-500"
+            style={{ color: '#ef4444' }}
           />
         </Space>
       ),
@@ -302,61 +487,65 @@ const StaffOrderConfirmScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <LoadingContainer>
         <Spin size="large" tip="Đang tải..." />
-      </div>
+      </LoadingContainer>
     );
   }
 
   if (!order) {
     return (
-      <div className="p-6 text-center">
+      <NotFoundContainer>
         <Title level={3}>Không tìm thấy đơn hàng</Title>
         <Button 
           type="primary" 
           icon={<ArrowLeftOutlined />} 
           onClick={() => navigate('/staff/products')}
-          className="mt-4 bg-blue-500"
+          className="back-button"
         >
           Quay lại danh sách sản phẩm
         </Button>
-      </div>
+      </NotFoundContainer>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <Button 
-          icon={<ArrowLeftOutlined />} 
-          onClick={() => navigate('/staff/products')}
-        >
-          Quay lại danh sách sản phẩm
-        </Button>
-        <Title level={3} className="m-0">Xác nhận đơn hàng</Title>
-        <div>
-          <Tag color="blue" className="text-base px-3 py-1">
+    <div style={{ padding: '1.5rem' }}>
+      <StyledHeader>
+        <HeaderContent>
+          <LogoSection>
+            <IconContainer>
+              <ShoppingCartOutlined />
+            </IconContainer>
+            <TitleContainer>
+              <h1>Milk Tea Shop</h1>
+              <p>
+                <span>Xác nhận đơn hàng</span>
+              </p>
+            </TitleContainer>
+          </LogoSection>
+          <OrderIdTag color="blue">
             Mã đơn: {order.id}
-          </Tag>
-        </div>
-      </div>
+          </OrderIdTag>
+        </HeaderContent>
+      </StyledHeader>
       
-      <Card className="shadow-md mb-4">
+      <ContentSection>
         <Title level={4}>Chi tiết đơn hàng</Title>
         <Table 
           dataSource={order.items} 
           columns={columns} 
           pagination={false}
           rowKey="id"
-          className="mb-4"
+          style={{ marginBottom: '1rem' }}
         />
         
-        <div className="flex justify-end">
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button 
             type="dashed" 
             icon={<PlusOutlined />} 
             onClick={handleAddMoreProducts}
-            className="mb-4"
+            style={{ marginBottom: '1rem' }}
           >
             Thêm sản phẩm
           </Button>
@@ -364,56 +553,49 @@ const StaffOrderConfirmScreen: React.FC = () => {
         
         <Divider />
         
-        <div className="mb-4">
+        <div style={{ marginBottom: '1rem' }}>
           <Title level={5}>Ghi chú đơn hàng:</Title>
           <TextArea 
             rows={2} 
             placeholder="Nhập ghi chú cho đơn hàng (nếu có)..."
             value={orderNote}
             onChange={(e) => setOrderNote(e.target.value)}
-            className="w-full"
+            style={{ width: '100%' }}
           />
         </div>
         
-        <div className="flex justify-end">
-          <div className="text-right">
-            <div className="mb-2">
-              <Text className="text-lg">Tổng tiền:</Text>
-              <Text className="text-2xl font-bold ml-4">{formatCurrency(order.totalAmount)}</Text>
-            </div>
-          </div>
-        </div>
-      </Card>
+        <TotalSection>
+          <Text className="total-label">Tổng tiền:</Text>
+          <Text className="total-amount">{formatCurrency(order.totalAmount)}</Text>
+        </TotalSection>
+      </ContentSection>
       
-      <Row gutter={16} className="mt-6">
+      <Row gutter={16} style={{ marginTop: '1.5rem' }}>
         <Col span={8}>
-          <Button 
+          <ActionButton 
             danger
             icon={<DeleteOutlined />}
             onClick={handleCancelOrder}
-            className="w-full h-12 text-base"
           >
             Hủy đơn hàng
-          </Button>
+          </ActionButton>
         </Col>
         <Col span={8}>
-          <Button 
+          <ActionButton 
             icon={<EditOutlined />}
             onClick={handleAddMoreProducts}
-            className="w-full h-12 text-base"
           >
             Chỉnh sửa đơn hàng
-          </Button>
+          </ActionButton>
         </Col>
         <Col span={8}>
-          <Button 
+          <GreenButton 
             type="primary" 
             icon={<CheckOutlined />}
             onClick={handleConfirmOrder}
-            className="w-full h-12 text-base bg-green-500 hover:bg-green-600"
           >
             Xác nhận đơn hàng
-          </Button>
+          </GreenButton>
         </Col>
       </Row>
       
@@ -428,9 +610,9 @@ const StaffOrderConfirmScreen: React.FC = () => {
       >
         {editingItem && (
           <div>
-            <div className="mb-4">
+            <ModalRow>
               <Text strong>{editingItem.productName}</Text>
-              <div className="text-sm text-gray-500">
+              <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
                 <div>Kích cỡ: {editingItem.size}</div>
                 <div>Đá: {editingItem.ice}</div>
                 {editingItem.toppings.length > 0 && (
@@ -439,22 +621,22 @@ const StaffOrderConfirmScreen: React.FC = () => {
                   </div>
                 )}
               </div>
-            </div>
+            </ModalRow>
             
-            <div className="mb-4">
+            <ModalRow>
               <Text>Ghi chú:</Text>
               <TextArea 
                 rows={2}
                 value={editingItem.note}
                 onChange={(e) => setEditingItem({...editingItem, note: e.target.value})}
                 placeholder="Nhập ghi chú cho sản phẩm..."
-                className="w-full mt-1"
+                style={{ width: '100%', marginTop: '0.25rem' }}
               />
-            </div>
+            </ModalRow>
             
-            <div className="mb-4">
+            <ModalRow>
               <Text>Số lượng:</Text>
-              <div className="flex items-center mt-1">
+              <QuantityControl>
                 <Button 
                   icon={<MinusOutlined />} 
                   onClick={() => handleQuantityChange(Math.max(1, editingItem.quantity - 1))}
@@ -464,25 +646,22 @@ const StaffOrderConfirmScreen: React.FC = () => {
                   min={1}
                   value={editingItem.quantity}
                   onChange={handleQuantityChange}
-                  className="mx-2 w-16 text-center"
                 />
                 <Button 
                   icon={<PlusOutlined />} 
                   onClick={() => handleQuantityChange(editingItem.quantity + 1)}
                 />
-              </div>
-            </div>
+              </QuantityControl>
+            </ModalRow>
             
-            <div className="mt-4">
-              <div className="flex justify-between">
-                <Text>Đơn giá:</Text>
-                <Text>{formatCurrency(editingItem.unitPrice)}</Text>
-              </div>
-              <div className="flex justify-between mt-2">
-                <Text strong>Thành tiền:</Text>
-                <Text strong>{formatCurrency(editingItem.totalPrice)}</Text>
-              </div>
-            </div>
+            <ModalRow className="price-row">
+              <Text>Đơn giá:</Text>
+              <Text>{formatCurrency(editingItem.unitPrice)}</Text>
+            </ModalRow>
+            <ModalRow className="price-row">
+              <Text strong>Thành tiền:</Text>
+              <Text strong>{formatCurrency(editingItem.totalPrice)}</Text>
+            </ModalRow>
           </div>
         )}
       </Modal>

@@ -13,11 +13,13 @@ const StyledHeader = styled(AntHeader)`
   height: auto !important; /* Override fixed height */
   line-height: normal !important; /* Override fixed line height */
   padding: 12px 24px !important; /* Add proper padding */
+  margin-bottom: 20px !important;
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
   align-items: center !important;
   justify-content: space-between !important;
+  border-bottom: 2px solid #d97706 !important;
   
   .ant-typography {
     color: #d97706 !important;
@@ -45,15 +47,6 @@ const Header: React.FC = () => {
     <StyledHeader className="shadow-md z-10 relative">
       {/* Logo and Shop Name */}
       <LogoSection>
-        <img  
-          src="/logo.png" /* Add a default src */
-          alt="Logo Trà Sữa" 
-          className="h-12 w-12 mr-3"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = 'https://via.placeholder.com/48?text=TS';
-          }}
-        />
         <Title level={3} className="m-0">Trà Sữa Ngọt Ngào</Title>
       </LogoSection>
 

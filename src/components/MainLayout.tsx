@@ -6,7 +6,7 @@ import MyFooter from "./Footer";
 const MainLayout = ({children}:{children: React.ReactNode}) => {
     return (
         <Layout className="min-h-screen">
-         <Header/>
+         <Header />
          <Layout className="flex-1">
             <div className="mx-auto w-full max-w-7xl my-6">
               <MyContent>{children}</MyContent>

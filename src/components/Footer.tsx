@@ -14,7 +14,8 @@ const { Title, Text, Link } = Typography;
 
 const MilkTeaFooter: React.FC = () => {
   return (
-    <Footer className="bg-amber-800 pt-12 pb-6" style={{ backgroundColor: '#92400e' }}>
+    <div style={{ paddingTop: '2rem' }}>
+    <Footer className="bg-amber-800 pt-12 pb-6" style={{ backgroundColor: '#92400e', borderTop: '3px solid #f59e0b' }}>
       <div className="container mx-auto">
         <Row gutter={[32, 24]}>
           <Col xs={24} sm={24} md={8} lg={8}>
@@ -100,6 +101,7 @@ const MilkTeaFooter: React.FC = () => {
         </div>
       </div>
     </Footer>
+    </div>
   );
 };
 
