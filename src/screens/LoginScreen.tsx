@@ -35,11 +35,16 @@ const LoginPage: React.FC = () => {
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("userEmail", email);
         localStorage.setItem("userRole", role);
+        console.log(accessToken)
 
         message.success(`🎉 Đăng nhập thành công! Chào mừng ${email} đến với Trà sữa ngọt ngào!`);
 
 
-        navigate("/dashboard");
+        if (role === 'STAFF') {
+          navigate("/staff/products");
+        } else {
+          navigate("/dashboard");
+        }
       } else {
         message.error("❌ Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin đăng nhập.");
       }
