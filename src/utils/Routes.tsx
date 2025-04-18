@@ -4,6 +4,7 @@ import StaffProductScreen from "../screens/StaffProductScreen";
 import StaffProductDetailScreen from "../screens/StaffProductDetailScreen";
 import StaffOrderConfirmScreen from "../screens/StaffOrderConfirmScreen";
 import StaffCartScreen from "../screens/StaffCartScreen";
+import StaffOrderPaymentScreen from "../screens/StaffOrderPaymentScreen";
 import Home from "../screens/home"
 import LoginScreen from "../screens/LoginScreen";
 
@@ -52,6 +53,16 @@ export const AppRoutes = createBrowserRouter([
             <Layout>
                 <ProtectedRoute allowedRoles={["GUEST"]}>
                     <StaffCartScreen />
+                </ProtectedRoute>
+            </Layout>
+        ),
+    },
+    {
+        path: "/staff/payment",
+        element: (
+            <Layout>
+                <ProtectedRoute allowedRoles={["GUEST"]}>
+                    <StaffOrderPaymentScreen />
                 </ProtectedRoute>
             </Layout>
         ),

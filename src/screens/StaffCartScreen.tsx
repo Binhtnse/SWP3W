@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Card, 
   Button, 
   Typography, 
   Divider, 
@@ -11,8 +10,6 @@ import {
   message, 
   Spin,
   Tag,
-  Row,
-  Col,
   Empty,
   Popconfirm
 } from 'antd';
@@ -24,9 +21,153 @@ import {
   CheckCircleOutlined,
   CreditCardOutlined
 } from '@ant-design/icons';
+import styled from 'styled-components';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { confirm } = Modal;
+
+const StyledHeader = styled.div`
+  background: linear-gradient(to right, #7c3aed, #4f46e5) !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  margin-bottom: 1.5rem !important;
+  padding: 1.5rem !important;
+`;
+
+const HeaderContent = styled.div`
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+
+  @media (min-width: 768px) {
+    flex-direction: row !important;
+  }
+`;
+
+const LogoSection = styled.div`
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  margin-bottom: 1rem !important;
+
+  @media (min-width: 768px) {
+    flex-direction: row !important;
+    margin-bottom: 0 !important;
+  }
+`;
+
+const IconContainer = styled.div`
+  background-color: white !important;
+  padding: 0.75rem !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  margin-right: 1rem !important;
+  margin-bottom: 0.75rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  @media (min-width: 768px) {
+    margin-bottom: 0 !important;
+  }
+
+  .anticon {
+    font-size: 1.875rem !important;
+    color: #7c3aed !important;
+  }
+`;
+
+const TitleContainer = styled.div`
+  h1 {
+    font-size: 1.875rem !important;
+    font-weight: 700 !important;
+    color: white !important;
+    text-align: center !important;
+
+    @media (min-width: 768px) {
+      text-align: left !important;
+    }
+  }
+
+  p {
+    color: #ddd6fe !important;
+    margin-top: 0.25rem !important;
+    display: flex !important;
+    align-items: center !important;
+    text-align: center !important;
+
+    @media (min-width: 768px) {
+      text-align: left !important;
+    }
+  }
+`;
+
+const ContentSection = styled.div`
+  background: white !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  padding: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+`;
+
+const ActionButton = styled(Button)`
+  &.ant-btn-primary {
+    background-color: #7c3aed !important;
+    border-color: #7c3aed !important;
+  }
+  
+  &.green {
+    background-color: #10b981 !important;
+    border-color: #10b981 !important;
+    
+    &:hover {
+      background-color: #059669 !important;
+      border-color: #059669 !important;
+    }
+  }
+`;
+
+const OrderSummary = styled.div`
+  display: flex !important;
+  flex-direction: column !important;
+  
+  @media (min-width: 768px) {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+`;
+
+const SummaryInfo = styled.div`
+  display: flex !important;
+  align-items: center !important;
+  margin-bottom: 1rem !important;
+  
+  @media (min-width: 768px) {
+    margin-bottom: 0 !important;
+  }
+`;
+
+const SummaryActions = styled.div`
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 0.5rem !important;
+`;
+
+const LoadingContainer = styled.div`
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  height: 100vh !important;
+`;
+
+const BackButton = styled(Button)`
+  display: flex !important;
+  align-items: center !important;
+`;
 
 interface OrderItem {
   id: number;
@@ -331,29 +472,38 @@ const StaffCartScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <LoadingContainer>
         <Spin size="large" tip="Đang tải..." />
-      </div>
+      </LoadingContainer>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <Button 
-          icon={<ArrowLeftOutlined />} 
-          onClick={() => navigate('/staff/products')}
-        >
-          Quay lại danh sách sản phẩm
-        </Button>
-        <Title level={3} className="m-0">
-          <ShoppingCartOutlined className="mr-2" />
-          Giỏ hàng
-        </Title>
-        <div></div>
-      </div>
+    <div style={{ padding: '1.5rem' }}>
+      <StyledHeader>
+        <HeaderContent>
+          <LogoSection>
+            <IconContainer>
+              <ShoppingCartOutlined />
+            </IconContainer>
+            <TitleContainer>
+              <h1>Milk Tea Shop</h1>
+              <p>
+                <span>Giỏ hàng</span>
+              </p>
+            </TitleContainer>
+          </LogoSection>
+          <BackButton 
+            icon={<ArrowLeftOutlined />} 
+            onClick={() => navigate('/staff/products')}
+            size="large"
+          >
+            Quay lại danh sách sản phẩm
+          </BackButton>
+        </HeaderContent>
+      </StyledHeader>
       
-      <Card className="shadow-md mb-4">
+      <ContentSection>
         {orders.length > 0 ? (
           <>
             <Table 
@@ -362,60 +512,55 @@ const StaffCartScreen: React.FC = () => {
               columns={columns} 
               pagination={false}
               rowKey="id"
-              className="mb-4"
+              style={{ marginBottom: '1rem' }}
             />
             
             <Divider />
             
-            <Row gutter={16} className="mt-6">
-              <Col span={12}>
-                <div className="flex items-center">
-                  <Text className="mr-2">Đã chọn:</Text>
-                  <Text strong>{selectedOrderIds.length}</Text>
-                  <Text className="mx-2">đơn hàng</Text>
-                  <Text strong className="ml-4 text-lg">
-                    {formatCurrency(calculateTotalAmount())}
-                  </Text>
-                </div>
-              </Col>
-              <Col span={12}>
-                <div className="flex justify-end">
-                  <Button 
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={handleCancelAllOrders}
-                    className="mr-2"
-                  >
-                    Hủy tất cả
-                  </Button>
-                  <Button 
-                    type="primary" 
-                    icon={<CreditCardOutlined />}
-                    onClick={handlePaySelectedOrders}
-                    className="bg-green-500 hover:bg-green-600"
-                    disabled={selectedOrderIds.length === 0}
-                  >
-                    Thanh toán đã chọn
-                  </Button>
-                </div>
-              </Col>
-            </Row>
+            <OrderSummary>
+              <SummaryInfo>
+                <Text style={{ marginRight: '0.5rem' }}>Đã chọn:</Text>
+                <Text strong>{selectedOrderIds.length}</Text>
+                <Text style={{ margin: '0 0.5rem' }}>đơn hàng</Text>
+                <Text strong style={{ marginLeft: '1rem', fontSize: '1.125rem' }}>
+                  {formatCurrency(calculateTotalAmount())}
+                </Text>
+              </SummaryInfo>
+              <SummaryActions>
+                <Button 
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={handleCancelAllOrders}
+                >
+                  Hủy tất cả
+                </Button>
+                <ActionButton 
+                  type="primary" 
+                  icon={<CreditCardOutlined />}
+                  onClick={handlePaySelectedOrders}
+                  className="green"
+                  disabled={selectedOrderIds.length === 0}
+                >
+                  Thanh toán đã chọn
+                </ActionButton>
+              </SummaryActions>
+            </OrderSummary>
           </>
         ) : (
           <Empty
             description="Không có đơn hàng nào trong giỏ hàng"
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           >
-            <Button 
+            <ActionButton 
               type="primary" 
               onClick={() => navigate('/staff/products')}
-              className="mt-4 bg-blue-500"
+              style={{ marginTop: '1rem' }}
             >
               Tạo đơn hàng mới
-            </Button>
+            </ActionButton>
           </Empty>
         )}
-      </Card>
+      </ContentSection>
     </div>
   );
 };
