@@ -8,9 +8,12 @@ import StaffOrderPaymentScreen from "../screens/StaffOrderPaymentScreen";
 import Home from "../screens/home"
 import LoginScreen from "../screens/LoginScreen";
 import ManagerOrderListScreen from "../screens/ManagerOrderListScreen";
+import AdminCategoryScreen from "../screens/AdminCategoryScreen";
+import AdminDashboardScreen from "../screens/AdminDashboardScreen";
 
 const Layout = lazy(() => import("../components/MainLayout"));
 const ProtectedRoute = lazy(() => import("../utils/ProtectedRoutes"));
+const AdminLayout = lazy(() => import("../components/AdminLayout")); 
 
 
 export const AppRoutes = createBrowserRouter([
@@ -22,7 +25,7 @@ export const AppRoutes = createBrowserRouter([
         path: "/staff/products",
         element: (
             <Layout>
-                <ProtectedRoute allowedRoles={["GUEST"]}>
+                <ProtectedRoute allowedRoles={["STAFF"]}>
                     <StaffProductScreen />
                 </ProtectedRoute>
             </Layout>
@@ -32,7 +35,7 @@ export const AppRoutes = createBrowserRouter([
         path: "/staff/products/:id",
         element: (
             <Layout>
-                <ProtectedRoute allowedRoles={["GUEST"]}>
+                <ProtectedRoute allowedRoles={["STAFF"]}>
                     <StaffProductDetailScreen />
                 </ProtectedRoute>
             </Layout>
@@ -42,7 +45,7 @@ export const AppRoutes = createBrowserRouter([
         path: "/staff/orders/confirm",
         element: (
             <Layout>
-                <ProtectedRoute allowedRoles={["GUEST"]}>
+                <ProtectedRoute allowedRoles={["STAFF"]}>
                     <StaffOrderConfirmScreen />
                 </ProtectedRoute>
             </Layout>
@@ -52,7 +55,7 @@ export const AppRoutes = createBrowserRouter([
         path: "/staff/cart",
         element: (
             <Layout>
-                <ProtectedRoute allowedRoles={["GUEST"]}>
+                <ProtectedRoute allowedRoles={["STAFF"]}>
                     <StaffCartScreen />
                 </ProtectedRoute>
             </Layout>
@@ -62,7 +65,7 @@ export const AppRoutes = createBrowserRouter([
         path: "/staff/payment",
         element: (
             <Layout>
-                <ProtectedRoute allowedRoles={["GUEST"]}>
+                <ProtectedRoute allowedRoles={["STAFF"]}>
                     <StaffOrderPaymentScreen />
                 </ProtectedRoute>
             </Layout>
@@ -76,6 +79,26 @@ export const AppRoutes = createBrowserRouter([
                     <ManagerOrderListScreen />
                 </ProtectedRoute>
             </Layout>
+        ),
+    },
+    {
+        path: "/admin/categories",
+        element: (
+            <AdminLayout>
+                <ProtectedRoute allowedRoles={["ADMIN"]}>
+                    <AdminCategoryScreen />
+                </ProtectedRoute>
+            </AdminLayout>
+        ),
+    },
+    {
+        path: "/admin/dashboard",
+        element: (
+            <AdminLayout>
+                <ProtectedRoute allowedRoles={["ADMIN"]}>
+                    <AdminDashboardScreen />
+                </ProtectedRoute>
+            </AdminLayout>
         ),
     },
     {

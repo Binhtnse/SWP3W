@@ -1,34 +1,57 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 export const useAuthState = () => {
-  const [role, setRole] = useState<string>("");
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [userName, setUserName] = useState<string>("");
+  // Initialize state from localStorage immediately
+  const accessToken = localStorage.getItem("accessToken");
+  const userRole = localStorage.getItem("userRole");
+  const userEmail = localStorage.getItem("userEmail");
+  
+  const [role, setRole] = useState<string>(userRole || "");
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(!!accessToken);
+  const [userName, setUserName] = useState<string>(userEmail || "");
 
-  const isLoggedInRef = useRef(false);
-  const roleRef = useRef("");
-  const userNameRef = useRef("");
+  const isLoggedInRef = useRef(!!accessToken);
+  const roleRef = useRef(userRole || "");
+  const userNameRef = useRef(userEmail || "");
 
   const checkAuthState = useCallback(() => {
-    const userString = localStorage.getItem("userLogin");
+    // Check for tokens directly
     const accessToken = localStorage.getItem("accessToken");
+    const userRole = localStorage.getItem("userRole");
+    const userEmail = localStorage.getItem("userEmail");
 
-    if (userString && accessToken) {
-      try {
-        const user = JSON.parse(userString);
-        setRole(user.roleName?.toUpperCase() || "");
-        setIsLoggedIn(true);
-        setUserName(user.name || "");
+    console.log("Auth state check:", { 
+      accessToken, 
+      userRole, 
+      userEmail,
+      currentIsLoggedIn: isLoggedInRef.current,
+      currentRole: roleRef.current
+    });
 
-        roleRef.current = user.roleName?.toUpperCase() || "";
-        isLoggedInRef.current = true;
-        userNameRef.current = user.name || "";
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-        resetAuthState();
+    if (accessToken) {
+      // If we have an access token, consider the user logged in
+      setIsLoggedIn(true);
+      isLoggedInRef.current = true;
+      
+      // Set role if available, default to GUEST if not
+      const role = userRole || "GUEST";
+      setRole(role);
+      roleRef.current = role;
+      
+      // Set username if available
+      if (userEmail) {
+        setUserName(userEmail);
+        userNameRef.current = userEmail;
       }
+      
+      console.log("User authenticated:", { 
+        isLoggedIn: true, 
+        role: roleRef.current 
+      });
     } else {
+      // No token means not logged in
       resetAuthState();
+      console.log("User not authenticated, state reset");
     }
   }, []);
 
