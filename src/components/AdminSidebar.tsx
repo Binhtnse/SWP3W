@@ -27,9 +27,9 @@ const AdminSidebar: React.FC = () => {
       label: 'Quản Lý Tài Khoản',
     },
     {
-      key: '/admin/products',
+      key: '/admin/categories',
       icon: <ShoppingOutlined />,
-      label: 'Quản Lý Sản Phẩm',
+      label: 'Quản Lý Danh Mục Sản Phẩm',
     },
     {
       key: '/admin/orders',
