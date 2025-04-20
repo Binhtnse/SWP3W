@@ -6,6 +6,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 
+
 const { Sider } = Layout;
 
 const ManagerSidebar: React.FC = () => {
@@ -14,16 +15,21 @@ const ManagerSidebar: React.FC = () => {
   const location = useLocation();
 
   const menuItems = [
+    // {
+    //   key: '/manager/dashboard',
+    //   icon: <DashboardOutlined />,
+    //   label: 'Tổng Quan',
+    // },
     {
-      key: '/manager/dashboard',
-      icon: <DashboardOutlined />,
-      label: 'Tổng Quan',
-    },
-    {
-      key: '/manager/managerOrderList',
+      key: '/manager/orderList',
       icon: <ShoppingCartOutlined />,
       label: 'Quản Lý Đơn Hàng',
     },
+    {
+        key: '/manager/income',
+        icon: <DashboardOutlined />,
+        label: 'Tổng Quan',
+      },
   ];
 
   const handleMenuClick = (key: string) => {

@@ -16,6 +16,7 @@ const ProtectedRoute = lazy(() => import("../utils/ProtectedRoutes"));
 const AdminLayout = lazy(() => import("../components/AdminLayout")); 
 
 
+
 export const AppRoutes = createBrowserRouter([
     {
         path: "/",
