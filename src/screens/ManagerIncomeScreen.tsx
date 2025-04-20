@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Typography, Select, Card, Statistic, Spin } from 'antd';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, Legend,
+    Cell,
 } from 'recharts';
 
 const { Title } = Typography;
@@ -28,12 +29,32 @@ interface AggregatedData {
 }
 
 const rawOrders: Order[] = [
-    { id: 'ORD2000', totalAmount: 365000, createdAt: new Date('2022-10-28'), items: [{ quantity: 10, unitPrice: 36500, totalPrice: 365000 }] },
-    { id: 'ORD2001', totalAmount: 400000, createdAt: new Date('2022-04-07'), items: [{ quantity: 9, unitPrice: 44444, totalPrice: 400000 }] },
-    { id: 'ORD2002', totalAmount: 530000, createdAt: new Date('2024-10-19'), items: [{ quantity: 12, unitPrice: 44166, totalPrice: 530000 }] },
-    { id: 'ORD2003', totalAmount: 45000, createdAt: new Date('2023-02-24'), items: [{ quantity: 1, unitPrice: 45000, totalPrice: 45000 }] },
-    { id: 'ORD2004', totalAmount: 235000, createdAt: new Date('2022-05-10'), items: [{ quantity: 6, unitPrice: 39166, totalPrice: 235000 }] },
+    // 10 ngày liên tiếp
+    ...Array.from({ length: 10 }).map((_, i) => ({
+        id: `DAY${i + 1}`,
+        totalAmount: 100000 + i * 50000,
+        createdAt: new Date(`2024-04-${i + 1}`),
+        items: [{ quantity: 1 + i, unitPrice: 100000 + i * 50000, totalPrice: 100000 + i * 50000 }],
+    })),
+
+    // 5 tháng khác nhau
+    { id: 'MONTH1', totalAmount: 800000, createdAt: new Date('2024-01-15'), items: [{ quantity: 8, unitPrice: 100000, totalPrice: 800000 }] },
+    { id: 'MONTH2', totalAmount: 700000, createdAt: new Date('2024-02-10'), items: [{ quantity: 7, unitPrice: 100000, totalPrice: 700000 }] },
+    { id: 'MONTH3', totalAmount: 600000, createdAt: new Date('2024-03-10'), items: [{ quantity: 6, unitPrice: 100000, totalPrice: 600000 }] },
+    { id: 'MONTH4', totalAmount: 900000, createdAt: new Date('2024-05-05'), items: [{ quantity: 9, unitPrice: 100000, totalPrice: 900000 }] },
+    { id: 'MONTH5', totalAmount: 1000000, createdAt: new Date('2024-06-25'), items: [{ quantity: 10, unitPrice: 100000, totalPrice: 1000000 }] },
+
+    // 4 quý khác nhau
+    { id: 'QUARTER1', totalAmount: 850000, createdAt: new Date('2023-01-20'), items: [{ quantity: 8, unitPrice: 106250, totalPrice: 850000 }] },
+    { id: 'QUARTER2', totalAmount: 930000, createdAt: new Date('2023-04-12'), items: [{ quantity: 9, unitPrice: 103333, totalPrice: 930000 }] },
+    { id: 'QUARTER3', totalAmount: 720000, createdAt: new Date('2023-07-18'), items: [{ quantity: 6, unitPrice: 120000, totalPrice: 720000 }] },
+    { id: 'QUARTER4', totalAmount: 660000, createdAt: new Date('2023-10-05'), items: [{ quantity: 6, unitPrice: 110000, totalPrice: 660000 }] },
+
+    // 2 năm khác nhau
+    { id: 'YEAR1', totalAmount: 1200000, createdAt: new Date('2022-08-08'), items: [{ quantity: 12, unitPrice: 100000, totalPrice: 1200000 }] },
+    { id: 'YEAR2', totalAmount: 1400000, createdAt: new Date('2021-09-09'), items: [{ quantity: 14, unitPrice: 100000, totalPrice: 1400000 }] },
 ];
+
 
 const getPeriodKey = (date: Date, type: 'day' | 'week' | 'month' | 'quarter' | 'year') => {
     const d = new Date(date);
@@ -53,6 +74,8 @@ const getPeriodKey = (date: Date, type: 'day' | 'week' | 'month' | 'quarter' | '
         case 'year': return `${year}`;
     }
 };
+
+const COLORS = ['#5B8FF9', '#61DDAA', '#65789B', '#F6BD16', '#7262fd', '#78D3F8', '#9661BC', '#F6903D'];
 
 const ManagerIncomeScreen: React.FC = () => {
     const [loading, setLoading] = useState(false);
@@ -126,12 +149,17 @@ const ManagerIncomeScreen: React.FC = () => {
                                 <Tooltip formatter={(value: any, name: any) =>
                                     name === 'income'
                                         ? [`${Number(value).toLocaleString('vi-VN')} ₫`, 'Thu nhập']
-                                        : [`${value} ly`, 'Số lượng bán']
+                                        : [`${value} VNĐ`, 'Thu nhập']
                                 }
                                 />
-
                                 <Legend />
-                                <Bar yAxisId="left" dataKey="income" fill="#5B8FF9" name="Thu nhập" radius={[6, 6, 0, 0]} />
+                                <Bar yAxisId="left" dataKey="income" name="Thu nhập" radius={[6, 6, 0, 0]}>
+                                    {
+                                        aggregatedData.map((_, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))
+                                    }
+                                </Bar>
                                 <Line yAxisId="right" type="monotone" dataKey="quantity" name="Số lượng bán" stroke="#F6BD16" strokeWidth={2} />
                             </BarChart>
                         </ResponsiveContainer>

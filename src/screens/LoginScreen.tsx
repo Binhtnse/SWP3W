@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react";
-import { Form, Input, Button, Typography, Modal, message } from "antd";
+import { Form, Input, Button, Typography, Modal, message, Alert } from "antd";
 import { LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -12,54 +12,71 @@ const animatedTextStyle: React.CSSProperties = {
   fontSize: 25,
   fontWeight: 700,
   animation: "fadeIn 1.5s ease-in-out",
-  display: "inline-block"
+  display: "inline-block",
 };
 
 const LoginPage: React.FC = () => {
   const [form] = Form.useForm();
   const [isResetVisible, setIsResetVisible] = useState(false);
   const [emailForReset, setEmailForReset] = useState("");
+  const [loginStatus, setLoginStatus] = useState<"success" | "error" | null>(null);
+  const [loginMessage, setLoginMessage] = useState<string>("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (values: any) => {
+    setIsLoggingIn(true); // ✅ Bắt đầu loading
     try {
-      const response = await axios.post("https://beautiful-unity-production.up.railway.app/api/authentication/login", {
-        email: values.username,
-        password: values.password,
-      });
-  
+      const response = await axios.post(
+        "https://beautiful-unity-production.up.railway.app/api/authentication/login",
+        {
+          email: values.username,
+          password: values.password,
+        }
+      );
+
       if (response.status === 200) {
         const { email, role, accessToken } = response.data;
-  
-        // Lưu thông tin người dùng
+
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("userEmail", email);
         localStorage.setItem("userRole", role);
-        
-        console.log("Login successful, stored auth data:", {
-          accessToken: !!accessToken,
-          email,
-          role
-        });
-  
-        message.success(`🎉 Đăng nhập thành công! Chào mừng ${email} đến với Trà sữa ngọt ngào!`);
-  
-        // Add a small delay to ensure localStorage is updated before navigation
+
+        setLoginStatus("success");
+        setLoginMessage(`🎉 Đăng nhập thành công! Chào mừng ${email} đến với Trà sữa ngọt ngào!`);
+
         setTimeout(() => {
-          if (role === 'STAFF') {
+          setLoginStatus(null);
+          setLoginMessage("");
+          setIsLoggingIn(false);
+          if (role === "STAFF") {
             navigate("/staff/products");
-          } else if (role === 'ADMIN') {
+          } else if (role === "ADMIN") {
             navigate("/admin/dashboard");
+          } else if (role === "MANAGER") {
+            navigate("/manager/manageIncome");
           }
-        }, 100);
+        }, 1500);
       } else {
-        message.error("❌ Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin đăng nhập.");
+        setLoginStatus("error");
+        setLoginMessage("❌ Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin đăng nhập.");
+        setTimeout(() => {
+          setLoginStatus(null);
+          setLoginMessage("");
+          setIsLoggingIn(false);
+        }, 1000);
       }
     } catch (error: any) {
-      // Error handling code remains the same
-      console.log(error)
+      setLoginStatus("error");
+      setLoginMessage("❌ Có lỗi xảy ra. Vui lòng thử lại sau.");
+      console.error(error);
+      setTimeout(() => {
+        setLoginStatus(null);
+        setLoginMessage("");
+        setIsLoggingIn(false);
+      }, 1000);
     }
-  };  
+  };
 
   const handleResetPassword = () => {
     if (emailForReset) {
@@ -91,6 +108,7 @@ const LoginPage: React.FC = () => {
           }
         `}
       </style>
+
       <div
         style={{
           backgroundColor: "rgba(255, 255, 255, 0.9)",
@@ -101,10 +119,24 @@ const LoginPage: React.FC = () => {
         }}
       >
         <div style={{ textAlign: "center", marginBottom: 12 }}>
-          <Text type="secondary" style={animatedTextStyle}>🌸 Trà sữa ngọt ngào 🌸</Text>
-          <Title level={3} style={{ margin: 0 }}>Đăng nhập hệ thống</Title>
-          
+          <Text type="secondary" style={animatedTextStyle}>
+            🌸 Trà sữa ngọt ngào 🌸
+          </Text>
+          <Title level={3} style={{ margin: 0 }}>
+            Đăng nhập hệ thống
+          </Title>
         </div>
+
+        
+        {loginStatus && (
+          <Alert
+            message={loginMessage}
+            type={loginStatus}
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+        )}
+
         <Form
           form={form}
           layout="vertical"
@@ -140,7 +172,12 @@ const LoginPage: React.FC = () => {
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit" block>
+            <Button
+              type="primary"
+              htmlType="submit"
+              block
+              loading={isLoggingIn} // ✅ loading khi đăng nhập
+            >
               Đăng nhập
             </Button>
           </Form.Item>
