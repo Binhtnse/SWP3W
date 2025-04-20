@@ -77,7 +77,7 @@ export const AppRoutes = createBrowserRouter([
         path: "/manager/orderList",
         element: (
             <Layout>
-                <ProtectedRoute allowedRoles={["GUEST"]}>
+                <ProtectedRoute allowedRoles={["MANAGER"]}>
                     <ManagerOrderListScreen />
                 </ProtectedRoute>
             </Layout>
@@ -87,7 +87,7 @@ export const AppRoutes = createBrowserRouter([
         path: "/manager/manageIncome",
         element: (
             <Layout>
-                <ProtectedRoute allowedRoles={["GUEST"]}>
+                <ProtectedRoute allowedRoles={["MANAGER"]}>
                     <ManagerIncomeScreen />
                 </ProtectedRoute>
             </Layout>
