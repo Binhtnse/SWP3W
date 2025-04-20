@@ -10,6 +10,7 @@ import LoginScreen from "../screens/LoginScreen";
 import ManagerOrderListScreen from "../screens/ManagerOrderListScreen";
 import AdminCategoryScreen from "../screens/AdminCategoryScreen";
 import AdminDashboardScreen from "../screens/AdminDashboardScreen";
+import ManagerIncomeScreen from "../screens/ManagerIncomeScreen";
 
 const Layout = lazy(() => import("../components/MainLayout"));
 const ProtectedRoute = lazy(() => import("../utils/ProtectedRoutes"));
@@ -78,6 +79,16 @@ export const AppRoutes = createBrowserRouter([
             <Layout>
                 <ProtectedRoute allowedRoles={["GUEST"]}>
                     <ManagerOrderListScreen />
+                </ProtectedRoute>
+            </Layout>
+        ),
+    },
+    {
+        path: "/manager/manageIncome",
+        element: (
+            <Layout>
+                <ProtectedRoute allowedRoles={["GUEST"]}>
+                    <ManagerIncomeScreen />
                 </ProtectedRoute>
             </Layout>
         ),
