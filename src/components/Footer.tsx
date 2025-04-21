@@ -96,7 +96,7 @@ const MilkTeaFooter: React.FC = () => {
         
         <div className="text-center">
           <Text style={{ color: '#d1d5db' }}>
-            &copy; {new Date().getFullYear()} Trà Sữa Ngon Ngon. Tất cả các quyền được bảo lưu.
+            &copy; {new Date().getFullYear()} Trà Sữa Ngọt Ngào. Tất cả các quyền được bảo lưu.
           </Text>
         </div>
       </div>

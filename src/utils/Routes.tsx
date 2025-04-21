@@ -5,7 +5,6 @@ import StaffProductDetailScreen from "../screens/StaffProductDetailScreen";
 import StaffOrderConfirmScreen from "../screens/StaffOrderConfirmScreen";
 import StaffCartScreen from "../screens/StaffCartScreen";
 import StaffOrderPaymentScreen from "../screens/StaffOrderPaymentScreen";
-import Home from "../screens/home"
 import LoginScreen from "../screens/LoginScreen";
 import ManagerOrderListScreen from "../screens/ManagerOrderListScreen";
 import AdminCategoryScreen from "../screens/AdminCategoryScreen";
@@ -19,10 +18,6 @@ const AdminLayout = lazy(() => import("../components/AdminLayout"));
 
 
 export const AppRoutes = createBrowserRouter([
-    {
-        path: "/",
-        element: <Home/>
-    },
     {
         path: "/staff/products",
         element: (
@@ -114,7 +109,7 @@ export const AppRoutes = createBrowserRouter([
         ),
     },
     {
-        path: "/login",
+        path: "/",
         element: <LoginScreen />,
       }
 ])

@@ -1,7 +1,9 @@
 import React from 'react';
-import { Layout, Typography, Space, Button } from 'antd';
-import { ShoppingCartOutlined, PhoneOutlined } from '@ant-design/icons';
+import { Layout, Typography, Space, Button, message } from 'antd';
+import { ShoppingCartOutlined, PhoneOutlined, LogoutOutlined } from '@ant-design/icons';
 import styled from 'styled-components'; 
+import { useNavigate } from 'react-router-dom';
+import { useAuthState } from '../hooks/useAuthState';
 
 const { Header: AntHeader } = Layout;
 const { Title } = Typography;
@@ -43,6 +45,27 @@ const ActionSection = styled.div`
 `;
 
 const Header: React.FC = () => {
+  const navigate = useNavigate();
+  const { isLoggedIn, setIsLoggedIn, setRole, setUserName } = useAuthState();
+
+  const handleLogout = () => {
+    // Clear localStorage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userEmail');
+    
+    // Update auth state
+    setIsLoggedIn(false);
+    setRole('GUEST');
+    setUserName('');
+    
+    // Show success message
+    message.success('Đăng xuất thành công!');
+    
+    // Redirect to login page
+    navigate('/login');
+  };
+
   return (
     <StyledHeader className="shadow-md z-10 relative">
       {/* Logo and Shop Name */}
@@ -66,6 +89,18 @@ const Header: React.FC = () => {
           >
             Giỏ Hàng
           </Button>
+          
+          {isLoggedIn && (
+            <Button 
+              type="default" 
+              icon={<LogoutOutlined />}
+              size="large"
+              onClick={handleLogout}
+              className="border-amber-700 text-amber-800 hover:bg-amber-100"
+            >
+              Đăng Xuất
+            </Button>
+          )}
         </Space>
       </ActionSection>
     </StyledHeader>

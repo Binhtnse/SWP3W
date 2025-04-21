@@ -23,17 +23,43 @@ import {
   DownOutlined,
 } from "@ant-design/icons";
 import styled from "styled-components";
+import axios from "axios";
+
+interface Category {
+  id: number;
+  name: string;
+  description: string;
+  status: string;
+  createAt: string;
+  updateAt: string | null;
+  deleteAt: string | null;
+}
 
 interface Product {
   id: number;
   name: string;
-  price: number;
-  remainingAmount: number;
-  category: string;
-  isCombo: boolean;
+  basePrice: number;
+  productCode: string;
+  imageUrl: string;
+  description: string;
+  productType: "SINGLE" | "COMBO";
+  productUsage: string;
+  status: "ACTIVE" | "INACTIVE";
+  createAt: string;
+  updateAt: string | null;
+  deleteAt: string | null;
+  category: Category;
   comboItems?: { name: string; quantity: number }[];
-  image: string;
-  status: "active" | "inactive";
+  remainingAmount?: number; // This might need to be added from inventory data
+}
+
+interface ApiResponse {
+  data: Product[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
 }
 
 const StyledHeader = styled.div`
@@ -190,100 +216,25 @@ const ViewControls = styled.div`
   }
 `;
 
-const { Option } = Select;
+const StyledCard = styled(Card)`
+  .ant-card-cover {
+    width: 100% !important;
+    height: 280px !important; // Fixed height for all images
+    overflow: hidden !important;
+  }
+  
+  .ant-card-body {
+    width: 100% !important;
+  }
+  
+  img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+`;
 
-// Mock data for products
-const mockProducts: Product[] = [
-  {
-    id: 1,
-    name: "Trà sữa truyền thống",
-    price: 25000,
-    remainingAmount: 50,
-    category: "Trà sữa",
-    isCombo: false,
-    image: "https://example.com/trasua.jpg",
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "Trà đào",
-    price: 20000,
-    remainingAmount: 30,
-    category: "Trà trái cây",
-    isCombo: false,
-    image: "https://example.com/tradao.jpg",
-    status: "active",
-  },
-  {
-    id: 3,
-    name: "Cà phê sữa đá",
-    price: 18000,
-    remainingAmount: 45,
-    category: "Cà phê",
-    isCombo: false,
-    image: "https://example.com/caphe.jpg",
-    status: "active",
-  },
-  {
-    id: 4,
-    name: "Combo trà sữa đôi",
-    price: 45000,
-    remainingAmount: 15,
-    category: "Trà sữa",
-    isCombo: true,
-    comboItems: [
-      { name: "Trà sữa truyền thống", quantity: 1 },
-      { name: "Trà sữa matcha", quantity: 1 },
-    ],
-    image: "https://example.com/combo.jpg",
-    status: "active",
-  },
-  {
-    id: 5,
-    name: "Trà sữa matcha",
-    price: 28000,
-    remainingAmount: 0,
-    category: "Trà sữa",
-    isCombo: false,
-    image: "https://example.com/matcha.jpg",
-    status: "inactive",
-  },
-  {
-    id: 6,
-    name: "Combo gia đình",
-    price: 85000,
-    remainingAmount: 8,
-    category: "Trà sữa",
-    isCombo: true,
-    comboItems: [
-      { name: "Trà sữa truyền thống", quantity: 2 },
-      { name: "Trà đào", quantity: 1 },
-      { name: "Cà phê sữa đá", quantity: 1 },
-    ],
-    image: "https://example.com/combogiadinh.jpg",
-    status: "active",
-  },
-  {
-    id: 7,
-    name: "Đá xay socola",
-    price: 32000,
-    remainingAmount: 25,
-    category: "Đá xay",
-    isCombo: false,
-    image: "https://example.com/daxay.jpg",
-    status: "active",
-  },
-  {
-    id: 8,
-    name: "Trân châu đen",
-    price: 5000,
-    remainingAmount: 100,
-    category: "Topping",
-    isCombo: false,
-    image: "https://example.com/tranchau.jpg",
-    status: "active",
-  },
-];
+const { Option } = Select;
 
 const StaffProductScreen: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -294,20 +245,38 @@ const StaffProductScreen: React.FC = () => {
   const [pageSize, setPageSize] = useState<number>(8);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState<string>("name");
+  const [totalElements, setTotalElements] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [categories, setCategories] = useState<string[]>([]);
+  console.log(totalPages)
 
   useEffect(() => {
-    // Use mock data instead of API call
     fetchProducts();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize]);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      // Simulate API delay
-      setTimeout(() => {
-        setProducts(mockProducts);
-        setLoading(false);
-      }, 1000);
+      const response = await axios.get<ApiResponse>(
+        `https://beautiful-unity-production.up.railway.app/api/product?page=${currentPage - 1}&size=${pageSize}`
+      );
+      
+      // Add default remainingAmount for display purposes
+      const productsWithStock = response.data.data.map(product => ({
+        ...product,
+        remainingAmount: Math.floor(Math.random() * 50) // Random stock for demo
+      }));
+      
+      setProducts(productsWithStock);
+      setTotalElements(response.data.totalElements);
+      setTotalPages(response.data.totalPages);
+      
+      // Extract unique categories
+      const uniqueCategories = [...new Set(productsWithStock.map(product => product.category.name))];
+      setCategories(uniqueCategories);
+      
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching products:", error);
       message.error("Không thể tải danh sách sản phẩm");
@@ -334,7 +303,7 @@ const StaffProductScreen: React.FC = () => {
       .toLowerCase()
       .includes(searchText.toLowerCase());
     const matchesCategory =
-      filterCategory === "all" || product.category === filterCategory;
+      filterCategory === "all" || product.category.name === filterCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -343,20 +312,15 @@ const StaffProductScreen: React.FC = () => {
       case "name":
         return a.name.localeCompare(b.name);
       case "price-asc":
-        return a.price - b.price;
+        return a.basePrice - b.basePrice;
       case "price-desc":
-        return b.price - a.price;
+        return b.basePrice - a.basePrice;
       case "stock":
-        return b.remainingAmount - a.remainingAmount;
+        return (b.remainingAmount || 0) - (a.remainingAmount || 0);
       default:
         return 0;
     }
   });
-
-  const paginatedProducts = sortedProducts.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -365,10 +329,8 @@ const StaffProductScreen: React.FC = () => {
     }).format(amount);
   };
 
-  const categories = ["Trà sữa", "Trà trái cây", "Cà phê", "Đá xay", "Topping"];
-
   const renderComboDetails = (product: Product) => {
-    if (!product.isCombo || !product.comboItems) return null;
+    if (product.productType !== "COMBO" || !product.comboItems) return null;
 
     return (
       <div className="mt-2 text-sm text-gray-600">
@@ -387,69 +349,74 @@ const StaffProductScreen: React.FC = () => {
   const renderGridView = () => {
     return (
       <Row gutter={[16, 16]}>
-        {paginatedProducts.length > 0 ? (
-          paginatedProducts.map((product) => (
+        {sortedProducts.length > 0 ? (
+          sortedProducts.map((product) => (
             <Col xs={24} sm={12} md={8} lg={6} key={product.id}>
               <Badge.Ribbon
-                text={product.status === "active" ? "Đang bán" : "Ngừng bán"}
-                color={product.status === "active" ? "green" : "red"}
+                text={product.status === "ACTIVE" ? "Đang bán" : "Ngừng bán"}
+                color={product.status === "ACTIVE" ? "green" : "red"}
                 style={{
-                  display: product.status === "active" ? "none" : "block",
+                  display: product.status === "ACTIVE" ? "none" : "block",
                 }}
               >
-                <Card
-                  hoverable
-                  className="h-full"
-                  cover={
-                    <div className="h-48 overflow-hidden relative">
-                      <img
-                        alt={product.name}
-                        src={product.image}
-                        className="w-full h-full object-cover"
-                      />
-                      {product.isCombo && (
-                        <div className="absolute top-2 left-2">
-                          <Tag color="blue">Combo</Tag>
-                        </div>
-                      )}
-                      {product.remainingAmount === 0 && (
-                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                          <span className="text-white font-bold text-lg">
-                            HẾT HÀNG
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  }
-                >
-                  <div className="flex flex-col h-full">
+                <StyledCard
+                hoverable
+                className="h-full flex flex-col"
+                cover={
+                  <div className="h-64 overflow-hidden relative" style={{ width: '100%' }}>
+                    <img
+                      alt={product.name}
+                      src={product.imageUrl}
+                      className="w-full h-full object-cover"
+                      style={{ objectPosition: 'center' }}
+                    />
+                    {product.productType === "COMBO" && (
+                      <div className="absolute top-2 left-2">
+                        <Tag color="blue">Combo</Tag>
+                      </div>
+                    )}
+                    {(product.remainingAmount === 0) && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                        <span className="text-white font-bold text-lg">
+                          HẾT HÀNG
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                }
+              >
+                  {/* Rest of the card content remains the same */}
+                  <div className="flex flex-col flex-grow">
                     <h3 className="text-lg font-medium mb-1 line-clamp-2">
                       {product.name}
                     </h3>
                     <div className="text-sm text-gray-500 mb-2">
-                      {product.category}
+                      {product.category.name}
                     </div>
                     <div className="text-lg font-bold text-red-600 mb-2">
-                      {formatCurrency(product.price)}
+                      {formatCurrency(product.basePrice)}
                     </div>
                     <div className="mb-2">
                       <Tag
                         color={
-                          product.remainingAmount > 10
+                          (product.remainingAmount || 0) > 10
                             ? "green"
-                            : product.remainingAmount > 0
+                            : (product.remainingAmount || 0) > 0
                             ? "orange"
                             : "red"
                         }
                       >
-                        {product.remainingAmount > 0
+                        {(product.remainingAmount || 0) > 0
                           ? `Còn ${product.remainingAmount}`
                           : "Hết hàng"}
                       </Tag>
                     </div>
-                    {product.isCombo && renderComboDetails(product)}
+                    {product.productType === "COMBO" && renderComboDetails(product)}
+                    <div className="text-sm text-gray-500 mt-2 line-clamp-2">
+                      {product.description}
+                    </div>
                   </div>
-                </Card>
+                </StyledCard>
               </Badge.Ribbon>
             </Col>
           ))
@@ -461,26 +428,26 @@ const StaffProductScreen: React.FC = () => {
       </Row>
     );
   };
-
+  
   const renderListView = () => {
     return (
       <div className="space-y-4">
-        {paginatedProducts.length > 0 ? (
-          paginatedProducts.map((product) => (
+        {sortedProducts.length > 0 ? (
+          sortedProducts.map((product) => (
             <Card key={product.id} className="overflow-hidden">
               <div className="flex flex-col sm:flex-row">
-                <div className="relative w-full sm:w-48 h-48 flex-shrink-0">
+                <div className="relative w-full sm:w-64 h-64 flex-shrink-0">
                   <img
-                    src={product.image}
+                    src={product.imageUrl}
                     alt={product.name}
                     className="w-full h-full object-cover"
                   />
-                  {product.isCombo && (
+                  {product.productType === "COMBO" && (
                     <div className="absolute top-2 left-2">
                       <Tag color="blue">Combo</Tag>
                     </div>
                   )}
-                  {product.remainingAmount === 0 && (
+                  {(product.remainingAmount === 0) && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                       <span className="text-white font-bold text-lg">
                         HẾT HÀNG
@@ -488,37 +455,45 @@ const StaffProductScreen: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <div className="p-4 flex-1">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-xl font-medium">{product.name}</h3>
-                      <div className="text-sm text-gray-500 mt-1">
-                        {product.category}
+                <div className="p-4 flex-1 min-h-[12rem] flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-xl font-medium">{product.name}</h3>
+                        <div className="text-sm text-gray-500 mt-1">
+                          {product.category.name}
+                        </div>
                       </div>
+                      <Tag color={product.status === "ACTIVE" ? "green" : "red"}>
+                        {product.status === "ACTIVE" ? "Đang bán" : "Ngừng bán"}
+                      </Tag>
                     </div>
-                    <Tag color={product.status === "active" ? "green" : "red"}>
-                      {product.status === "active" ? "Đang bán" : "Ngừng bán"}
-                    </Tag>
+                    <div className="text-xl font-bold text-red-600 mt-2">
+                      {formatCurrency(product.basePrice)}
+                    </div>
+                    <div className="mt-2">
+                      <Tag
+                        color={
+                          (product.remainingAmount || 0) > 10
+                            ? "green"
+                            : (product.remainingAmount || 0) > 0
+                            ? "orange"
+                            : "red"
+                        }
+                      >
+                        {(product.remainingAmount || 0) > 0
+                          ? `Còn ${product.remainingAmount}`
+                          : "Hết hàng"}
+                      </Tag>
+                    </div>
+                    {product.productType === "COMBO" && renderComboDetails(product)}
+                    <div className="text-sm text-gray-500 mt-2 line-clamp-3">
+                      {product.description}
+                    </div>
                   </div>
-                  <div className="text-xl font-bold text-red-600 mt-2">
-                    {formatCurrency(product.price)}
+                  <div className="text-xs text-gray-400 mt-2">
+                    Mã sản phẩm: {product.productCode}
                   </div>
-                  <div className="mt-2">
-                    <Tag
-                      color={
-                        product.remainingAmount > 10
-                          ? "green"
-                          : product.remainingAmount > 0
-                          ? "orange"
-                          : "red"
-                      }
-                    >
-                      {product.remainingAmount > 0
-                        ? `Còn ${product.remainingAmount}`
-                        : "Hết hàng"}
-                    </Tag>
-                  </div>
-                  {product.isCombo && renderComboDetails(product)}
                 </div>
               </div>
             </Card>
@@ -630,13 +605,13 @@ const StaffProductScreen: React.FC = () => {
 
               <div className="flex justify-between items-center flex-wrap">
                 <div className="text-gray-500 mb-4 sm:mb-0">
-                  Hiển thị {paginatedProducts.length} trên tổng số{" "}
-                  {filteredProducts.length} sản phẩm
+                  Hiển thị {sortedProducts.length} trên tổng số{" "}
+                  {totalElements} sản phẩm
                 </div>
                 <Pagination
                   current={currentPage}
                   pageSize={pageSize}
-                  total={filteredProducts.length}
+                  total={totalElements}
                   onChange={(page) => setCurrentPage(page)}
                   showSizeChanger
                   onShowSizeChange={(_current, size) => {
