@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table, message } from 'antd';
 import axios from 'axios';
+import ManagerLayout from '../components/ManagerLayout';
 
 interface Product {
   id: number;
@@ -71,6 +72,7 @@ const ManagerProductList: React.FC = () => {
   ];
 
   return (
+    <ManagerLayout>{
     <div>
       <h1>Product Manager</h1>
       <Table
@@ -83,7 +85,7 @@ const ManagerProductList: React.FC = () => {
           total: 1, 
         }}
       />
-    </div>
+    </div>}</ManagerLayout>
   );
 };
 

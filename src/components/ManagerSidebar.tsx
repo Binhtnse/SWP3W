@@ -26,7 +26,7 @@ const ManagerSidebar: React.FC = () => {
       label: 'Quản Lý Đơn Hàng',
     },
     {
-        key: '/manager/income',
+        key: '/manager/manageIncome',
         icon: <DashboardOutlined />,
         label: 'Tổng Quan',
       },
