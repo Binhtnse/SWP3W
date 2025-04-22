@@ -5,6 +5,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, Legend,
     Cell,
 } from 'recharts';
+import ManagerLayout from '../components/ManagerLayout'; // Import ManagerLayout
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -115,64 +116,67 @@ const ManagerIncomeScreen: React.FC = () => {
     ];
 
     return (
-        <div style={{ padding: 24 }}>
-            <Title level={2}>📊 Quản lý thu nhập & sản phẩm đã bán</Title>
+        <ManagerLayout> {/* Bao bọc trang trong ManagerLayout */}
+            <div style={{ padding: 24 }}>
+                {/* Đưa phần thống kê lên đầu trang */}
+                <Title level={2}>📊 Quản lý thu nhập & sản phẩm đã bán</Title>
 
-            <Card style={{ marginBottom: 24 }}>
-                <span style={{ marginRight: 12 }}>Xem theo:</span>
-                <Select value={filterType} onChange={(val) => setFilterType(val)} style={{ width: 200 }}>
-                    <Option value="day">Theo ngày</Option>
-                    <Option value="week">Theo tuần</Option>
-                    <Option value="month">Theo tháng</Option>
-                    <Option value="quarter">Theo quý</Option>
-                    <Option value="year">Theo năm</Option>
-                </Select>
-            </Card>
+                <Card style={{ marginBottom: 24 }}>
+                    <Statistic title="Tổng thu nhập" value={totalIncome} suffix="₫" valueStyle={{ color: '#3f8600' }} formatter={(val) => Number(val).toLocaleString('vi-VN')} />
+                    <Statistic title="Tổng số ly đã bán" value={totalQuantity} suffix="ly" valueStyle={{ color: '#f79e1b' }} />
+                </Card>
 
-            {loading ? (
-                <Spin size="large" />
-            ) : (
-                <>
-                    <Table
-                        columns={columns}
-                        dataSource={aggregatedData.map((item, idx) => ({ key: idx, ...item }))}
-                        pagination={false}
-                    />
+                <Card style={{ marginBottom: 24 }}>
+                    <span style={{ marginRight: 12 }}>Xem theo:</span>
+                    <Select value={filterType} onChange={(val) => setFilterType(val)} style={{ width: 200 }}>
+                        <Option value="day">Theo ngày</Option>
+                        <Option value="week">Theo tuần</Option>
+                        <Option value="month">Theo tháng</Option>
+                        <Option value="quarter">Theo quý</Option>
+                        <Option value="year">Theo năm</Option>
+                    </Select>
+                </Card>
 
-                    <Card title="📈 Biểu đồ thu nhập & số lượng bán" style={{ marginTop: 24 }}>
-                        <ResponsiveContainer width="100%" height={350}>
-                            <BarChart data={aggregatedData} margin={{ top: 16, right: 30, left: 0, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="period" />
-                                <YAxis yAxisId="left" />
-                                <YAxis yAxisId="right" orientation="right" />
-                                <Tooltip formatter={(value: any, name: any) =>
-                                    name === 'income'
-                                        ? [`${Number(value).toLocaleString('vi-VN')} ₫`, 'Thu nhập']
-                                        : [`${value} VNĐ`, 'Thu nhập']
-                                }
-                                />
-                                <Legend />
-                                <Bar yAxisId="left" dataKey="income" name="Thu nhập" radius={[6, 6, 0, 0]}>
-                                    {
-                                        aggregatedData.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))
+                {loading ? (
+                    <Spin size="large" />
+                ) : (
+                    <>
+                        <Table
+                            columns={columns}
+                            dataSource={aggregatedData.map((item, idx) => ({ key: idx, ...item }))}
+                            pagination={false}
+                        />
+
+                        <Card title="📈 Biểu đồ thu nhập & số lượng bán" style={{ marginTop: 24 }}>
+                            <ResponsiveContainer width="100%" height={350}>
+                                <BarChart data={aggregatedData} margin={{ top: 16, right: 30, left: 0, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="period" />
+                                    <YAxis yAxisId="left" />
+                                    <YAxis yAxisId="right" orientation="right" />
+                                    <Tooltip formatter={(value: any, name: any) =>
+                                        name === 'income'
+                                            ? [`${Number(value).toLocaleString('vi-VN')} ₫`, 'Thu nhập']
+                                            : [`${value} VNĐ`, 'Thu nhập']
                                     }
-                                </Bar>
-                                <Line yAxisId="right" type="monotone" dataKey="quantity" name="Số lượng bán" stroke="#F6BD16" strokeWidth={2} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </Card>
+                                    />
+                                    <Legend />
+                                    <Bar yAxisId="left" dataKey="income" name="Thu nhập" radius={[6, 6, 0, 0]}>
+                                        {
+                                            aggregatedData.map((_, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))
+                                        }
+                                    </Bar>
+                                    <Line yAxisId="right" type="monotone" dataKey="quantity" name="Số lượng bán" stroke="#F6BD16" strokeWidth={2} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </Card>
 
-                    <Card style={{ marginTop: 24 }}>
-                        <Statistic title="Tổng thu nhập" value={totalIncome} suffix="₫" valueStyle={{ color: '#3f8600' }} formatter={(val) => Number(val).toLocaleString('vi-VN')} />
-                        <br />
-                        <Statistic title="Tổng số ly đã bán" value={totalQuantity} suffix="ly" valueStyle={{ color: '#f79e1b' }} />
-                    </Card>
-                </>
-            )}
-        </div>
+                    </>
+                )}
+            </div>
+        </ManagerLayout>
     );
 };
 
