@@ -1,27 +1,6 @@
 import React, { useState, useEffect } from "react";
-import {
-  Card,
-  Tag,
-  Input,
-  Select,
-  Spin,
-  message,
-  Row,
-  Col,
-  Badge,
-  Empty,
-  Pagination,
-  Button,
-  Dropdown,
-  Menu,
-} from "antd";
-import {
-  FilterOutlined,
-  ShoppingOutlined,
-  AppstoreOutlined,
-  UnorderedListOutlined,
-  DownOutlined,
-} from "@ant-design/icons";
+import { Card, Tag, Input, Select, Spin, message, Row, Col, Badge, Empty, Pagination, Button, Dropdown,Menu,} from "antd";
+import {FilterOutlined, ShoppingOutlined, AppstoreOutlined, UnorderedListOutlined, DownOutlined,} from "@ant-design/icons";
 import styled from "styled-components";
 import axios from "axios";
 
@@ -49,12 +28,23 @@ interface Product {
   updateAt: string | null;
   deleteAt: string | null;
   category: Category;
+  categoryId: number;
+  categoryName: string;
   comboItems?: { name: string; quantity: number }[];
   remainingAmount?: number; // This might need to be added from inventory data
 }
 
 interface ApiResponse {
   data: Product[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
+
+interface CategoryApiResponse {
+  data: Category[];
   page: number;
   size: number;
   totalElements: number;
@@ -247,13 +237,36 @@ const StaffProductScreen: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>("name");
   const [totalElements, setTotalElements] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   console.log(totalPages)
 
   useEffect(() => {
-    fetchProducts();
+    fetchCategories();
+    
+    if (filterCategory !== "all") {
+      const selectedCategory = categories.find(category => category.name === filterCategory);
+      if (selectedCategory) {
+        fetchProductsByCategory(selectedCategory.id);
+      } else {
+        fetchProducts();
+      }
+    } else {
+      fetchProducts();
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get<CategoryApiResponse>(
+        "https://beautiful-unity-production.up.railway.app/api/category?page=0&size=20"
+      );
+      setCategories(response.data.data);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      message.error("Không thể tải danh mục sản phẩm");
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -262,7 +275,6 @@ const StaffProductScreen: React.FC = () => {
         `https://beautiful-unity-production.up.railway.app/api/product?page=${currentPage - 1}&size=${pageSize}`
       );
       
-      // Add default remainingAmount for display purposes
       const productsWithStock = response.data.data.map(product => ({
         ...product,
         remainingAmount: Math.floor(Math.random() * 50) // Random stock for demo
@@ -271,11 +283,6 @@ const StaffProductScreen: React.FC = () => {
       setProducts(productsWithStock);
       setTotalElements(response.data.totalElements);
       setTotalPages(response.data.totalPages);
-      
-      // Extract unique categories
-      const uniqueCategories = [...new Set(productsWithStock.map(product => product.category.name))];
-      setCategories(uniqueCategories);
-      
       setLoading(false);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -292,6 +299,48 @@ const StaffProductScreen: React.FC = () => {
   const handleCategoryFilter = (value: string) => {
     setFilterCategory(value);
     setCurrentPage(1);
+  
+    if (value === "all") {
+      fetchProducts();
+      return;
+    }
+    
+    const selectedCategory = categories.find(category => category.name === value);
+    if (selectedCategory) {
+      fetchProductsByCategory(selectedCategory.id);
+    }
+  };
+
+  const fetchProductsByCategory = async (categoryId: number) => {
+    try {
+      setLoading(true);
+      const response = await axios.get<ApiResponse>(
+        `https://beautiful-unity-production.up.railway.app/api/category/${categoryId}/products?page=${currentPage - 1}&size=${pageSize}`
+      );
+      
+      const productsWithStock = response.data.data.map(product => ({
+        ...product,
+        remainingAmount: Math.floor(Math.random() * 50), // Random stock for demo
+        category: {
+          id: product.categoryId,
+          name: product.categoryName,
+          description: "",
+          status: "",
+          createAt: "",
+          updateAt: null,
+          deleteAt: null
+        }
+      }));
+      
+      setProducts(productsWithStock);
+      setTotalElements(response.data.totalElements);
+      setTotalPages(response.data.totalPages);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching products by category:", error);
+      message.error("Không thể tải danh sách sản phẩm theo danh mục");
+      setLoading(false);
+    }
   };
 
   const handleSortChange = (value: string) => {
@@ -510,7 +559,6 @@ const StaffProductScreen: React.FC = () => {
       <Menu.Item key="name">Tên A-Z</Menu.Item>
       <Menu.Item key="price-asc">Giá: Thấp đến cao</Menu.Item>
       <Menu.Item key="price-desc">Giá: Cao đến thấp</Menu.Item>
-      <Menu.Item key="stock">Tồn kho</Menu.Item>
     </Menu>
   );
 
@@ -546,17 +594,18 @@ const StaffProductScreen: React.FC = () => {
         <FilterSection>
           <FilterContent className="mb-6">
             <FilterControls>
-              <Select
+            <Select
                 placeholder="Danh mục"
                 onChange={handleCategoryFilter}
                 className="w-40"
                 defaultValue="all"
                 suffixIcon={<FilterOutlined />}
+                loading={categories.length === 0}
               >
                 <Option value="all">Tất cả danh mục</Option>
                 {categories.map((category) => (
-                  <Option key={category} value={category}>
-                    {category}
+                  <Option key={category.id} value={category.name}>
+                    {category.name}
                   </Option>
                 ))}
               </Select>

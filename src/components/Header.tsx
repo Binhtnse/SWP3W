@@ -8,7 +8,6 @@ import { useAuthState } from '../hooks/useAuthState';
 const { Header: AntHeader } = Layout;
 const { Title } = Typography;
 
-// Create a styled version of AntHeader to override default styles
 const StyledHeader = styled(AntHeader)`
   background: linear-gradient(to right, #fff8e1, #ffecb3) !important; /* amber-100 to amber-200 */
   color: #d97706 !important; /* amber-800 */
@@ -46,34 +45,28 @@ const ActionSection = styled.div`
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, setIsLoggedIn, setRole, setUserName } = useAuthState();
+  const { isLoggedIn, setIsLoggedIn, setRole, setUserName, role } = useAuthState();
 
   const handleLogout = () => {
-    // Clear localStorage
     localStorage.removeItem('accessToken');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userEmail');
-    
-    // Update auth state
+
     setIsLoggedIn(false);
     setRole('GUEST');
     setUserName('');
-    
-    // Show success message
+
     message.success('Đăng xuất thành công!');
-    
-    // Redirect to login page
+
     navigate('/login');
   };
 
   return (
     <StyledHeader className="shadow-md z-10 relative">
-      {/* Logo and Shop Name */}
       <LogoSection>
         <Title level={3} className="m-0">Trà Sữa Ngọt Ngào</Title>
       </LogoSection>
 
-      {/* Right side elements */}
       <ActionSection>
         <Space size="large">
           <div className="hidden sm:flex items-center">
@@ -81,14 +74,16 @@ const Header: React.FC = () => {
             <span className="text-amber-800 font-medium">Đặt Hàng: 123-456-7890</span>
           </div>
           
-          <Button 
-            type="primary" 
-            icon={<ShoppingCartOutlined />}
-            size="large"
-            className="bg-amber-700 hover:bg-amber-800 border-amber-700"
-          >
-            Giỏ Hàng
-          </Button>
+          {role === 'STAFF' && (
+            <Button 
+              type="primary" 
+              icon={<ShoppingCartOutlined />}
+              size="large"
+              className="bg-amber-700 hover:bg-amber-800 border-amber-700"
+            >
+              Giỏ Hàng
+            </Button>
+          )}
           
           {isLoggedIn && (
             <Button 
