@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useState } from 'react';
-import { Table, message } from 'antd';
+import { Table, message, Modal, Descriptions, Button } from 'antd';
 import axios from 'axios';
 import ManagerLayout from '../components/ManagerLayout';
 
@@ -25,6 +25,8 @@ interface Product {
 const ManagerProductList: React.FC = () => {
   const [data, setData] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
 
   useEffect(() => {
     fetchProducts();
@@ -40,6 +42,16 @@ const ManagerProductList: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const showProductDetails = (product: Product) => {
+    setSelectedProduct(product);
+    setIsModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedProduct(null);
+    setIsModalVisible(false);
   };
 
   const columns = [
@@ -69,23 +81,54 @@ const ManagerProductList: React.FC = () => {
       title: 'Status',
       dataIndex: 'status',
     },
+    {
+      title: 'Action',
+      key: 'action',
+      render: (_: any, record: Product) => (
+        <Button type="link" onClick={() => showProductDetails(record)}>
+          View Details
+        </Button>
+      ),
+    },
   ];
 
   return (
-    <ManagerLayout>{
-    <div>
-      <h1>Product Manager</h1>
-      <Table
-        dataSource={data}
-        columns={columns}
-        rowKey="id"
-        loading={loading}
-        pagination={{
-          pageSize: 10,
-          total: 1, 
-        }}
-      />
-    </div>}</ManagerLayout>
+    <ManagerLayout>
+      <div>
+        <h1>Product Manager</h1>
+        <Table
+          dataSource={data}
+          columns={columns}
+          rowKey="id"
+          loading={loading}
+          pagination={{
+            pageSize: 10,
+          }}
+        />
+      </div>
+
+      {/* Product Detail Modal */}
+      <Modal
+        title="Product Details"
+        visible={isModalVisible}
+        onCancel={handleCloseModal}
+        footer={null}
+      >
+        {selectedProduct && (
+          <Descriptions bordered column={1} size="small">
+            <Descriptions.Item label="Product Name">{selectedProduct.name}</Descriptions.Item>
+            <Descriptions.Item label="Product Code">{selectedProduct.productCode}</Descriptions.Item>
+            <Descriptions.Item label="Price">{selectedProduct.basePrice} VND</Descriptions.Item>
+            <Descriptions.Item label="Category">{selectedProduct.categoryName}</Descriptions.Item>
+            <Descriptions.Item label="Status">{selectedProduct.status}</Descriptions.Item>
+            <Descriptions.Item label="Description">{selectedProduct.description}</Descriptions.Item>
+            <Descriptions.Item label="Created At">{selectedProduct.createAt}</Descriptions.Item>
+            <Descriptions.Item label="Updated At">{selectedProduct.updateAt || 'N/A'}</Descriptions.Item>
+            <Descriptions.Item label="Deleted At">{selectedProduct.deleteAt || 'N/A'}</Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
+    </ManagerLayout>
   );
 };
 

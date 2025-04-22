@@ -3,9 +3,9 @@ import { Layout, Menu } from 'antd';
 import {
   DashboardOutlined,
   ShoppingCartOutlined,
+  AppstoreAddOutlined, // Icon cho quản lý sản phẩm
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
-
 
 const { Sider } = Layout;
 
@@ -15,21 +15,21 @@ const ManagerSidebar: React.FC = () => {
   const location = useLocation();
 
   const menuItems = [
-    // {
-    //   key: '/manager/dashboard',
-    //   icon: <DashboardOutlined />,
-    //   label: 'Tổng Quan',
-    // },
     {
-      key: '/manager/orderList',
+      key: '/manager/orderList', 
       icon: <ShoppingCartOutlined />,
       label: 'Quản Lý Đơn Hàng',
     },
     {
-        key: '/manager/manageIncome',
-        icon: <DashboardOutlined />,
-        label: 'Tổng Quan',
-      },
+      key: '/manager/listProduct', 
+      icon: <AppstoreAddOutlined />,
+      label: 'Quản Lý Sản Phẩm',
+    },
+    {
+      key: '/manager/manageIncome', 
+      icon: <DashboardOutlined />,
+      label: 'Tổng Quan',
+    },
   ];
 
   const handleMenuClick = (key: string) => {
@@ -45,7 +45,7 @@ const ManagerSidebar: React.FC = () => {
     >
       <div className="flex h-16 items-center justify-center">
         <h1 className={`text-primary transition-all duration-300 ${collapsed ? 'text-xl' : 'text-2xl'} font-bold`}>
-          {collapsed ? 'MT' : 'MilkTea'}
+          {collapsed ? 'TSNN' : 'Trà Sữa Ngọt Ngào'}
         </h1>
       </div>
       <Menu
