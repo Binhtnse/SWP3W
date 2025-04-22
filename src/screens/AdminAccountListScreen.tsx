@@ -1,17 +1,41 @@
-import React, { useEffect, useState } from 'react';
-import { Table, Button, Input, Select, Space, Modal, Form, DatePicker, message, Tag } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import axios from 'axios';
-import styled from 'styled-components';
-import moment from 'moment';
-import { TablePaginationConfig, TableProps} from 'antd/lib/table';
-import { FilterValue, SorterResult } from 'antd/lib/table/interface';
+import React, { useEffect, useState } from "react";
+import {
+  Table,
+  Button,
+  Input,
+  Select,
+  Space,
+  Modal,
+  Form,
+  DatePicker,
+  message,
+  Tag,
+  Card,
+  Typography,
+  Divider,
+} from "antd";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  ReloadOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
+import axios from "axios";
+import styled from "styled-components";
+import moment from "moment";
+import { TablePaginationConfig, TableProps } from "antd/lib/table";
+import { FilterValue, SorterResult } from "antd/lib/table/interface";
 
 const { Option } = Select;
+const { Title, Text } = Typography;
 
 // Styled Components
 const Container = styled.div`
   padding: 24px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
 `;
 
 const Header = styled.div`
@@ -19,25 +43,71 @@ const Header = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  background-color: white;
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 `;
 
-const Title = styled.h1`
-  font-size: 24px;
-  margin: 0;
+const StyledTitle = styled(Title)`
+  margin: 0 !important;
+  color: #1890ff;
 `;
 
-const FilterContainer = styled.div`
+const FilterContainer = styled(Card)`
+  margin-bottom: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+`;
+
+const FilterRow = styled.div`
   display: flex;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
+  align-items: center;
 `;
 
 const StyledTable = styled(Table)<{ dataSource: User[] }>`
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-`as React.ComponentType<TableProps<User>>;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  
+  .ant-table-thead > tr > th {
+    background-color: #f0f7ff;
+    color: #1890ff;
+    font-weight: 600;
+  }
+  
+  .ant-table-tbody > tr:hover > td {
+    background-color: #e6f7ff;
+  }
+` as React.ComponentType<TableProps<User>>;
+
+const ActionButton = styled(Button)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const AddButton = styled(Button)`
+  background: #1890ff;
+  border-color: #1890ff;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.045);
+  height: 40px;
+  border-radius: 6px;
+  
+  &:hover {
+    background: #40a9ff;
+    border-color: #40a9ff;
+  }
+`;
+
+const ResetButton = styled(Button)`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+`;
 
 // Types
 interface User {
@@ -46,11 +116,11 @@ interface User {
   email: string;
   password: string;
   dateOfBirth: string;
-  gender: 'Male' | 'Female';
+  gender: "Male" | "Female";
   phoneNumber: string;
   address: string;
-  role: 'STAFF' | 'ADMIN' | 'MANAGER';
-  status: 'ACTIVE' | 'INACTIVE';
+  role: "STAFF" | "ADMIN" | "MANAGER";
+  status: "ACTIVE" | "INACTIVE";
 }
 
 interface ApiResponse {
@@ -63,15 +133,15 @@ interface ApiResponse {
 }
 
 interface RegisterUserRequest {
-    email: string;
-    fullName: string;
-    dateOfBirth: string;
-    gender: string;
-    address: string;
-    phoneNumber: string;
-    role: string;
-    password?: string;
-  }
+  email: string;
+  fullName: string;
+  dateOfBirth: string;
+  gender: string;
+  address: string;
+  phoneNumber: string;
+  role: string;
+  password?: string;
+}
 
 const AdminAccountListScreen: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -82,24 +152,34 @@ const AdminAccountListScreen: React.FC = () => {
     total: 0,
   });
   const [filters, setFilters] = useState({
-    name: '',
-    gender: '',
-    role: '',
+    name: "",
+    gender: "",
+    role: "",
   });
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
-  console.log(submitting)
+  console.log(submitting);
   const [form] = Form.useForm();
 
   const fetchUsers = async (page = 0, size = 20) => {
     setLoading(true);
     try {
       const { name, gender, role } = filters;
+
+      // Create URL params object and only add non-empty values
+      const params = new URLSearchParams();
+      params.append("page", page.toString());
+      params.append("size", size.toString());
+
+      if (name) params.append("name", name);
+      if (gender) params.append("gender", gender);
+      if (role) params.append("role", role);
+
       const response = await axios.get<ApiResponse>(
-        `https://beautiful-unity-production.up.railway.app/api/users/filter?page=${page}&size=${size}&name=${name}&gender=${gender}&role=${role}`
+        `https://beautiful-unity-production.up.railway.app/api/users/filter?${params.toString()}`
       );
-      
+
       setUsers(response.data.data);
       setPagination({
         ...pagination,
@@ -107,8 +187,8 @@ const AdminAccountListScreen: React.FC = () => {
         total: response.data.totalElements,
       });
     } catch (error) {
-      console.error('Error fetching users:', error);
-      message.error('Không thể tải danh sách tài khoản');
+      console.error("Error fetching users:", error);
+      message.error("Không thể tải danh sách tài khoản");
     } finally {
       setLoading(false);
     }
@@ -116,23 +196,23 @@ const AdminAccountListScreen: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const handleTableChange = (
     pagination: TablePaginationConfig,
     filters: Record<string, FilterValue | null>,
-    sorter: SorterResult<User> | SorterResult<User>[],
+    sorter: SorterResult<User> | SorterResult<User>[]
   ) => {
     console.log(filters);
-    console.log(sorter)
+    console.log(sorter);
     const current = pagination.current || 1;
     const pageSize = pagination.pageSize || 20;
     fetchUsers(current - 1, pageSize);
   };
 
   const handleFilterChange = (key: string, value: string) => {
-    setFilters({ ...filters, [key]: value });
+    setFilters({ ...filters, [key]: value || undefined });
   };
 
   const showModal = (user?: User) => {
@@ -157,12 +237,12 @@ const AdminAccountListScreen: React.FC = () => {
   const registerNewUser = async (userData: RegisterUserRequest) => {
     try {
       const response = await axios.post(
-        'https://beautiful-unity-production.up.railway.app/api/authentication/register',
+        "https://beautiful-unity-production.up.railway.app/api/authentication/register",
         userData
       );
       return response.data;
     } catch (error) {
-      console.error('Error registering user:', error);
+      console.error("Error registering user:", error);
       throw error;
     }
   };
@@ -173,16 +253,18 @@ const AdminAccountListScreen: React.FC = () => {
       const values = await form.validateFields();
       const formattedValues = {
         ...values,
-        dateOfBirth: values.dateOfBirth.format('YYYY-MM-DD'),
+        dateOfBirth: values.dateOfBirth.format("YYYY-MM-DD"),
       };
-  
+
       if (editingUser) {
         // Update user with PUT request
         await axios.put(
           `https://beautiful-unity-production.up.railway.app/api/users/${editingUser.id}`,
           formattedValues
         );
-        message.success(`Tài khoản ${formattedValues.fullName} đã được cập nhật thành công`);
+        message.success(
+          `Tài khoản ${formattedValues.fullName} đã được cập nhật thành công`
+        );
       } else {
         // Create user using the register API
         const registerData: RegisterUserRequest = {
@@ -193,127 +275,146 @@ const AdminAccountListScreen: React.FC = () => {
           address: formattedValues.address,
           phoneNumber: formattedValues.phoneNumber,
           role: formattedValues.role,
-          password: formattedValues.password
+          password: formattedValues.password,
         };
-  
+
         await registerNewUser(registerData);
-        message.success(`Tài khoản ${formattedValues.fullName} đã được tạo thành công`);
+        message.success(
+          `Tài khoản ${formattedValues.fullName} đã được tạo thành công`
+        );
       }
-  
+
       setIsModalVisible(false);
       fetchUsers(pagination.current - 1, pagination.pageSize);
     } catch (error: unknown) {
-      if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        error.response &&
+        typeof error.response === "object" &&
+        "data" in error.response
+      ) {
         const errorResponse = error.response as { data: { message?: string } };
-        message.error(`Lỗi: ${errorResponse.data.message || 'Không thể thực hiện thao tác'}`);
+        message.error(
+          `Lỗi: ${errorResponse.data.message || "Không thể thực hiện thao tác"}`
+        );
       } else {
-        message.error('Không thể thực hiện thao tác. Vui lòng thử lại sau.');
+        message.error("Không thể thực hiện thao tác. Vui lòng thử lại sau.");
       }
-      console.error('Error submitting form:', error);
+      console.error("Error submitting form:", error);
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (userId: number) => {
-  Modal.confirm({
-    title: 'Bạn có chắc chắn muốn xóa tài khoản này?',
-    content: 'Hành động này không thể hoàn tác.',
-    okText: 'Đồng ý',
-    okType: 'danger',
-    cancelText: 'Hủy',
-    onOk: async () => {
-      try {
-        // Delete user with DELETE request
-        await axios.delete(
-          `https://beautiful-unity-production.up.railway.app/api/users/${userId}`
-        );
-        message.success('Tài khoản đã được xóa thành công');
-        fetchUsers(pagination.current - 1, pagination.pageSize);
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        message.error('Không thể xóa tài khoản');
-      }
-    },
-  });
-};
+    Modal.confirm({
+      title: "Bạn có chắc chắn muốn xóa tài khoản này?",
+      content: "Hành động này không thể hoàn tác.",
+      okText: "Đồng ý",
+      okType: "danger",
+      cancelText: "Hủy",
+      onOk: async () => {
+        try {
+          // Delete user with DELETE request
+          await axios.delete(
+            `https://beautiful-unity-production.up.railway.app/api/users/${userId}`
+          );
+          message.success("Tài khoản đã được xóa thành công");
+          fetchUsers(pagination.current - 1, pagination.pageSize);
+        } catch (error) {
+          console.error("Error deleting user:", error);
+          message.error("Không thể xóa tài khoản");
+        }
+      },
+    });
+  };
 
-const columns = [
+  const columns = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
       width: 70,
     },
     {
-      title: 'Họ và tên',
-      dataIndex: 'fullName',
-      key: 'fullName',
+      title: "Họ và tên",
+      dataIndex: "fullName",
+      key: "fullName",
       sorter: (a: User, b: User) => a.fullName.localeCompare(b.fullName),
+      render: (text: string) => <Text strong>{text}</Text>,
     },
     {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
     },
     {
-      title: 'Giới tính',
-      dataIndex: 'gender',
-      key: 'gender',
+      title: "Giới tính",
+      dataIndex: "gender",
+      key: "gender",
       render: (gender: string) => {
-        const genderText = gender === 'Male' ? 'Nam' : 'Nữ';
-        return <Tag color={gender === 'Male' ? 'blue' : 'pink'}>{genderText}</Tag>;
+        const genderText = gender === "Male" ? "Nam" : "Nữ";
+        return (
+          <Tag color={gender === "Male" ? "blue" : "magenta"}>{genderText}</Tag>
+        );
       },
     },
     {
-      title: 'Số điện thoại',
-      dataIndex: 'phoneNumber',
-      key: 'phoneNumber',
+      title: "Số điện thoại",
+      dataIndex: "phoneNumber",
+      key: "phoneNumber",
     },
     {
-      title: 'Vai trò',
-      dataIndex: 'role',
-      key: 'role',
+      title: "Vai trò",
+      dataIndex: "role",
+      key: "role",
       render: (role: string) => {
-        let color = 'green';
-        let roleText = 'Nhân viên';
-        
-        if (role === 'ADMIN') {
-          color = 'red';
-          roleText = 'Quản trị viên';
-        } else if (role === 'MANAGER') {
-          color = 'blue';
-          roleText = 'Quản lý';
+        let color = "green";
+        let roleText = "Nhân viên";
+
+        if (role === "ADMIN") {
+          color = "red";
+          roleText = "Quản trị viên";
+        } else if (role === "MANAGER") {
+          color = "blue";
+          roleText = "Quản lý";
         }
-        
+
         return <Tag color={color}>{roleText}</Tag>;
       },
     },
     {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
       render: (status: string) => {
-        const statusText = status === 'ACTIVE' ? 'Hoạt động' : 'Không hoạt động';
-        return <Tag color={status === 'ACTIVE' ? 'green' : 'red'}>{statusText}</Tag>;
+        const statusText =
+          status === "ACTIVE" ? "Hoạt động" : "Không hoạt động";
+        return (
+          <Tag color={status === "ACTIVE" ? "success" : "error"}>{statusText}</Tag>
+        );
       },
     },
     {
-      title: 'Thao tác',
-      key: 'actions',
+      title: "Thao tác",
+      key: "actions",
       render: (_: unknown, record: User) => (
         <Space>
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />} 
+          <ActionButton
+            type="primary"
+            icon={<EditOutlined />}
             onClick={() => showModal(record)}
             title="Sửa"
+            shape="circle"
           />
-          <Button 
-            danger 
-            icon={<DeleteOutlined />} 
+          <ActionButton
+            danger
+            icon={<DeleteOutlined />}
             onClick={() => handleDelete(record.id)}
             title="Xóa"
+            shape="circle"
           />
         </Space>
       ),
@@ -323,114 +424,152 @@ const columns = [
   return (
     <Container>
       <Header>
-        <Title>Quản lý tài khoản</Title>
-        <Button 
-          type="primary" 
-          icon={<PlusOutlined />} 
+        <StyledTitle level={3}>
+          <UserOutlined style={{ marginRight: 8 }} />
+          Quản lý tài khoản
+        </StyledTitle>
+        <AddButton
+          type="primary"
+          icon={<PlusOutlined />}
           onClick={() => showModal()}
+          size="large"
         >
           Thêm tài khoản mới
-        </Button>
+        </AddButton>
       </Header>
 
       <FilterContainer>
-        <Input
-          placeholder="Tìm kiếm theo tên"
-          prefix={<SearchOutlined />}
-          value={filters.name}
-          onChange={(e) => handleFilterChange('name', e.target.value)}
-          style={{ width: 200 }}
-          allowClear
-        />
-        <Select
-          placeholder="Lọc theo giới tính"
-          style={{ width: 150 }}
-          value={filters.gender || undefined}
-          onChange={(value) => handleFilterChange('gender', value)}
-          allowClear
-        >
-          <Option value="Male">Nam</Option>
-          <Option value="Female">Nữ</Option>
-        </Select>
-        <Select
-          placeholder="Lọc theo vai trò"
-          style={{ width: 150 }}
-          value={filters.role || undefined}
-          onChange={(value) => handleFilterChange('role', value)}
-          allowClear
-        >
-          <Option value="ADMIN">Quản trị viên</Option>
-          <Option value="STAFF">Nhân viên</Option>
-          <Option value="MANAGER">Quản lý</Option>
-        </Select>
-        <Button 
-          onClick={() => {
-            setFilters({ name: '', gender: '', role: '' });
-          }}
-        >
-          Đặt lại bộ lọc
-        </Button>
+        <Text strong style={{ fontSize: 16, marginBottom: 16, display: 'block' }}>
+          Bộ lọc tìm kiếm
+        </Text>
+        <Divider style={{ margin: '12px 0' }} />
+        <FilterRow>
+          <Input
+            placeholder="Tìm kiếm theo tên"
+            prefix={<SearchOutlined style={{ color: '#1890ff' }} />}
+            value={filters.name || ""}
+            onChange={(e) => handleFilterChange("name", e.target.value)}
+            style={{ width: 250 }}
+            allowClear
+            size="large"
+          />
+          <Select
+            placeholder="Lọc theo giới tính"
+            style={{ width: 180 }}
+            value={filters.gender || undefined}
+            onChange={(value) => handleFilterChange("gender", value)}
+            allowClear
+            size="large"
+          >
+            <Option value="Male">Nam</Option>
+            <Option value="Female">Nữ</Option>
+          </Select>
+          <Select
+            placeholder="Lọc theo vai trò"
+            style={{ width: 180 }}
+            value={filters.role || undefined}
+            onChange={(value) => handleFilterChange("role", value)}
+            allowClear
+            size="large"
+          >
+            <Option value="ADMIN">Quản trị viên</Option>
+            <Option value="STAFF">Nhân viên</Option>
+            <Option value="MANAGER">Quản lý</Option>
+          </Select>
+          <ResetButton
+            onClick={() => {
+              setFilters({ name: "", gender: "", role: "" });
+            }}
+            icon={<ReloadOutlined />}
+            size="large"
+          >
+            Đặt lại bộ lọc
+          </ResetButton>
+        </FilterRow>
       </FilterContainer>
 
       <StyledTable
-  columns={columns}
-  dataSource={users}
-  rowKey="id"
-  pagination={pagination}
-  loading={loading}
-  onChange={handleTableChange}
-/>
+        columns={columns}
+        dataSource={users}
+        rowKey="id"
+        pagination={{
+          ...pagination,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total) => `Tổng số ${total} tài khoản`,
+          pageSizeOptions: ['10', '20', '50', '100'],
+        }}
+        loading={loading}
+        onChange={handleTableChange}
+        scroll={{ x: 'max-content' }}
+        bordered
+      />
 
       <Modal
-        title={editingUser ? 'Chỉnh sửa tài khoản' : 'Thêm tài khoản mới'}
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', color: '#1890ff' }}>
+            {editingUser ? <EditOutlined style={{ marginRight: 8 }} /> : <PlusOutlined style={{ marginRight: 8 }} />}
+            {editingUser ? "Chỉnh sửa tài khoản" : "Thêm tài khoản mới"}
+          </div>
+        }
         visible={isModalVisible}
         onCancel={handleCancel}
         onOk={handleSubmit}
         width={600}
-        okText={editingUser ? 'Cập nhật' : 'Thêm mới'}
+        okText={editingUser ? "Cập nhật" : "Thêm mới"}
         cancelText="Hủy"
+        okButtonProps={{ 
+          loading: submitting,
+          style: { background: '#1890ff', borderColor: '#1890ff' }
+        }}
+        bodyStyle={{ maxHeight: '70vh', overflow: 'auto', padding: '24px' }}
+        maskClosable={false}
       >
-        <Form
-          form={form}
-          layout="vertical"
-        >
+        <Form form={form} layout="vertical">
           <Form.Item
             name="fullName"
             label="Họ và tên"
-            rules={[{ required: true, message: 'Vui lòng nhập họ và tên' }]}
+            rules={[{ required: true, message: "Vui lòng nhập họ và tên" }]}
           >
-            <Input />
+            <Input placeholder="Nhập họ và tên" />
           </Form.Item>
           <Form.Item
             name="email"
             label="Email"
             rules={[
-              { required: true, message: 'Vui lòng nhập email' },
-              { type: 'email', message: 'Vui lòng nhập email hợp lệ' }
+              { required: true, message: "Vui lòng nhập email" },
+              { type: "email", message: "Vui lòng nhập email hợp lệ" },
             ]}
           >
-            <Input />
+            <Input placeholder="Nhập địa chỉ email" />
           </Form.Item>
           {!editingUser && (
             <Form.Item
               name="password"
               label="Mật khẩu"
-              rules={[{ required: true, message: 'Vui lòng nhập mật khẩu' }]}
+              rules={[
+                { required: true, message: "Vui lòng nhập mật khẩu" },
+                { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" }
+              ]}
             >
-              <Input.Password />
+              <Input.Password placeholder="Nhập mật khẩu" />
             </Form.Item>
           )}
           <Form.Item
             name="dateOfBirth"
             label="Ngày sinh"
-            rules={[{ required: true, message: 'Vui lòng chọn ngày sinh' }]}
+            rules={[{ required: true, message: "Vui lòng chọn ngày sinh" }]}
           >
-            <DatePicker style={{ width: '100%' }} placeholder="Chọn ngày" format="DD/MM/YYYY" />
+            <DatePicker
+              style={{ width: "100%" }}
+              placeholder="Chọn ngày"
+              format="DD/MM/YYYY"
+            />
           </Form.Item>
           <Form.Item
             name="gender"
             label="Giới tính"
-            rules={[{ required: true, message: 'Vui lòng chọn giới tính' }]}
+            rules={[{ required: true, message: "Vui lòng chọn giới tính" }]}
           >
             <Select placeholder="Chọn giới tính">
               <Option value="Male">Nam</Option>
@@ -440,21 +579,24 @@ const columns = [
           <Form.Item
             name="phoneNumber"
             label="Số điện thoại"
-            rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
+            rules={[
+              { required: true, message: "Vui lòng nhập số điện thoại" },
+              { pattern: /^[0-9]{10,11}$/, message: "Số điện thoại không hợp lệ" }
+            ]}
           >
-            <Input />
+            <Input placeholder="Nhập số điện thoại" />
           </Form.Item>
           <Form.Item
             name="address"
             label="Địa chỉ"
-            rules={[{ required: true, message: 'Vui lòng nhập địa chỉ' }]}
+            rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
           >
-            <Input />
+            <Input.TextArea rows={3} placeholder="Nhập địa chỉ" />
           </Form.Item>
           <Form.Item
             name="role"
             label="Vai trò"
-            rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
+            rules={[{ required: true, message: "Vui lòng chọn vai trò" }]}
           >
             <Select placeholder="Chọn vai trò">
               <Option value="ADMIN">Quản trị viên</Option>
@@ -465,7 +607,7 @@ const columns = [
           <Form.Item
             name="status"
             label="Trạng thái"
-            rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
+            rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
           >
             <Select placeholder="Chọn trạng thái">
               <Option value="ACTIVE">Hoạt động</Option>

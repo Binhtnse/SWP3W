@@ -47,7 +47,8 @@ const AdminSidebar: React.FC = () => {
       collapsible
       collapsed={collapsed}
       onCollapse={(value) => setCollapsed(value)}
-      className="min-h-screen bg-white shadow-md"
+      className="h-full min-h-screen bg-white shadow-md flex flex-col"
+      style={{ position: 'sticky', top: 0, left: 0, height: '100vh', overflow: 'auto' }}
     >
       <div className="flex h-16 items-center justify-center">
         <h1 className={`text-primary transition-all duration-300 ${collapsed ? 'text-xl' : 'text-2xl'} font-bold`}>
@@ -58,7 +59,7 @@ const AdminSidebar: React.FC = () => {
         theme="light"
         mode="inline"
         selectedKeys={[location.pathname]}
-        className="border-r-0"
+        className="border-r-0 flex-1"
         items={menuItems}
         onClick={({ key }) => handleMenuClick(key)}
       />
