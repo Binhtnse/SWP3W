@@ -10,6 +10,7 @@ import ManagerOrderListScreen from "../screens/ManagerOrderListScreen";
 import AdminCategoryScreen from "../screens/AdminCategoryScreen";
 import AdminDashboardScreen from "../screens/AdminDashboardScreen";
 import ManagerIncomeScreen from "../screens/ManagerIncomeScreen";
+import AdminAccountListScreen from "../screens/AdminAccountListScreen";
 
 const Layout = lazy(() => import("../components/MainLayout"));
 const ProtectedRoute = lazy(() => import("../utils/ProtectedRoutes"));
@@ -104,6 +105,16 @@ export const AppRoutes = createBrowserRouter([
             <AdminLayout>
                 <ProtectedRoute allowedRoles={["ADMIN"]}>
                     <AdminDashboardScreen />
+                </ProtectedRoute>
+            </AdminLayout>
+        ),
+    },
+    {
+        path: "/admin/accounts",
+        element: (
+            <AdminLayout>
+                <ProtectedRoute allowedRoles={["ADMIN"]}>
+                    <AdminAccountListScreen />
                 </ProtectedRoute>
             </AdminLayout>
         ),
