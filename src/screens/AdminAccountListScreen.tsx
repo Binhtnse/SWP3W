@@ -33,7 +33,7 @@ const AdminAccountListScreen: React.FC = () => {
 
   const fetchAccounts = () => {
     // Hardcoded data for 10 users
-    const dummyData = [
+    const dummyData: UserAccount[] = [
       { id: '1', name: 'User 1', role: 'staff', email: 'user1@example.com', status: 'active' },
       { id: '2', name: 'User 2', role: 'manager', email: 'user2@example.com', status: 'inactive' },
       { id: '3', name: 'User 3', role: 'staff', email: 'user3@example.com', status: 'active' },
@@ -48,6 +48,7 @@ const AdminAccountListScreen: React.FC = () => {
     setAccounts(dummyData);
     setLoading(false);
   };
+  
 
   const filterAccounts = () => {
     let result = [...accounts];
