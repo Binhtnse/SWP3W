@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Table, Tag, Typography, Spin, Button, Layout } from 'antd';
+import { Table, Tag, Typography, Spin, Button, Modal, Descriptions, Layout } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
-import ManagerSidebar from '../components/ManagerSidebar';
+
+import ManagerLayout from '../components/ManagerLayout';
 
 const { Title } = Typography;
 const { Content } = Layout;
@@ -126,7 +126,8 @@ const mockOrders: Order[] = [
 const ManagerOrderListScreen: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -194,7 +195,10 @@ const ManagerOrderListScreen: React.FC = () => {
         <Button
           type="link"
           icon={<EyeOutlined />}
-          onClick={() => navigate(`/manager/orders/${record.id}`)}
+          onClick={() => {
+            setSelectedOrder(record);
+            setIsModalVisible(true);
+          }}
         >
           Xem chi tiết
         </Button>
@@ -202,14 +206,18 @@ const ManagerOrderListScreen: React.FC = () => {
     }
   ];
 
+  const handleCloseModal = () => {
+    setSelectedOrder(null);
+    setIsModalVisible(false);
+  };
+
   if (loading) {
     return <Spin tip="Đang tải danh sách đơn hàng..." style={{ marginTop: 100 }} />;
   }
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <ManagerSidebar />
-      <Layout>
+    <ManagerLayout>
+      <div style={{ minHeight: '100vh' }}>
         <Content style={{ padding: '1.5rem' }}>
           <StyledHeader>
             <StyledTitle level={2}>Danh sách đơn hàng</StyledTitle>
@@ -222,8 +230,40 @@ const ManagerOrderListScreen: React.FC = () => {
             pagination={{ pageSize: 5 }}
           />
         </Content>
-      </Layout>
-    </Layout>
+
+        {/* Order Detail Modal */}
+        <Modal
+          title="Chi tiết đơn hàng"
+          visible={isModalVisible}
+          onCancel={handleCloseModal}
+          footer={null}
+          width={800}
+        >
+          {selectedOrder && (
+            <Descriptions bordered column={1} size="small">
+              <Descriptions.Item label="Mã đơn">{selectedOrder.id}</Descriptions.Item>
+              <Descriptions.Item label="Người thực hiện">{selectedOrder.staff}</Descriptions.Item>
+              <Descriptions.Item label="Tổng tiền">{formatCurrency(selectedOrder.totalAmount)}</Descriptions.Item>
+              <Descriptions.Item label="Trạng thái">
+                <Tag color="blue">{selectedOrder.status.toUpperCase()}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Thời gian">{formatDate(selectedOrder.createdAt)}</Descriptions.Item>
+              <Descriptions.Item label="Ghi chú">{selectedOrder.note || 'Không có'}</Descriptions.Item>
+              <Descriptions.Item label="Sản phẩm">
+                {selectedOrder.items.map((item) => (
+                  <div key={item.id}>
+                    <strong>{item.productName}</strong>
+                    <p>Size: {item.size}, Số lượng: {item.quantity}, Giá: {formatCurrency(item.unitPrice)}</p>
+                    <p>Ghi chú: {item.note}</p>
+                    <p>Topping: {item.toppings.join(', ')}</p>
+                  </div>
+                ))}
+              </Descriptions.Item>
+            </Descriptions>
+          )}
+        </Modal>
+      </div>
+    </ManagerLayout>
   );
 };
 
