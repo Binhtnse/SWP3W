@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import { Table, message, Modal, Button, Form, Input, Select } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import ManagerLayout from '../components/ManagerLayout';
 
@@ -25,11 +26,12 @@ interface Product {
 const ManagerProductList: React.FC = () => {
   const [data, setData] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
-  const [categories, setCategories] = useState<any[]>([]); // Store categories
+  const [categories, setCategories] = useState<any[]>([]);
   const [form] = Form.useForm();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [filter, setFilter] = useState<{ status?: string; categoryId?: number; productType?: string }>({});
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   useEffect(() => {
     fetchProducts();
@@ -62,7 +64,7 @@ const ManagerProductList: React.FC = () => {
       name: values.name,
       basePrice: values.basePrice,
       productCode: values.productCode,
-      imageUrl: values.imageUrl,  // URL instead of file
+      imageUrl: values.imageUrl,
       description: values.description,
       productType: values.productType,
       productUsage: values.productUsage,
@@ -131,6 +133,14 @@ const ManagerProductList: React.FC = () => {
     form.resetFields();
   };
 
+  const filteredData = data.filter((item) => {
+    const matchName = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchStatus = !filter.status || item.status === filter.status;
+    const matchCategory = !filter.categoryId || item.categoryId === filter.categoryId;
+    const matchType = !filter.productType || item.productType === filter.productType;
+    return matchName && matchStatus && matchCategory && matchType;
+  });
+
   const columns = [
     {
       title: 'Hình ảnh',
@@ -155,6 +165,10 @@ const ManagerProductList: React.FC = () => {
       dataIndex: 'categoryName',
     },
     {
+      title: 'Loại sản phẩm',
+      dataIndex: 'productType',
+    },
+    {
       title: 'Trạng thái',
       dataIndex: 'status',
     },
@@ -166,7 +180,7 @@ const ManagerProductList: React.FC = () => {
           <Button type="link" onClick={() => showEditProductModal(record)}>
             Chỉnh sửa
           </Button>
-          <Button type="link" onClick={() => deleteProduct(record.id)}>
+          <Button type="link" danger onClick={() => deleteProduct(record.id)}>
             Xóa
           </Button>
         </>
@@ -178,21 +192,70 @@ const ManagerProductList: React.FC = () => {
     <ManagerLayout>
       <div>
         <h1>Quản lý sản phẩm</h1>
+        <div style={{ marginBottom: 20, display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <Input
+            placeholder="Tìm theo tên sản phẩm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: 250 }}
+          />
+          <Select
+            placeholder="Lọc theo trạng thái"
+            allowClear
+            onChange={(value) => setFilter((prev) => ({ ...prev, status: value }))}
+            value={filter.status}
+            style={{ width: 200 }}
+          >
+            <Select.Option value="ACTIVE">Đang hoạt động</Select.Option>
+            <Select.Option value="INACTIVE">Ngừng hoạt động</Select.Option>
+          </Select>
+          <Select
+            placeholder="Lọc theo danh mục"
+            allowClear
+            onChange={(value) => setFilter((prev) => ({ ...prev, categoryId: value }))}
+            value={filter.categoryId}
+            style={{ width: 200 }}
+          >
+            {categories.map((cat) => (
+              <Select.Option key={cat.id} value={cat.id}>
+                {cat.name}
+              </Select.Option>
+            ))}
+          </Select>
+          <Select
+            placeholder="Lọc theo loại sản phẩm"
+            allowClear
+            onChange={(value) => setFilter((prev) => ({ ...prev, productType: value }))}
+            value={filter.productType}
+            style={{ width: 200 }}
+          >
+            <Select.Option value="SINGLE">SINGLE</Select.Option>
+            <Select.Option value="COMBO">COMBO</Select.Option>
+          </Select>
+
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => {
+              setFilter({});
+              setSearchTerm('');
+            }}
+          >
+            Đặt lại bộ lọc
+          </Button>
+        </div>
+
         <Button type="primary" onClick={showAddProductModal} style={{ marginBottom: 20 }}>
           Thêm sản phẩm
         </Button>
         <Table
-          dataSource={data}
+          dataSource={filteredData}
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={{
-            pageSize: 10,
-          }}
+          pagination={{ pageSize: 10 }}
         />
       </div>
 
-      {/* Modal chi tiết sản phẩm */}
       <Modal
         title={editingProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm'}
         visible={isModalVisible}
