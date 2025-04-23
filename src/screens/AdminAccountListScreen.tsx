@@ -255,20 +255,20 @@ const AdminAccountListScreen: React.FC = () => {
         ...values,
         dateOfBirth: values.dateOfBirth.format("YYYY-MM-DD"),
       };
-  
+
       if (editingUser) {
         // Update user with PUT request
         const updateData = { ...formattedValues };
-        
+
         // Only include password if a new one was provided
         if (formattedValues.newPassword) {
           updateData.password = formattedValues.newPassword;
         }
-        
+
         // Remove the confirmation fields before sending to API
         delete updateData.newPassword;
         delete updateData.confirmNewPassword;
-        
+
         await axios.put(
           `https://beautiful-unity-production.up.railway.app/api/users/${editingUser.id}`,
           updateData
@@ -288,16 +288,16 @@ const AdminAccountListScreen: React.FC = () => {
           role: formattedValues.role,
           password: formattedValues.password,
         };
-  
+
         // Remove the confirmation field
         delete formattedValues.confirmPassword;
-  
+
         await registerNewUser(registerData);
         message.success(
           `Tài khoản ${formattedValues.fullName} đã được tạo thành công`
         );
       }
-  
+
       setIsModalVisible(false);
       fetchUsers(pagination.current - 1, pagination.pageSize);
     } catch (error: unknown) {
@@ -575,7 +575,12 @@ const AdminAccountListScreen: React.FC = () => {
                 label="Mật khẩu"
                 rules={[
                   { required: true, message: "Vui lòng nhập mật khẩu" },
-                  { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" },
+                  { min: 8, message: "Mật khẩu phải có ít nhất 8 ký tự" },
+                  {
+                    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
+                    message:
+                      "Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số",
+                  },
                 ]}
               >
                 <Input.Password placeholder="Nhập mật khẩu" />
@@ -608,7 +613,24 @@ const AdminAccountListScreen: React.FC = () => {
                 name="newPassword"
                 label="Mật khẩu mới (để trống nếu không thay đổi)"
                 rules={[
-                  { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" },
+                  {
+                    validator: (_, value) => {
+                      if (!value) return Promise.resolve(); // Skip validation if empty
+                      if (value.length < 8) {
+                        return Promise.reject(
+                          new Error("Mật khẩu phải có ít nhất 8 ký tự")
+                        );
+                      }
+                      if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/.test(value)) {
+                        return Promise.reject(
+                          new Error(
+                            "Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số"
+                          )
+                        );
+                      }
+                      return Promise.resolve();
+                    },
+                  },
                 ]}
               >
                 <Input.Password placeholder="Nhập mật khẩu mới" />
