@@ -26,6 +26,8 @@ const ManagerProductList: React.FC = () => {
   const [data, setData] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  console.log(selectedProduct)
+  console.log(setSelectedProduct)
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [categories, setCategories] = useState<any[]>([]); // Store categories
   const [form] = Form.useForm();
