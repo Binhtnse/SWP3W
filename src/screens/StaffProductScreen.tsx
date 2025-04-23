@@ -273,7 +273,7 @@ const StaffProductScreen: React.FC = () => {
     try {
       setLoading(true);
       const response = await axios.get<ApiResponse>(
-        `https://beautiful-unity-production.up.railway.app/api/product?page=${currentPage - 1}&size=${pageSize}&sort=${sortParam}`
+        `https://beautiful-unity-production.up.railway.app/api/products?page=${currentPage - 1}&size=${pageSize}&sort=${sortParam}`
       );
       
       const productsWithStock = response.data.data.map(product => ({
@@ -365,8 +365,9 @@ const StaffProductScreen: React.FC = () => {
     const matchesSearch = product.name
       .toLowerCase()
       .includes(searchText.toLowerCase());
-    const matchesCategory =
-      filterCategory === "all" || product.category.name === filterCategory;
+      const matchesCategory =
+      filterCategory === "all" || 
+      (product.category && product.categoryName === filterCategory);
     return matchesSearch && matchesCategory;
   });
 
@@ -441,7 +442,7 @@ const StaffProductScreen: React.FC = () => {
                       {product.name}
                     </h3>
                     <div className="text-sm text-gray-500 mb-2">
-                      {product.category.name}
+                      {product.categoryName || 'Không có danh mục'}
                     </div>
                     <div className="text-lg font-bold text-red-600 mb-2">
                       {formatCurrency(product.basePrice)}
@@ -511,7 +512,7 @@ const StaffProductScreen: React.FC = () => {
                       <div>
                         <h3 className="text-xl font-medium">{product.name}</h3>
                         <div className="text-sm text-gray-500 mt-1">
-                          {product.category.name}
+                          {product.categoryName}
                         </div>
                       </div>
                       <Tag color={product.status === "ACTIVE" ? "green" : "red"}>
