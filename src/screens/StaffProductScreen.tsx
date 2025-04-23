@@ -31,7 +31,7 @@ interface Product {
   categoryId: number;
   categoryName: string;
   comboItems?: { name: string; quantity: number }[];
-  remainingAmount?: number; // This might need to be added from inventory data
+  remainingAmount?: number; 
 }
 
 interface ApiResponse {
@@ -235,6 +235,7 @@ const StaffProductScreen: React.FC = () => {
   const [pageSize, setPageSize] = useState<number>(8);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState<string>("name");
+  const [sortParam, setSortParam] = useState<string>("name");
   const [totalElements, setTotalElements] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -254,7 +255,7 @@ const StaffProductScreen: React.FC = () => {
       fetchProducts();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize, sortParam]);
 
   const fetchCategories = async () => {
     try {
@@ -272,7 +273,7 @@ const StaffProductScreen: React.FC = () => {
     try {
       setLoading(true);
       const response = await axios.get<ApiResponse>(
-        `https://beautiful-unity-production.up.railway.app/api/product?page=${currentPage - 1}&size=${pageSize}`
+        `https://beautiful-unity-production.up.railway.app/api/product?page=${currentPage - 1}&size=${pageSize}&sort=${sortParam}`
       );
       
       const productsWithStock = response.data.data.map(product => ({
@@ -345,6 +346,19 @@ const StaffProductScreen: React.FC = () => {
 
   const handleSortChange = (value: string) => {
     setSortBy(value);
+    switch (value) {
+      case "name":
+        setSortParam("name");
+        break;
+      case "price-asc":
+        setSortParam("basePrice");
+        break;
+      case "price-desc":
+        setSortParam("basePrice,desc");
+        break;
+      default:
+        setSortParam("name");
+    }
   };
 
   const filteredProducts = products.filter((product) => {
@@ -356,20 +370,7 @@ const StaffProductScreen: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    switch (sortBy) {
-      case "name":
-        return a.name.localeCompare(b.name);
-      case "price-asc":
-        return a.basePrice - b.basePrice;
-      case "price-desc":
-        return b.basePrice - a.basePrice;
-      case "stock":
-        return (b.remainingAmount || 0) - (a.remainingAmount || 0);
-      default:
-        return 0;
-    }
-  });
+  const sortedProducts = filteredProducts;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", {
