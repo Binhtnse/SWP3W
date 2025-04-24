@@ -3,6 +3,7 @@ import { Card, Tag, Input, Select, Spin, message, Row, Col, Badge, Empty, Pagina
 import {FilterOutlined, ShoppingOutlined, AppstoreOutlined, UnorderedListOutlined, DownOutlined,} from "@ant-design/icons";
 import styled from "styled-components";
 import axios from "axios";
+import { useNavigate } from 'react-router-dom';
 
 interface Category {
   id: number;
@@ -239,6 +240,7 @@ const StaffProductScreen: React.FC = () => {
   const [totalElements, setTotalElements] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [categories, setCategories] = useState<Category[]>([]);
+  const navigate = useNavigate();
   console.log(totalPages)
 
   useEffect(() => {
@@ -344,6 +346,11 @@ const StaffProductScreen: React.FC = () => {
     }
   };
 
+  const handleProductClick = (productId: number, productType: string) => {
+    console.log(productType)
+    navigate(`/staff/products/${productId}`);
+  };
+
   const handleSortChange = (value: string) => {
     setSortBy(value);
     switch (value) {
@@ -413,6 +420,7 @@ const StaffProductScreen: React.FC = () => {
                 <StyledCard
                 hoverable
                 className="h-full flex flex-col"
+                onClick={() => handleProductClick(product.id, product.productType)}
                 cover={
                   <div className="h-64 overflow-hidden relative" style={{ width: '100%' }}>
                     <img
@@ -485,7 +493,8 @@ const StaffProductScreen: React.FC = () => {
       <div className="space-y-4">
         {sortedProducts.length > 0 ? (
           sortedProducts.map((product) => (
-            <Card key={product.id} className="overflow-hidden">
+            <Card key={product.id} className="overflow-hidden" hoverable
+            onClick={() => handleProductClick(product.id, product.productType)}>
               <div className="flex flex-col sm:flex-row">
                 <div className="relative w-full sm:w-64 h-64 flex-shrink-0">
                   <img
