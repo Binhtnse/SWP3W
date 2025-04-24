@@ -1,115 +1,15 @@
 import React, { useEffect, useState } from "react";
-import {
-  Table,
-  Button,
-  Input,
-  Select,
-  Space,
-  Modal,
-  Form,
-  DatePicker,
-  message,
-  Tag,
-  Card,
-  Typography,
-  Divider,
-} from "antd";
-import {
-  EditOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-  SearchOutlined,
-  ReloadOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
+import {Input,Select,Space,Modal,Form,DatePicker,message,Tag,Typography,Divider,} from "antd";
+import {EditOutlined,DeleteOutlined,PlusOutlined,SearchOutlined,ReloadOutlined,UserOutlined,} from "@ant-design/icons";
 import axios from "axios";
-import styled from "styled-components";
 import moment from "moment";
-import { TablePaginationConfig, TableProps } from "antd/lib/table";
+import { TablePaginationConfig } from "antd/lib/table";
 import { FilterValue, SorterResult } from "antd/lib/table/interface";
+import {Container,Header,StyledTitle,FilterContainer,FilterRow,StyledTable,ActionButton,AddButton,ResetButton,} from "../components/styled components/AdminAccountListStyles";
 
 const { Option } = Select;
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
-// Styled Components
-const Container = styled.div`
-  padding: 24px;
-  background-color: #f5f5f5;
-  min-height: 100vh;
-`;
-
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  background-color: white;
-  padding: 16px 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-`;
-
-const StyledTitle = styled(Title)`
-  margin: 0 !important;
-  color: #1890ff;
-`;
-
-const FilterContainer = styled(Card)`
-  margin-bottom: 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-`;
-
-const FilterRow = styled.div`
-  display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-`;
-
-const StyledTable = styled(Table)<{ dataSource: User[] }>`
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-
-  .ant-table-thead > tr > th {
-    background-color: #f0f7ff;
-    color: #1890ff;
-    font-weight: 600;
-  }
-
-  .ant-table-tbody > tr:hover > td {
-    background-color: #e6f7ff;
-  }
-` as React.ComponentType<TableProps<User>>;
-
-const ActionButton = styled(Button)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const AddButton = styled(Button)`
-  background: #1890ff;
-  border-color: #1890ff;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.045);
-  height: 40px;
-  border-radius: 6px;
-
-  &:hover {
-    background: #40a9ff;
-    border-color: #40a9ff;
-  }
-`;
-
-const ResetButton = styled(Button)`
-  display: flex;
-  align-items: center;
-  gap: 5px;
-`;
-
-// Types
 interface User {
   id: number;
   fullName: string;
@@ -166,8 +66,6 @@ const AdminAccountListScreen: React.FC = () => {
     setLoading(true);
     try {
       const { name, gender, role } = filters;
-
-      // Create URL params object and only add non-empty values
       const params = new URLSearchParams();
       params.append("page", page.toString());
       params.append("size", size.toString());
@@ -257,15 +155,10 @@ const AdminAccountListScreen: React.FC = () => {
       };
 
       if (editingUser) {
-        // Update user with PUT request
         const updateData = { ...formattedValues };
-
-        // Only include password if a new one was provided
         if (formattedValues.newPassword) {
           updateData.password = formattedValues.newPassword;
         }
-
-        // Remove the confirmation fields before sending to API
         delete updateData.newPassword;
         delete updateData.confirmNewPassword;
 
@@ -277,7 +170,6 @@ const AdminAccountListScreen: React.FC = () => {
           `Tài khoản ${formattedValues.fullName} đã được cập nhật thành công`
         );
       } else {
-        // Create user using the register API
         const registerData: RegisterUserRequest = {
           email: formattedValues.email,
           fullName: formattedValues.fullName,
@@ -288,8 +180,6 @@ const AdminAccountListScreen: React.FC = () => {
           role: formattedValues.role,
           password: formattedValues.password,
         };
-
-        // Remove the confirmation field
         delete formattedValues.confirmPassword;
 
         await registerNewUser(registerData);
@@ -331,7 +221,6 @@ const AdminAccountListScreen: React.FC = () => {
       cancelText: "Hủy",
       onOk: async () => {
         try {
-          // Delete user with DELETE request
           await axios.delete(
             `https://beautiful-unity-production.up.railway.app/api/users/${userId}`
           );
@@ -710,16 +599,6 @@ const AdminAccountListScreen: React.FC = () => {
               <Option value="ADMIN">Quản trị viên</Option>
               <Option value="STAFF">Nhân viên</Option>
               <Option value="MANAGER">Quản lý</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="status"
-            label="Trạng thái"
-            rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
-          >
-            <Select placeholder="Chọn trạng thái">
-              <Option value="ACTIVE">Hoạt động</Option>
-              <Option value="INACTIVE">Không hoạt động</Option>
             </Select>
           </Form.Item>
         </Form>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Card, Tag, Input, Select, Spin, message, Row, Col, Badge, Empty, Pagination, Button, Dropdown,Menu,} from "antd";
 import {FilterOutlined, ShoppingOutlined, AppstoreOutlined, UnorderedListOutlined, DownOutlined,} from "@ant-design/icons";
-import styled from "styled-components";
 import axios from "axios";
 import { useNavigate } from 'react-router-dom';
+import { StyledCard, StyledHeader, HeaderContent, LogoSection, IconContainer, TitleContainer, SearchContainer, FilterSection, FilterContent, Separator, FilterControls, ViewControls } from "../components/styled components/StaffProductStyles";
 
 interface Category {
   id: number;
@@ -32,7 +32,6 @@ interface Product {
   categoryId: number;
   categoryName: string;
   comboItems?: { name: string; quantity: number }[];
-  remainingAmount?: number; 
 }
 
 interface ApiResponse {
@@ -52,178 +51,6 @@ interface CategoryApiResponse {
   totalPages: number;
   last: boolean;
 }
-
-const StyledHeader = styled.div`
-  background: linear-gradient(to right, #7c3aed, #4f46e5) !important;
-  border-radius: 0.5rem !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-  margin-bottom: 1.5rem !important;
-  padding: 1.5rem !important;
-`;
-
-const HeaderContent = styled.div`
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-
-  @media (min-width: 768px) {
-    flex-direction: row !important;
-  }
-`;
-
-const LogoSection = styled.div`
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  margin-bottom: 1rem !important;
-
-  @media (min-width: 768px) {
-    flex-direction: row !important;
-    margin-bottom: 0 !important;
-  }
-`;
-
-const IconContainer = styled.div`
-  background-color: white !important;
-  padding: 0.75rem !important;
-  border-radius: 9999px !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
-  margin-right: 1rem !important;
-  margin-bottom: 0.75rem !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-
-  @media (min-width: 768px) {
-    margin-bottom: 0 !important;
-  }
-
-  .anticon {
-    font-size: 1.875rem !important;
-    color: #7c3aed !important;
-  }
-`;
-
-const TitleContainer = styled.div`
-  h1 {
-    font-size: 1.875rem !important;
-    font-weight: 700 !important;
-    color: white !important;
-    text-align: center !important;
-
-    @media (min-width: 768px) {
-      text-align: left !important;
-    }
-  }
-
-  p {
-    color: #ddd6fe !important;
-    margin-top: 0.25rem !important;
-    display: flex !important;
-    align-items: center !important;
-    text-align: center !important;
-
-    @media (min-width: 768px) {
-      text-align: left !important;
-    }
-  }
-`;
-
-const SearchContainer = styled.div`
-  width: 100% !important;
-
-  @media (min-width: 768px) {
-    width: auto !important;
-  }
-
-  .ant-input-search {
-    width: 100% !important;
-
-    @media (min-width: 768px) {
-      width: 20rem !important;
-    }
-  }
-`;
-
-const FilterSection = styled.div`
-  background: white !important;
-  border-radius: 0.5rem !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-  padding: 1.5rem !important;
-  margin-bottom: 1.5rem !important;
-`;
-
-const FilterContent = styled.div`
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  margin-bottom: 1.5rem !important; // Increased from previous value
-  
-  @media (min-width: 768px) {
-    flex-direction: row !important;
-  }
-`;
-
-const Separator = styled.div`
-  height: 1px !important;
-  background-color: #e5e7eb !important;
-  width: 100% !important;
-  margin: 1rem 0 2rem 0 !important; // Add space above and below the separator
-`;
-
-const FilterControls = styled.div`
-  display: flex !important;
-  flex-wrap: wrap !important;
-  gap: 1rem !important;
-  margin-bottom: 1rem !important;
-
-  @media (min-width: 768px) {
-    margin-bottom: 0 !important;
-  }
-`;
-
-const ViewControls = styled.div`
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
-
-  span {
-    color: #6b7280 !important;
-  }
-
-  .ant-btn {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-
-  .ant-btn-primary {
-    background-color: #7c3aed !important;
-    border-color: #7c3aed !important;
-  }
-`;
-
-const StyledCard = styled(Card)`
-  .ant-card-cover {
-    width: 100% !important;
-    height: 280px !important; // Fixed height for all images
-    overflow: hidden !important;
-  }
-  
-  .ant-card-body {
-    width: 100% !important;
-  }
-  
-  img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
-  }
-`;
 
 const { Option } = Select;
 
@@ -278,12 +105,7 @@ const StaffProductScreen: React.FC = () => {
         `https://beautiful-unity-production.up.railway.app/api/products?page=${currentPage - 1}&size=${pageSize}&sort=${sortParam}`
       );
       
-      const productsWithStock = response.data.data.map(product => ({
-        ...product,
-        remainingAmount: Math.floor(Math.random() * 50) // Random stock for demo
-      }));
-      
-      setProducts(productsWithStock);
+      setProducts(response.data.data);
       setTotalElements(response.data.totalElements);
       setTotalPages(response.data.totalPages);
       setLoading(false);
@@ -321,9 +143,8 @@ const StaffProductScreen: React.FC = () => {
         `https://beautiful-unity-production.up.railway.app/api/category/${categoryId}/products?page=${currentPage - 1}&size=${pageSize}`
       );
       
-      const productsWithStock = response.data.data.map(product => ({
+      const productsWithCategory = response.data.data.map(product => ({
         ...product,
-        remainingAmount: Math.floor(Math.random() * 50), // Random stock for demo
         category: {
           id: product.categoryId,
           name: product.categoryName,
@@ -335,7 +156,7 @@ const StaffProductScreen: React.FC = () => {
         }
       }));
       
-      setProducts(productsWithStock);
+      setProducts(productsWithCategory);
       setTotalElements(response.data.totalElements);
       setTotalPages(response.data.totalPages);
       setLoading(false);
@@ -372,10 +193,11 @@ const StaffProductScreen: React.FC = () => {
     const matchesSearch = product.name
       .toLowerCase()
       .includes(searchText.toLowerCase());
-      const matchesCategory =
+    const matchesCategory =
       filterCategory === "all" || 
       (product.category && product.categoryName === filterCategory);
-    return matchesSearch && matchesCategory;
+    const isActive = product.status === "ACTIVE";
+    return matchesSearch && matchesCategory && isActive;
   });
 
   const sortedProducts = filteredProducts;
@@ -434,17 +256,9 @@ const StaffProductScreen: React.FC = () => {
                         <Tag color="blue">Combo</Tag>
                       </div>
                     )}
-                    {(product.remainingAmount === 0) && (
-                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">
-                          HẾT HÀNG
-                        </span>
-                      </div>
-                    )}
                   </div>
                 }
               >
-                  {/* Rest of the card content remains the same */}
                   <div className="flex flex-col flex-grow">
                     <h3 className="text-lg font-medium mb-1 line-clamp-2">
                       {product.name}
@@ -454,21 +268,6 @@ const StaffProductScreen: React.FC = () => {
                     </div>
                     <div className="text-lg font-bold text-red-600 mb-2">
                       {formatCurrency(product.basePrice)}
-                    </div>
-                    <div className="mb-2">
-                      <Tag
-                        color={
-                          (product.remainingAmount || 0) > 10
-                            ? "green"
-                            : (product.remainingAmount || 0) > 0
-                            ? "orange"
-                            : "red"
-                        }
-                      >
-                        {(product.remainingAmount || 0) > 0
-                          ? `Còn ${product.remainingAmount}`
-                          : "Hết hàng"}
-                      </Tag>
                     </div>
                     {product.productType === "COMBO" && renderComboDetails(product)}
                     <div className="text-sm text-gray-500 mt-2 line-clamp-2">
@@ -507,13 +306,6 @@ const StaffProductScreen: React.FC = () => {
                       <Tag color="blue">Combo</Tag>
                     </div>
                   )}
-                  {(product.remainingAmount === 0) && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                      <span className="text-white font-bold text-lg">
-                        HẾT HÀNG
-                      </span>
-                    </div>
-                  )}
                 </div>
                 <div className="p-4 flex-1 min-h-[12rem] flex flex-col justify-between">
                   <div>
@@ -530,21 +322,6 @@ const StaffProductScreen: React.FC = () => {
                     </div>
                     <div className="text-xl font-bold text-red-600 mt-2">
                       {formatCurrency(product.basePrice)}
-                    </div>
-                    <div className="mt-2">
-                      <Tag
-                        color={
-                          (product.remainingAmount || 0) > 10
-                            ? "green"
-                            : (product.remainingAmount || 0) > 0
-                            ? "orange"
-                            : "red"
-                        }
-                      >
-                        {(product.remainingAmount || 0) > 0
-                          ? `Còn ${product.remainingAmount}`
-                          : "Hết hàng"}
-                      </Tag>
                     </div>
                     {product.productType === "COMBO" && renderComboDetails(product)}
                     <div className="text-sm text-gray-500 mt-2 line-clamp-3">
@@ -623,14 +400,14 @@ const StaffProductScreen: React.FC = () => {
 
               <Dropdown overlay={sortMenu}>
                 <Button>
-                  Sắp xếp theo:{" "}
+                Sắp xếp theo:{" "}
                   {sortBy === "name"
                     ? "Tên A-Z"
                     : sortBy === "price-asc"
                     ? "Giá: Thấp đến cao"
                     : sortBy === "price-desc"
                     ? "Giá: Cao đến thấp"
-                    : "Tồn kho"}{" "}
+                    : "Tên A-Z"}{" "}
                   <DownOutlined />
                 </Button>
               </Dropdown>
