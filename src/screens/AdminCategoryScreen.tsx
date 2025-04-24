@@ -1,32 +1,11 @@
 import React, { useState, useEffect } from "react";
-import {
-  Table,
-  Button,
-  Modal,
-  Form,
-  Input,
-  Space,
-  message,
-  Typography,
-  TableProps,
-  Card,
-  Divider,
-  Tag,
-} from "antd";
-import {
-  EditOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-  ExclamationCircleOutlined,
-  SearchOutlined,
-  ReloadOutlined,
-  AppstoreOutlined,
-} from "@ant-design/icons";
+import {Button,Modal,Form,Input,Space,message,Typography,TableProps,Divider,Tag,} from "antd";
+import {EditOutlined,DeleteOutlined,PlusOutlined,ExclamationCircleOutlined,SearchOutlined,ReloadOutlined,AppstoreOutlined,} from "@ant-design/icons";
 import axios from "axios";
-import styled from "styled-components";
 import { ColumnsType } from "antd/es/table";
+import { Container, Header, StyledTitle, FilterContainer, FilterRow, StyledTable, ActionButton, AddButton, ResetButton } from "../components/styled components/AdminCategoryStyles";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { TextArea } = Input;
 
 interface Category {
@@ -48,84 +27,6 @@ interface CategoryResponse {
   last: boolean;
 }
 
-// Styled Components
-const Container = styled.div`
-  padding: 24px;
-  background-color: #f5f5f5;
-  min-height: 100vh;
-`;
-
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  background-color: white;
-  padding: 16px 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-`;
-
-const StyledTitle = styled(Title)`
-  margin: 0 !important;
-  color: #1890ff;
-`;
-
-const FilterContainer = styled(Card)`
-  margin-bottom: 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-`;
-
-const FilterRow = styled.div`
-  display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-`;
-
-const StyledTable = styled(Table)<{ dataSource: Category[] }>`
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-
-  .ant-table-thead > tr > th {
-    background-color: #f0f7ff;
-    color: #1890ff;
-    font-weight: 600;
-  }
-
-  .ant-table-tbody > tr:hover > td {
-    background-color: #e6f7ff;
-  }
-` as React.ComponentType<TableProps<Category>>;
-
-const ActionButton = styled(Button)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const AddButton = styled(Button)`
-  background: #1890ff;
-  border-color: #1890ff;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.045);
-  height: 40px;
-  border-radius: 6px;
-
-  &:hover {
-    background: #40a9ff;
-    border-color: #40a9ff;
-  }
-`;
-
-const ResetButton = styled(Button)`
-  display: flex;
-  align-items: center;
-  gap: 5px;
-`;
-
 const AdminCategoryScreen: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -146,23 +47,17 @@ const AdminCategoryScreen: React.FC = () => {
     setLoading(true);
     try {
       const { name } = filters;
-      
-      // Create URL params object for pagination
       const params = new URLSearchParams();
       params.append("page", page.toString());
       params.append("size", size.toString());
       
       let url = 'https://beautiful-unity-production.up.railway.app/api/category';
-      
-      // If name filter is provided, use the path parameter format
       if (name) {
         url = `https://beautiful-unity-production.up.railway.app/api/category/${name}`;
       }
-      
       const response = await axios.get<CategoryResponse>(
         `${url}?${params.toString()}`
       );
-      
       setCategories(response.data.data);
       setPagination({
         current: response.data.page + 1,
@@ -182,7 +77,6 @@ const AdminCategoryScreen: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
-  // Properly type the handleTableChange function to match what Table<Category> expects
   const handleTableChange: TableProps<Category>["onChange"] = (pagination) => {
     if (pagination.current && pagination.pageSize) {
       fetchCategories(pagination.current - 1, pagination.pageSize);
@@ -215,21 +109,18 @@ const AdminCategoryScreen: React.FC = () => {
       const values = await form.validateFields();
 
       if (editingCategory) {
-        // Update existing category
         await axios.put(
           `https://beautiful-unity-production.up.railway.app/api/category/${editingCategory.id}`,
           values
         );
         message.success("Cập nhật danh mục thành công");
       } else {
-        // Create new category
         await axios.post(
           "https://beautiful-unity-production.up.railway.app/api/category",
           values
         );
         message.success("Tạo danh mục thành công");
       }
-
       setModalVisible(false);
       fetchCategories(pagination.current - 1, pagination.pageSize);
     } catch (error) {

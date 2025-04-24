@@ -1,32 +1,12 @@
-import React, { useState } from 'react';
-import { Layout, Menu, Typography, Card, Row, Col, Statistic, Button } from 'antd';
-import {
-  DashboardOutlined,
-  UserOutlined,
-  ShoppingCartOutlined,
-  CoffeeOutlined,
-  SettingOutlined,
-  MenuUnfoldOutlined,
-  MenuFoldOutlined,
-} from '@ant-design/icons';
+import React from 'react';
+import { Layout, Typography, Card, Row, Col, Statistic } from 'antd';
 import styled from 'styled-components';
 
-const { Header, Sider, Content } = Layout;
+const { Header, Content } = Layout;
 const { Title } = Typography;
 
 const StyledLayout = styled(Layout)`
   min-height: 100vh;
-`;
-
-const StyledLogo = styled.div`
-  height: 32px;
-  margin: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 18px;
-  font-weight: bold;
 `;
 
 const StyledHeader = styled(Header)`
@@ -51,57 +31,10 @@ const StyledCard = styled(Card)`
 `;
 
 const AdminDashboardScreen: React.FC = () => {
-  const [collapsed, setCollapsed] = useState(false);
-
-  const toggleCollapsed = () => {
-    setCollapsed(!collapsed);
-  };
-
   return (
     <StyledLayout>
-      <Sider trigger={null} collapsible collapsed={collapsed} width={250}>
-        <StyledLogo>Milk Tea Admin</StyledLogo>
-        <Menu
-          theme="dark"
-          mode="inline"
-          defaultSelectedKeys={['1']}
-          items={[
-            {
-              key: '1',
-              icon: <DashboardOutlined />,
-              label: 'Dashboard',
-            },
-            {
-              key: '2',
-              icon: <UserOutlined />,
-              label: 'Users',
-            },
-            {
-              key: '3',
-              icon: <ShoppingCartOutlined />,
-              label: 'Orders',
-            },
-            {
-              key: '4',
-              icon: <CoffeeOutlined />,
-              label: 'Products',
-            },
-            {
-              key: '5',
-              icon: <SettingOutlined />,
-              label: 'Settings',
-            },
-          ]}
-        />
-      </Sider>
       <Layout>
         <StyledHeader>
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={toggleCollapsed}
-            style={{ fontSize: '16px', width: 64, height: 64 }}
-          />
           <Typography.Text strong>Welcome, Admin</Typography.Text>
         </StyledHeader>
         <StyledContent>

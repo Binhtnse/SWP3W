@@ -31,7 +31,7 @@ export const AppRoutes = createBrowserRouter([
         ),
     },
     {
-        path: "/staff/products/:id",
+        path: "/staff/products/:productId",
         element: (
             <Layout>
                 <ProtectedRoute allowedRoles={["STAFF"]}>

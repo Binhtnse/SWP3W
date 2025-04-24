@@ -1,115 +1,15 @@
 import React, { useEffect, useState } from "react";
-import {
-  Table,
-  Button,
-  Input,
-  Select,
-  Space,
-  Modal,
-  Form,
-  DatePicker,
-  message,
-  Tag,
-  Card,
-  Typography,
-  Divider,
-} from "antd";
-import {
-  EditOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-  SearchOutlined,
-  ReloadOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
+import {Input,Select,Space,Modal,Form,DatePicker,message,Tag,Typography,Divider,} from "antd";
+import {EditOutlined,DeleteOutlined,PlusOutlined,SearchOutlined,ReloadOutlined,UserOutlined,} from "@ant-design/icons";
 import axios from "axios";
-import styled from "styled-components";
 import moment from "moment";
-import { TablePaginationConfig, TableProps } from "antd/lib/table";
+import { TablePaginationConfig } from "antd/lib/table";
 import { FilterValue, SorterResult } from "antd/lib/table/interface";
+import {Container,Header,StyledTitle,FilterContainer,FilterRow,StyledTable,ActionButton,AddButton,ResetButton,} from "../components/styled components/AdminAccountListStyles";
 
 const { Option } = Select;
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
-// Styled Components
-const Container = styled.div`
-  padding: 24px;
-  background-color: #f5f5f5;
-  min-height: 100vh;
-`;
-
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  background-color: white;
-  padding: 16px 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-`;
-
-const StyledTitle = styled(Title)`
-  margin: 0 !important;
-  color: #1890ff;
-`;
-
-const FilterContainer = styled(Card)`
-  margin-bottom: 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-`;
-
-const FilterRow = styled.div`
-  display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-`;
-
-const StyledTable = styled(Table)<{ dataSource: User[] }>`
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  
-  .ant-table-thead > tr > th {
-    background-color: #f0f7ff;
-    color: #1890ff;
-    font-weight: 600;
-  }
-  
-  .ant-table-tbody > tr:hover > td {
-    background-color: #e6f7ff;
-  }
-` as React.ComponentType<TableProps<User>>;
-
-const ActionButton = styled(Button)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const AddButton = styled(Button)`
-  background: #1890ff;
-  border-color: #1890ff;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.045);
-  height: 40px;
-  border-radius: 6px;
-  
-  &:hover {
-    background: #40a9ff;
-    border-color: #40a9ff;
-  }
-`;
-
-const ResetButton = styled(Button)`
-  display: flex;
-  align-items: center;
-  gap: 5px;
-`;
-
-// Types
 interface User {
   id: number;
   fullName: string;
@@ -166,8 +66,6 @@ const AdminAccountListScreen: React.FC = () => {
     setLoading(true);
     try {
       const { name, gender, role } = filters;
-
-      // Create URL params object and only add non-empty values
       const params = new URLSearchParams();
       params.append("page", page.toString());
       params.append("size", size.toString());
@@ -257,16 +155,21 @@ const AdminAccountListScreen: React.FC = () => {
       };
 
       if (editingUser) {
-        // Update user with PUT request
+        const updateData = { ...formattedValues };
+        if (formattedValues.newPassword) {
+          updateData.password = formattedValues.newPassword;
+        }
+        delete updateData.newPassword;
+        delete updateData.confirmNewPassword;
+
         await axios.put(
           `https://beautiful-unity-production.up.railway.app/api/users/${editingUser.id}`,
-          formattedValues
+          updateData
         );
         message.success(
           `Tài khoản ${formattedValues.fullName} đã được cập nhật thành công`
         );
       } else {
-        // Create user using the register API
         const registerData: RegisterUserRequest = {
           email: formattedValues.email,
           fullName: formattedValues.fullName,
@@ -277,6 +180,7 @@ const AdminAccountListScreen: React.FC = () => {
           role: formattedValues.role,
           password: formattedValues.password,
         };
+        delete formattedValues.confirmPassword;
 
         await registerNewUser(registerData);
         message.success(
@@ -317,7 +221,6 @@ const AdminAccountListScreen: React.FC = () => {
       cancelText: "Hủy",
       onOk: async () => {
         try {
-          // Delete user with DELETE request
           await axios.delete(
             `https://beautiful-unity-production.up.railway.app/api/users/${userId}`
           );
@@ -393,7 +296,9 @@ const AdminAccountListScreen: React.FC = () => {
         const statusText =
           status === "ACTIVE" ? "Hoạt động" : "Không hoạt động";
         return (
-          <Tag color={status === "ACTIVE" ? "success" : "error"}>{statusText}</Tag>
+          <Tag color={status === "ACTIVE" ? "success" : "error"}>
+            {statusText}
+          </Tag>
         );
       },
     },
@@ -439,14 +344,17 @@ const AdminAccountListScreen: React.FC = () => {
       </Header>
 
       <FilterContainer>
-        <Text strong style={{ fontSize: 16, marginBottom: 16, display: 'block' }}>
+        <Text
+          strong
+          style={{ fontSize: 16, marginBottom: 16, display: "block" }}
+        >
           Bộ lọc tìm kiếm
         </Text>
-        <Divider style={{ margin: '12px 0' }} />
+        <Divider style={{ margin: "12px 0" }} />
         <FilterRow>
           <Input
             placeholder="Tìm kiếm theo tên"
-            prefix={<SearchOutlined style={{ color: '#1890ff' }} />}
+            prefix={<SearchOutlined style={{ color: "#1890ff" }} />}
             value={filters.name || ""}
             onChange={(e) => handleFilterChange("name", e.target.value)}
             style={{ width: 250 }}
@@ -497,18 +405,24 @@ const AdminAccountListScreen: React.FC = () => {
           showSizeChanger: true,
           showQuickJumper: true,
           showTotal: (total) => `Tổng số ${total} tài khoản`,
-          pageSizeOptions: ['10', '20', '50', '100'],
+          pageSizeOptions: ["10", "20", "50", "100"],
         }}
         loading={loading}
         onChange={handleTableChange}
-        scroll={{ x: 'max-content' }}
+        scroll={{ x: "max-content" }}
         bordered
       />
 
       <Modal
         title={
-          <div style={{ display: 'flex', alignItems: 'center', color: '#1890ff' }}>
-            {editingUser ? <EditOutlined style={{ marginRight: 8 }} /> : <PlusOutlined style={{ marginRight: 8 }} />}
+          <div
+            style={{ display: "flex", alignItems: "center", color: "#1890ff" }}
+          >
+            {editingUser ? (
+              <EditOutlined style={{ marginRight: 8 }} />
+            ) : (
+              <PlusOutlined style={{ marginRight: 8 }} />
+            )}
             {editingUser ? "Chỉnh sửa tài khoản" : "Thêm tài khoản mới"}
           </div>
         }
@@ -518,11 +432,11 @@ const AdminAccountListScreen: React.FC = () => {
         width={600}
         okText={editingUser ? "Cập nhật" : "Thêm mới"}
         cancelText="Hủy"
-        okButtonProps={{ 
+        okButtonProps={{
           loading: submitting,
-          style: { background: '#1890ff', borderColor: '#1890ff' }
+          style: { background: "#1890ff", borderColor: "#1890ff" },
         }}
-        bodyStyle={{ maxHeight: '70vh', overflow: 'auto', padding: '24px' }}
+        bodyStyle={{ maxHeight: "70vh", overflow: "auto", padding: "24px" }}
         maskClosable={false}
       >
         <Form form={form} layout="vertical">
@@ -544,16 +458,96 @@ const AdminAccountListScreen: React.FC = () => {
             <Input placeholder="Nhập địa chỉ email" />
           </Form.Item>
           {!editingUser && (
-            <Form.Item
-              name="password"
-              label="Mật khẩu"
-              rules={[
-                { required: true, message: "Vui lòng nhập mật khẩu" },
-                { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" }
-              ]}
-            >
-              <Input.Password placeholder="Nhập mật khẩu" />
-            </Form.Item>
+            <>
+              <Form.Item
+                name="password"
+                label="Mật khẩu"
+                rules={[
+                  { required: true, message: "Vui lòng nhập mật khẩu" },
+                  { min: 8, message: "Mật khẩu phải có ít nhất 8 ký tự" },
+                  {
+                    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
+                    message:
+                      "Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số",
+                  },
+                ]}
+              >
+                <Input.Password placeholder="Nhập mật khẩu" />
+              </Form.Item>
+              <Form.Item
+                name="confirmPassword"
+                label="Xác nhận mật khẩu"
+                dependencies={["password"]}
+                rules={[
+                  { required: true, message: "Vui lòng xác nhận mật khẩu" },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue("password") === value) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(
+                        new Error("Mật khẩu xác nhận không khớp!")
+                      );
+                    },
+                  }),
+                ]}
+              >
+                <Input.Password placeholder="Xác nhận mật khẩu" />
+              </Form.Item>
+            </>
+          )}
+          {editingUser && (
+            <>
+              <Form.Item
+                name="newPassword"
+                label="Mật khẩu mới (để trống nếu không thay đổi)"
+                rules={[
+                  {
+                    validator: (_, value) => {
+                      if (!value) return Promise.resolve(); // Skip validation if empty
+                      if (value.length < 8) {
+                        return Promise.reject(
+                          new Error("Mật khẩu phải có ít nhất 8 ký tự")
+                        );
+                      }
+                      if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/.test(value)) {
+                        return Promise.reject(
+                          new Error(
+                            "Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số"
+                          )
+                        );
+                      }
+                      return Promise.resolve();
+                    },
+                  },
+                ]}
+              >
+                <Input.Password placeholder="Nhập mật khẩu mới" />
+              </Form.Item>
+              <Form.Item
+                name="confirmNewPassword"
+                label="Xác nhận mật khẩu mới"
+                dependencies={["newPassword"]}
+                rules={[
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (
+                        !getFieldValue("newPassword") ||
+                        !value ||
+                        getFieldValue("newPassword") === value
+                      ) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(
+                        new Error("Mật khẩu xác nhận không khớp!")
+                      );
+                    },
+                  }),
+                ]}
+              >
+                <Input.Password placeholder="Xác nhận mật khẩu mới" />
+              </Form.Item>
+            </>
           )}
           <Form.Item
             name="dateOfBirth"
@@ -581,7 +575,10 @@ const AdminAccountListScreen: React.FC = () => {
             label="Số điện thoại"
             rules={[
               { required: true, message: "Vui lòng nhập số điện thoại" },
-              { pattern: /^[0-9]{10,11}$/, message: "Số điện thoại không hợp lệ" }
+              {
+                pattern: /^[0-9]{10,11}$/,
+                message: "Số điện thoại không hợp lệ",
+              },
             ]}
           >
             <Input placeholder="Nhập số điện thoại" />
@@ -602,16 +599,6 @@ const AdminAccountListScreen: React.FC = () => {
               <Option value="ADMIN">Quản trị viên</Option>
               <Option value="STAFF">Nhân viên</Option>
               <Option value="MANAGER">Quản lý</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="status"
-            label="Trạng thái"
-            rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
-          >
-            <Select placeholder="Chọn trạng thái">
-              <Option value="ACTIVE">Hoạt động</Option>
-              <Option value="INACTIVE">Không hoạt động</Option>
             </Select>
           </Form.Item>
         </Form>

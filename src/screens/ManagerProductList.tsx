@@ -26,6 +26,7 @@ interface Product {
 const ManagerProductList: React.FC = () => {
   const [data, setData] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [form] = Form.useForm();
