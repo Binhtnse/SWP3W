@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import { Table, message, Modal, Button, Form, Input, Select } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import ManagerLayout from '../components/ManagerLayout';
 
@@ -26,12 +27,13 @@ const ManagerProductList: React.FC = () => {
   const [data, setData] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  console.log(selectedProduct)
-  console.log(setSelectedProduct)
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
-  const [categories, setCategories] = useState<any[]>([]); // Store categories
+  const [categories, setCategories] = useState<any[]>([]);
   const [form] = Form.useForm();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [filter, setFilter] = useState<{ status?: string; categoryId?: number; productType?: string }>({});
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState<boolean>(false);
 
   useEffect(() => {
     fetchProducts();
@@ -41,7 +43,12 @@ const ManagerProductList: React.FC = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('https://beautiful-unity-production.up.railway.app/api/products');
+      const response = await axios.get(
+        'https://beautiful-unity-production.up.railway.app/api/products',
+        {
+          params: { productType: 'SINGLE' },
+        }
+      );
       setData(response.data.data);
     } catch (error) {
       message.error('Không thể tải danh sách sản phẩm');
@@ -64,7 +71,7 @@ const ManagerProductList: React.FC = () => {
       name: values.name,
       basePrice: values.basePrice,
       productCode: values.productCode,
-      imageUrl: values.imageUrl,  // URL instead of file
+      imageUrl: values.imageUrl,
       description: values.description,
       productType: values.productType,
       productUsage: values.productUsage,
@@ -111,6 +118,16 @@ const ManagerProductList: React.FC = () => {
     setIsModalVisible(true);
   };
 
+  const showDetailModal = (product: Product) => {
+    setSelectedProduct(product);
+    setIsDetailModalVisible(true);
+  };
+
+  const closeDetailModal = () => {
+    setIsDetailModalVisible(false);
+    setSelectedProduct(null);
+  };
+
   const handleOk = () => {
     form
       .validateFields()
@@ -133,6 +150,14 @@ const ManagerProductList: React.FC = () => {
     form.resetFields();
   };
 
+  const filteredData = data.filter((item) => {
+    const matchName = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchStatus = !filter.status || item.status === filter.status;
+    const matchCategory = !filter.categoryId || item.categoryId === filter.categoryId;
+    const matchType = !filter.productType || item.productType === filter.productType;
+    return matchName && matchStatus && matchCategory && matchType;
+  });
+
   const columns = [
     {
       title: 'Hình ảnh',
@@ -142,6 +167,11 @@ const ManagerProductList: React.FC = () => {
     {
       title: 'Tên sản phẩm',
       dataIndex: 'name',
+      render: (_: any, record: Product) => (
+        <Button type="link" onClick={() => showDetailModal(record)}>
+          {record.name}
+        </Button>
+      ),
     },
     {
       title: 'Mã sản phẩm',
@@ -157,6 +187,10 @@ const ManagerProductList: React.FC = () => {
       dataIndex: 'categoryName',
     },
     {
+      title: 'Loại sản phẩm',
+      dataIndex: 'productType',
+    },
+    {
       title: 'Trạng thái',
       dataIndex: 'status',
     },
@@ -168,7 +202,7 @@ const ManagerProductList: React.FC = () => {
           <Button type="link" onClick={() => showEditProductModal(record)}>
             Chỉnh sửa
           </Button>
-          <Button type="link" onClick={() => deleteProduct(record.id)}>
+          <Button type="link" danger onClick={() => deleteProduct(record.id)}>
             Xóa
           </Button>
         </>
@@ -180,21 +214,61 @@ const ManagerProductList: React.FC = () => {
     <ManagerLayout>
       <div>
         <h1>Quản lý sản phẩm</h1>
+        <div style={{ marginBottom: 20, display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <Input
+            placeholder="Tìm theo tên sản phẩm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: 250 }}
+          />
+          <Select
+            placeholder="Lọc theo trạng thái"
+            allowClear
+            onChange={(value) => setFilter((prev) => ({ ...prev, status: value }))}
+            value={filter.status}
+            style={{ width: 200 }}
+          >
+            <Select.Option value="ACTIVE">Đang hoạt động</Select.Option>
+            <Select.Option value="INACTIVE">Ngừng hoạt động</Select.Option>
+          </Select>
+          <Select
+            placeholder="Lọc theo danh mục"
+            allowClear
+            onChange={(value) => setFilter((prev) => ({ ...prev, categoryId: value }))}
+            value={filter.categoryId}
+            style={{ width: 200 }}
+          >
+            {categories.map((cat) => (
+              <Select.Option key={cat.id} value={cat.id}>
+                {cat.name}
+              </Select.Option>
+            ))}
+          </Select>
+        
+
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => {
+              setFilter({});
+              setSearchTerm('');
+            }}
+          >
+            Đặt lại bộ lọc
+          </Button>
+        </div>
+
         <Button type="primary" onClick={showAddProductModal} style={{ marginBottom: 20 }}>
           Thêm sản phẩm
         </Button>
         <Table
-          dataSource={data}
+          dataSource={filteredData}
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={{
-            pageSize: 10,
-          }}
+          pagination={{ pageSize: 10 }}
         />
       </div>
 
-      {/* Modal chi tiết sản phẩm */}
       <Modal
         title={editingProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm'}
         visible={isModalVisible}
@@ -255,6 +329,32 @@ const ManagerProductList: React.FC = () => {
             </Select>
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Chi tiết sản phẩm"
+        visible={isDetailModalVisible}
+        footer={null}
+        onCancel={closeDetailModal}
+      >
+        {selectedProduct && (
+          <div>
+            <img
+              src={selectedProduct.imageUrl}
+              alt="Product"
+              style={{ width: '100%', marginBottom: '16px' }}
+            />
+            <p><strong>Tên sản phẩm:</strong> {selectedProduct.name}</p>
+            <p><strong>Mã sản phẩm:</strong> {selectedProduct.productCode}</p>
+            <p><strong>Giá:</strong> {selectedProduct.basePrice} VND</p>
+            <p><strong>Danh mục:</strong> {selectedProduct.categoryName}</p>
+            <p><strong>Loại sản phẩm:</strong> {selectedProduct.productType}</p>
+            <p><strong>Mục đích sử dụng:</strong> {selectedProduct.productUsage}</p>
+            <p><strong>Trạng thái:</strong> {selectedProduct.status}</p>
+            <p><strong>Mô tả:</strong> {selectedProduct.description}</p>
+            <p><strong>Ngày tạo:</strong> {selectedProduct.createAt}</p>
+          </div>
+        )}
       </Modal>
     </ManagerLayout>
   );

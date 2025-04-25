@@ -4,6 +4,8 @@ import {
   DashboardOutlined,
   ShoppingCartOutlined,
   AppstoreAddOutlined, // Icon cho quản lý sản phẩm
+  AppstoreOutlined, // Icon cho quản lý combo
+  PlusCircleOutlined, // Icon cho quản lý extra product
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -16,17 +18,27 @@ const ManagerSidebar: React.FC = () => {
 
   const menuItems = [
     {
-      key: '/manager/orderList', 
+      key: '/manager/orderList',
       icon: <ShoppingCartOutlined />,
       label: 'Quản Lý Đơn Hàng',
     },
     {
-      key: '/manager/listProduct', 
+      key: '/manager/listProduct',
       icon: <AppstoreAddOutlined />,
       label: 'Quản Lý Sản Phẩm',
     },
     {
-      key: '/manager/manageIncome', 
+      key: '/manager/listCombo',
+      icon: <AppstoreOutlined />,
+      label: 'Quản Lý Combo',
+    },
+    {
+      key: '/manager/manageExtraProduct',
+      icon: <PlusCircleOutlined />,
+      label: 'Quản Lý Extra Product',
+    },
+    {
+      key: '/manager/manageIncome',
       icon: <DashboardOutlined />,
       label: 'Tổng Quan',
     },
