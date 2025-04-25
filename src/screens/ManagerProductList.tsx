@@ -33,6 +33,7 @@ const ManagerProductList: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [filter, setFilter] = useState<{ status?: string; categoryId?: number; productType?: string }>({});
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState<boolean>(false);
 
   useEffect(() => {
     fetchProducts();
@@ -42,7 +43,12 @@ const ManagerProductList: React.FC = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('https://beautiful-unity-production.up.railway.app/api/products');
+      const response = await axios.get(
+        'https://beautiful-unity-production.up.railway.app/api/products',
+        {
+          params: { productType: 'SINGLE' },
+        }
+      );
       setData(response.data.data);
     } catch (error) {
       message.error('Không thể tải danh sách sản phẩm');
@@ -112,6 +118,16 @@ const ManagerProductList: React.FC = () => {
     setIsModalVisible(true);
   };
 
+  const showDetailModal = (product: Product) => {
+    setSelectedProduct(product);
+    setIsDetailModalVisible(true);
+  };
+
+  const closeDetailModal = () => {
+    setIsDetailModalVisible(false);
+    setSelectedProduct(null);
+  };
+
   const handleOk = () => {
     form
       .validateFields()
@@ -151,6 +167,11 @@ const ManagerProductList: React.FC = () => {
     {
       title: 'Tên sản phẩm',
       dataIndex: 'name',
+      render: (_: any, record: Product) => (
+        <Button type="link" onClick={() => showDetailModal(record)}>
+          {record.name}
+        </Button>
+      ),
     },
     {
       title: 'Mã sản phẩm',
@@ -223,16 +244,7 @@ const ManagerProductList: React.FC = () => {
               </Select.Option>
             ))}
           </Select>
-          <Select
-            placeholder="Lọc theo loại sản phẩm"
-            allowClear
-            onChange={(value) => setFilter((prev) => ({ ...prev, productType: value }))}
-            value={filter.productType}
-            style={{ width: 200 }}
-          >
-            <Select.Option value="SINGLE">SINGLE</Select.Option>
-            <Select.Option value="COMBO">COMBO</Select.Option>
-          </Select>
+        
 
           <Button
             icon={<ReloadOutlined />}
@@ -317,6 +329,32 @@ const ManagerProductList: React.FC = () => {
             </Select>
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Chi tiết sản phẩm"
+        visible={isDetailModalVisible}
+        footer={null}
+        onCancel={closeDetailModal}
+      >
+        {selectedProduct && (
+          <div>
+            <img
+              src={selectedProduct.imageUrl}
+              alt="Product"
+              style={{ width: '100%', marginBottom: '16px' }}
+            />
+            <p><strong>Tên sản phẩm:</strong> {selectedProduct.name}</p>
+            <p><strong>Mã sản phẩm:</strong> {selectedProduct.productCode}</p>
+            <p><strong>Giá:</strong> {selectedProduct.basePrice} VND</p>
+            <p><strong>Danh mục:</strong> {selectedProduct.categoryName}</p>
+            <p><strong>Loại sản phẩm:</strong> {selectedProduct.productType}</p>
+            <p><strong>Mục đích sử dụng:</strong> {selectedProduct.productUsage}</p>
+            <p><strong>Trạng thái:</strong> {selectedProduct.status}</p>
+            <p><strong>Mô tả:</strong> {selectedProduct.description}</p>
+            <p><strong>Ngày tạo:</strong> {selectedProduct.createAt}</p>
+          </div>
+        )}
       </Modal>
     </ManagerLayout>
   );
