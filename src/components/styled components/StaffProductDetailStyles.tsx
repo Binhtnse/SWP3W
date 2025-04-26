@@ -300,3 +300,81 @@ export const OptionTag = styled(Tag)`
   padding: 0.25rem 0.5rem !important;
   border-radius: 0.25rem !important;
 `;
+
+export const ComboHeader = styled.div`
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 1rem !important;
+`;
+
+export const ComboTitle = styled.div`
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+`;
+
+export const ComboIcon = styled.div`
+  background-color: #3b82f6 !important;
+  color: white !important;
+  width: 2rem !important;
+  height: 2rem !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1rem !important;
+`;
+
+export const ComboItemCard = styled.div`
+  background-color: white !important;
+  border-radius: 0.5rem !important;
+  padding: 0.75rem !important;
+  margin-bottom: 0.75rem !important;
+  border: 1px solid #e5e7eb !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  transition: all 0.2s !important;
+  
+  &:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+    transform: translateY(-2px) !important;
+  }
+`;
+
+export const ComboItemInfo = styled.div`
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+`;
+
+export const ComboItemNumber = styled.div`
+  background-color: #eff6ff !important;
+  color: #3b82f6 !important;
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.75rem !important;
+  font-weight: bold !important;
+`;
+
+export const ComboItemDetails = styled.div`
+  display: flex !important;
+  flex-direction: column !important;
+`;
+
+export const ComboItemName = styled.div`
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+`;
+
+export const ComboItemMeta = styled.div`
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  margin-top: 0.25rem !important;
+`;

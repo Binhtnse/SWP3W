@@ -2,7 +2,6 @@ import { lazy } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import StaffProductScreen from "../screens/StaffProductScreen";
 import StaffProductDetailScreen from "../screens/StaffProductDetailScreen";
-import StaffOrderConfirmScreen from "../screens/StaffOrderConfirmScreen";
 import StaffCartScreen from "../screens/StaffCartScreen";
 import StaffOrderPaymentScreen from "../screens/StaffOrderPaymentScreen";
 import LoginScreen from "../screens/LoginScreen";
@@ -37,16 +36,6 @@ export const AppRoutes = createBrowserRouter([
             <Layout>
                 <ProtectedRoute allowedRoles={["STAFF"]}>
                     <StaffProductDetailScreen />
-                </ProtectedRoute>
-            </Layout>
-        ),
-    },
-    {
-        path: "/staff/orders/confirm",
-        element: (
-            <Layout>
-                <ProtectedRoute allowedRoles={["STAFF"]}>
-                    <StaffOrderConfirmScreen />
                 </ProtectedRoute>
             </Layout>
         ),

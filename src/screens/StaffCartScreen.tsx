@@ -11,7 +11,6 @@ import {
   Spin,
   Tag,
   Empty,
-  Popconfirm
 } from 'antd';
 import { 
   ArrowLeftOutlined, 
@@ -21,153 +20,10 @@ import {
   CheckCircleOutlined,
   CreditCardOutlined
 } from '@ant-design/icons';
-import styled from 'styled-components';
+import { StyledHeader, HeaderContent, LogoSection, IconContainer, TitleContainer, ContentSection, ActionButton, OrderSummary, SummaryInfo, SummaryActions, LoadingContainer, BackButton } from '../components/styled components/StaffCartStyles';
 
 const { Text } = Typography;
 const { confirm } = Modal;
-
-const StyledHeader = styled.div`
-  background: linear-gradient(to right, #7c3aed, #4f46e5) !important;
-  border-radius: 0.5rem !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-  margin-bottom: 1.5rem !important;
-  padding: 1.5rem !important;
-`;
-
-const HeaderContent = styled.div`
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-
-  @media (min-width: 768px) {
-    flex-direction: row !important;
-  }
-`;
-
-const LogoSection = styled.div`
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  margin-bottom: 1rem !important;
-
-  @media (min-width: 768px) {
-    flex-direction: row !important;
-    margin-bottom: 0 !important;
-  }
-`;
-
-const IconContainer = styled.div`
-  background-color: white !important;
-  padding: 0.75rem !important;
-  border-radius: 9999px !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
-  margin-right: 1rem !important;
-  margin-bottom: 0.75rem !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-
-  @media (min-width: 768px) {
-    margin-bottom: 0 !important;
-  }
-
-  .anticon {
-    font-size: 1.875rem !important;
-    color: #7c3aed !important;
-  }
-`;
-
-const TitleContainer = styled.div`
-  h1 {
-    font-size: 1.875rem !important;
-    font-weight: 700 !important;
-    color: white !important;
-    text-align: center !important;
-
-    @media (min-width: 768px) {
-      text-align: left !important;
-    }
-  }
-
-  p {
-    color: #ddd6fe !important;
-    margin-top: 0.25rem !important;
-    display: flex !important;
-    align-items: center !important;
-    text-align: center !important;
-
-    @media (min-width: 768px) {
-      text-align: left !important;
-    }
-  }
-`;
-
-const ContentSection = styled.div`
-  background: white !important;
-  border-radius: 0.5rem !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-  padding: 1.5rem !important;
-  margin-bottom: 1.5rem !important;
-`;
-
-const ActionButton = styled(Button)`
-  &.ant-btn-primary {
-    background-color: #7c3aed !important;
-    border-color: #7c3aed !important;
-  }
-  
-  &.green {
-    background-color: #10b981 !important;
-    border-color: #10b981 !important;
-    
-    &:hover {
-      background-color: #059669 !important;
-      border-color: #059669 !important;
-    }
-  }
-`;
-
-const OrderSummary = styled.div`
-  display: flex !important;
-  flex-direction: column !important;
-  
-  @media (min-width: 768px) {
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-  }
-`;
-
-const SummaryInfo = styled.div`
-  display: flex !important;
-  align-items: center !important;
-  margin-bottom: 1rem !important;
-  
-  @media (min-width: 768px) {
-    margin-bottom: 0 !important;
-  }
-`;
-
-const SummaryActions = styled.div`
-  display: flex !important;
-  justify-content: flex-end !important;
-  gap: 0.5rem !important;
-`;
-
-const LoadingContainer = styled.div`
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-  height: 100vh !important;
-`;
-
-const BackButton = styled(Button)`
-  display: flex !important;
-  align-items: center !important;
-`;
 
 interface OrderItem {
   id: number;
@@ -257,7 +113,6 @@ const StaffCartScreen: React.FC = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
 
   useEffect(() => {
     // Simulate loading order data
@@ -294,7 +149,6 @@ const StaffCartScreen: React.FC = () => {
       onOk() {
         const updatedOrders = orders.filter(order => order.id !== orderId);
         setOrders(updatedOrders);
-        setSelectedOrderIds(selectedOrderIds.filter(id => id !== orderId));
         message.success('Đã hủy đơn hàng');
       }
     });
@@ -310,69 +164,33 @@ const StaffCartScreen: React.FC = () => {
       cancelText: 'Quay lại',
       onOk() {
         setOrders([]);
-        setSelectedOrderIds([]);
         message.success('Đã hủy tất cả đơn hàng');
       }
     });
   };
 
-  const handlePayOrder = (orderId: string) => {
-    const updatedOrders = orders.map(order => 
-      order.id === orderId ? { ...order, status: 'paid' as const } : order
-    );
-    
-    setOrders(updatedOrders);
-    setSelectedOrderIds(selectedOrderIds.filter(id => id !== orderId));
-    message.success('Thanh toán đơn hàng thành công!');
-  };
-
-  const handlePaySelectedOrders = () => {
-    if (selectedOrderIds.length === 0) {
-      message.warning('Vui lòng chọn ít nhất một đơn hàng để thanh toán');
+  const handlePayAllOrders = () => {
+    if (orders.length === 0) {
+      message.warning('Không có đơn hàng nào để thanh toán');
       return;
     }
 
     confirm({
-      title: 'Xác nhận thanh toán',
+      title: 'Xác nhận thanh toán tất cả đơn hàng',
       icon: <CheckCircleOutlined style={{ color: 'green' }} />,
-      content: `Bạn có chắc chắn muốn thanh toán ${selectedOrderIds.length} đơn hàng đã chọn?`,
+      content: `Bạn có chắc chắn muốn thanh toán tất cả ${orders.length} đơn hàng?`,
       okText: 'Thanh toán',
       okType: 'primary',
       cancelText: 'Hủy',
       onOk() {
-        const updatedOrders = orders.map(order => 
-          selectedOrderIds.includes(order.id) 
-            ? { ...order, status: 'paid' as const } 
-            : order
-        );
-        
-        setOrders(updatedOrders.filter(order => order.status !== 'paid'));
-        setSelectedOrderIds([]);
-        message.success('Thanh toán thành công!');
+        setOrders([]);
+        message.success('Thanh toán tất cả đơn hàng thành công!');
       }
     });
   };
 
-//   const handleSelectOrder = (orderId: string, selected: boolean) => {
-//     if (selected) {
-//       setSelectedOrderIds([...selectedOrderIds, orderId]);
-//     } else {
-//       setSelectedOrderIds(selectedOrderIds.filter(id => id !== orderId));
-//     }
-//   };
-
-//   const handleSelectAllOrders = (selected: boolean) => {
-//     if (selected) {
-//       setSelectedOrderIds(orders.map(order => order.id));
-//     } else {
-//       setSelectedOrderIds([]);
-//     }
-//   };
-
   const calculateTotalAmount = () => {
-    return orders
-      .filter(order => selectedOrderIds.includes(order.id))
-      .reduce((sum, order) => sum + order.totalAmount, 0);
+    return orders.reduce((sum, order) => sum + order.totalAmount, 0);
   };
 
   const columns = [
@@ -437,20 +255,6 @@ const StaffCartScreen: React.FC = () => {
       key: 'action',
       render: (_: unknown, record: Order) => (
         <Space size="small">
-          <Popconfirm
-            title="Xác nhận thanh toán đơn hàng này?"
-            onConfirm={() => handlePayOrder(record.id)}
-            okText="Thanh toán"
-            cancelText="Hủy"
-          >
-            <Button 
-              type="primary" 
-              icon={<CreditCardOutlined />} 
-              className="bg-green-500 hover:bg-green-600"
-            >
-              Thanh toán
-            </Button>
-          </Popconfirm>
           <Button 
             danger
             icon={<DeleteOutlined />} 
@@ -462,13 +266,6 @@ const StaffCartScreen: React.FC = () => {
       ),
     },
   ];
-
-  const rowSelection = {
-    selectedRowKeys: selectedOrderIds,
-    onChange: (selectedRowKeys: React.Key[]) => {
-      setSelectedOrderIds(selectedRowKeys as string[]);
-    }
-  };
 
   if (loading) {
     return (
@@ -507,7 +304,6 @@ const StaffCartScreen: React.FC = () => {
         {orders.length > 0 ? (
           <>
             <Table 
-              rowSelection={rowSelection}
               dataSource={orders} 
               columns={columns} 
               pagination={false}
@@ -519,8 +315,8 @@ const StaffCartScreen: React.FC = () => {
             
             <OrderSummary>
               <SummaryInfo>
-                <Text style={{ marginRight: '0.5rem' }}>Đã chọn:</Text>
-                <Text strong>{selectedOrderIds.length}</Text>
+                <Text style={{ marginRight: '0.5rem' }}>Tổng cộng:</Text>
+                <Text strong>{orders.length}</Text>
                 <Text style={{ margin: '0 0.5rem' }}>đơn hàng</Text>
                 <Text strong style={{ marginLeft: '1rem', fontSize: '1.125rem' }}>
                   {formatCurrency(calculateTotalAmount())}
@@ -537,11 +333,10 @@ const StaffCartScreen: React.FC = () => {
                 <ActionButton 
                   type="primary" 
                   icon={<CreditCardOutlined />}
-                  onClick={handlePaySelectedOrders}
+                  onClick={handlePayAllOrders}
                   className="green"
-                  disabled={selectedOrderIds.length === 0}
                 >
-                  Thanh toán đã chọn
+                  Thanh toán tất cả
                 </ActionButton>
               </SummaryActions>
             </OrderSummary>
