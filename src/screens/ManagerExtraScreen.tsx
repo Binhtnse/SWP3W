@@ -1,7 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useState } from 'react';
-import { Table, message, Modal, Button, Form, Input, Select } from 'antd';
+import { Table, message, Modal, Button, Form, Input, Select, Descriptions } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import ManagerLayout from '../components/ManagerLayout';
@@ -28,12 +29,12 @@ const ManagerExtraScreen: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState<boolean>(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [form] = Form.useForm();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [filter, setFilter] = useState<{ status?: string; categoryId?: number; productType?: string }>({});
   const [searchTerm, setSearchTerm] = useState<string>(''); 
-  const [isDetailModalVisible, setIsDetailModalVisible] = useState<boolean>(false);
   const [pageSize, setPageSize] = useState<number>(10);
 
   useEffect(() => {
@@ -132,8 +133,7 @@ const ManagerExtraScreen: React.FC = () => {
   };
 
   const handleOk = () => {
-    form
-      .validateFields()
+    form.validateFields()
       .then((values) => {
         if (editingProduct) {
           const updatedProduct = {
@@ -276,6 +276,7 @@ const ManagerExtraScreen: React.FC = () => {
         />
       </div>
 
+      {/* Modal Thêm/Sửa Sản phẩm */}
       <Modal
         title={editingProduct ? "Chỉnh sửa sản phẩm" : "Thêm sản phẩm"}
         open={isModalVisible}
@@ -299,7 +300,6 @@ const ManagerExtraScreen: React.FC = () => {
           >
             <Input />
           </Form.Item>
-
           <Form.Item
             label="Mã sản phẩm"
             name="productCode"
@@ -307,7 +307,6 @@ const ManagerExtraScreen: React.FC = () => {
           >
             <Input />
           </Form.Item>
-
           <Form.Item
             label="Giá"
             name="basePrice"
@@ -315,21 +314,12 @@ const ManagerExtraScreen: React.FC = () => {
           >
             <Input type="number" />
           </Form.Item>
-
-          <Form.Item
-            label="URL hình ảnh"
-            name="imageUrl"
-          >
+          <Form.Item label="URL hình ảnh" name="imageUrl">
             <Input placeholder="Nhập link hình ảnh..." />
           </Form.Item>
-
-          <Form.Item
-            label="Mô tả"
-            name="description"
-          >
+          <Form.Item label="Mô tả" name="description">
             <Input.TextArea />
           </Form.Item>
-
           <Form.Item
             label="Danh mục"
             name="categoryId"
@@ -344,6 +334,36 @@ const ManagerExtraScreen: React.FC = () => {
             </Select>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Modal Xem Chi tiết Sản phẩm */}
+      <Modal
+        title="Chi tiết Sản phẩm"
+        open={isDetailModalVisible}
+        onCancel={closeDetailModal}
+        footer={null}
+        width={800}
+      >
+        {selectedProduct ? (
+          <Descriptions bordered column={1} size="default">
+            <Descriptions.Item label="Tên sản phẩm">{selectedProduct.name}</Descriptions.Item>
+            <Descriptions.Item label="Mã sản phẩm">{selectedProduct.productCode}</Descriptions.Item>
+            <Descriptions.Item label="Giá">{selectedProduct.basePrice} VND</Descriptions.Item>
+            <Descriptions.Item label="Mô tả">{selectedProduct.description || 'Không có mô tả'}</Descriptions.Item>
+            <Descriptions.Item label="Danh mục">{selectedProduct.categoryName}</Descriptions.Item>
+            <Descriptions.Item label="Loại sản phẩm">{selectedProduct.productType}</Descriptions.Item>
+            <Descriptions.Item label="Trạng thái">{selectedProduct.status}</Descriptions.Item>
+            <Descriptions.Item label="Hình ảnh">
+              <img
+                src={selectedProduct.imageUrl}
+                alt={selectedProduct.name}
+                style={{ width: '100%', height: 'auto', marginTop: '10px' }}
+              />
+            </Descriptions.Item>
+          </Descriptions>
+        ) : (
+          <p>Không tìm thấy sản phẩm.</p>
+        )}
       </Modal>
     </ManagerLayout>
   );
