@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
@@ -383,7 +384,7 @@ const ManagerComboList: React.FC = () => {
                     <Form.Item
                       {...restField}
                       name={[name, 'productId']}
-                      fieldKey={[fieldKey || 'defaultKey', 'productId']}  // Added fallback here
+                      fieldKey={[fieldKey || 'defaultKey', 'productId']} 
                       label="Sản phẩm"
                       rules={[{ required: true, message: 'Vui lòng chọn sản phẩm' }]}
                     >
@@ -397,7 +398,7 @@ const ManagerComboList: React.FC = () => {
                     <Form.Item
                       {...restField}
                       name={[name, 'quantity']}
-                      fieldKey={[fieldKey || 'defaultKey', 'quantity']}  // Added fallback here
+                      fieldKey={[fieldKey || 'defaultKey', 'quantity']}
                       label="Số lượng"
                       rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}
                     >
@@ -407,7 +408,7 @@ const ManagerComboList: React.FC = () => {
                     <Form.Item
                       {...restField}
                       name={[name, 'size']}
-                      fieldKey={[fieldKey || 'defaultKey', 'size']}  // Added fallback here
+                      fieldKey={[fieldKey || 'defaultKey', 'size']}
                       label="Size"
                       rules={[{ required: true, message: 'Vui lòng chọn size' }]}
                     >

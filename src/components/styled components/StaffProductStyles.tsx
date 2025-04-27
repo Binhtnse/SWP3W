@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { Card} from 'antd';
+import { Card, Col, Empty, Row, Tabs} from 'antd';
 
 export const StyledHeader = styled.div`
   background: linear-gradient(to right, #7c3aed, #4f46e5) !important;
@@ -170,5 +170,229 @@ export const StyledCard = styled(Card)`
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
+  }
+`;
+
+export const StyledTabs = styled(Tabs)`
+  .ant-tabs-nav {
+    margin-bottom: 1.5rem !important;
+    
+    &::before {
+      border-bottom: 2px solid #f3f4f6 !important;
+    }
+  }
+
+  .ant-tabs-tab {
+    padding: 0.75rem 1.5rem !important;
+    font-size: 1rem !important;
+    font-weight: 500 !important;
+    color: #6b7280 !important;
+    transition: all 0.3s ease !important;
+    
+    &:hover {
+      color: #7c3aed !important;
+    }
+  }
+
+  .ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: #7c3aed !important;
+    font-weight: 600 !important;
+  }
+
+  .ant-tabs-ink-bar {
+    background-color: #7c3aed !important;
+    height: 3px !important;
+  }
+
+  .ant-tabs-content {
+    padding-top: 0.5rem !important;
+  }
+`;
+
+export const ProductContainer = styled.div`
+  margin-bottom: 2rem !important;
+`;
+
+export const ProductGrid = styled(Row)`
+  margin: 0 -8px !important;
+`;
+
+export const ProductCol = styled(Col)`
+  padding: 8px !important;
+  transition: transform 0.3s ease !important;
+  
+  &:hover {
+    transform: translateY(-4px) !important;
+  }
+`;
+
+export const StyledEmpty = styled(Empty)`
+  padding: 3rem 0 !important;
+  
+  .ant-empty-image {
+    height: 120px !important;
+  }
+  
+  .ant-empty-description {
+    color: #6b7280 !important;
+    font-size: 1rem !important;
+  }
+`;
+
+export const ProductCard = styled(StyledCard)`
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
+  transition: all 0.3s ease !important;
+  height: 100% !important;
+  
+  &:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 
+                0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  }
+  
+  .ant-card-cover {
+    height: 220px !important;
+  }
+  
+  .ant-card-body {
+    padding: 1.25rem !important;
+  }
+`;
+
+export const ProductImage = styled.div`
+  height: 220px !important;
+  overflow: hidden !important;
+  position: relative !important;
+  
+  img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    transition: transform 0.5s ease !important;
+  }
+  
+  &:hover img {
+    transform: scale(1.05) !important;
+  }
+`;
+
+export const ProductTag = styled.div`
+  position: absolute !important;
+  top: 0.75rem !important;
+  left: 0.75rem !important;
+  z-index: 10 !important;
+`;
+
+export const ProductName = styled.h3`
+  font-size: 1.125rem !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.4 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+`;
+
+export const ProductCategory = styled.div`
+  font-size: 0.875rem !important;
+  color: #6b7280 !important;
+  margin-bottom: 0.5rem !important;
+`;
+
+export const ProductPrice = styled.div`
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: #dc2626 !important;
+  margin-bottom: 0.75rem !important;
+`;
+
+export const ProductDescription = styled.div`
+  font-size: 0.875rem !important;
+  color: #6b7280 !important;
+  margin-top: 0.75rem !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+`;
+
+export const ComboDetails = styled.div`
+  margin-top: 0.75rem !important;
+  padding-top: 0.75rem !important;
+  border-top: 1px solid #f3f4f6 !important;
+  
+  .title {
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    color: #4b5563 !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  ul {
+    padding-left: 1.25rem !important;
+    margin: 0 !important;
+    
+    li {
+      font-size: 0.8125rem !important;
+      color: #6b7280 !important;
+      margin-bottom: 0.25rem !important;
+    }
+  }
+`;
+
+export const ListViewCard = styled(Card)`
+  margin-bottom: 1rem !important;
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
+  transition: all 0.3s ease !important;
+  
+  &:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 
+                0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  }
+  
+  .ant-card-body {
+    padding: 0 !important;
+  }
+`;
+
+export const PaginationContainer = styled.div`
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  margin-top: 2rem !important;
+  
+  .pagination-info {
+    color: #6b7280 !important;
+    margin-bottom: 1rem !important;
+    
+    @media (min-width: 640px) {
+      margin-bottom: 0 !important;
+    }
+  }
+  
+  .ant-pagination {
+    .ant-pagination-item-active {
+      border-color: #7c3aed !important;
+      
+      a {
+        color: #7c3aed !important;
+      }
+    }
+    
+    .ant-pagination-item:hover a {
+      color: #7c3aed !important;
+    }
+    
+    .ant-pagination-prev:hover .ant-pagination-item-link,
+    .ant-pagination-next:hover .ant-pagination-item-link {
+      color: #7c3aed !important;
+      border-color: #7c3aed !important;
+    }
   }
 `;

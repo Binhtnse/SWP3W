@@ -2,7 +2,6 @@ import { lazy } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import StaffProductScreen from "../screens/StaffProductScreen";
 import StaffProductDetailScreen from "../screens/StaffProductDetailScreen";
-import StaffOrderConfirmScreen from "../screens/StaffOrderConfirmScreen";
 import StaffCartScreen from "../screens/StaffCartScreen";
 import StaffOrderPaymentScreen from "../screens/StaffOrderPaymentScreen";
 import LoginScreen from "../screens/LoginScreen";
@@ -13,6 +12,7 @@ import ManagerIncomeScreen from "../screens/ManagerIncomeScreen";
 import AdminAccountListScreen from "../screens/AdminAccountListScreen";
 import ManagerProductList from "../screens/ManagerProductList";
 import ManagerComboList from "../screens/ManagerComboList";
+import ManagerExtraScreen from "../screens/ManagerExtraScreen";
 
 const Layout = lazy(() => import("../components/MainLayout"));
 const ProtectedRoute = lazy(() => import("../utils/ProtectedRoutes"));
@@ -37,16 +37,6 @@ export const AppRoutes = createBrowserRouter([
             <Layout>
                 <ProtectedRoute allowedRoles={["STAFF"]}>
                     <StaffProductDetailScreen />
-                </ProtectedRoute>
-            </Layout>
-        ),
-    },
-    {
-        path: "/staff/orders/confirm",
-        element: (
-            <Layout>
-                <ProtectedRoute allowedRoles={["STAFF"]}>
-                    <StaffOrderConfirmScreen />
                 </ProtectedRoute>
             </Layout>
         ),
@@ -100,12 +90,23 @@ export const AppRoutes = createBrowserRouter([
                 </ProtectedRoute>
             </Layout>
         ),
-    }, {
+    }, 
+    {
         path: "/manager/listCombo",
         element: (
             <Layout>
                 <ProtectedRoute allowedRoles={["MANAGER"]}>
                     <ManagerComboList />
+                </ProtectedRoute>
+            </Layout>
+        ),
+    },
+    {
+        path: "/manager/listExtra",
+        element: (
+            <Layout>
+                <ProtectedRoute allowedRoles={["MANAGER"]}>
+                    <ManagerExtraScreen />
                 </ProtectedRoute>
             </Layout>
         ),

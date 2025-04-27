@@ -4,7 +4,6 @@ import {
   DashboardOutlined,
   UserOutlined,
   ShoppingOutlined,
-  ShoppingCartOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -30,11 +29,6 @@ const AdminSidebar: React.FC = () => {
       key: '/admin/categories',
       icon: <ShoppingOutlined />,
       label: 'Quản Lý Danh Mục Sản Phẩm',
-    },
-    {
-      key: '/admin/orders',
-      icon: <ShoppingCartOutlined />,
-      label: 'Quản Lý Đơn Hàng',
     },
   ];
 

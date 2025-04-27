@@ -1,9 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { Card, Tag, Input, Select, Spin, message, Row, Col, Badge, Empty, Pagination, Button, Dropdown,Menu,} from "antd";
-import {FilterOutlined, ShoppingOutlined, AppstoreOutlined, UnorderedListOutlined, DownOutlined,} from "@ant-design/icons";
+import { Tag, Input, Spin, message, Col, Badge, Pagination, Button, Dropdown, Menu, Tabs } from "antd";
+import {
+  ShoppingOutlined, AppstoreOutlined, UnorderedListOutlined, DownOutlined,
+} from "@ant-design/icons";
 import axios from "axios";
 import { useNavigate } from 'react-router-dom';
-import { StyledCard, StyledHeader, HeaderContent, LogoSection, IconContainer, TitleContainer, SearchContainer, FilterSection, FilterContent, Separator, FilterControls, ViewControls } from "../components/styled components/StaffProductStyles";
+import { StyledHeader, HeaderContent, LogoSection, IconContainer, TitleContainer, SearchContainer, FilterSection, FilterContent, Separator, FilterControls, ViewControls, StyledTabs ,
+  ProductContainer,
+  ProductGrid,
+  ProductCol,
+  StyledEmpty,
+  ProductCard,
+  ProductImage,
+  ProductTag,
+  ProductName,
+  ProductCategory,
+  ProductPrice,
+  ProductDescription,
+  ComboDetails,
+  ListViewCard,
+  PaginationContainer } from "../components/styled components/StaffProductStyles";
 
 interface Category {
   id: number;
@@ -52,7 +68,7 @@ interface CategoryApiResponse {
   last: boolean;
 }
 
-const { Option } = Select;
+const { TabPane } = Tabs;
 
 const StaffProductScreen: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -60,31 +76,23 @@ const StaffProductScreen: React.FC = () => {
   const [searchText, setSearchText] = useState<string>("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(8);
+  const [pageSize, setPageSize] = useState<number>(1000);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState<string>("name");
   const [sortParam, setSortParam] = useState<string>("name");
   const [totalElements, setTotalElements] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const navigate = useNavigate();
   console.log(totalPages)
+  const [categories, setCategories] = useState<Category[]>([]);
+  console.log(categories)
+  const [activeTab, setActiveTab] = useState<string>("drinks");
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCategories();
-    
-    if (filterCategory !== "all") {
-      const selectedCategory = categories.find(category => category.name === filterCategory);
-      if (selectedCategory) {
-        fetchProductsByCategory(selectedCategory.id);
-      } else {
-        fetchProducts();
-      }
-    } else {
-      fetchProducts();
-    }
+    fetchProducts();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize, sortParam]);
+  }, [currentPage, pageSize, sortParam, activeTab]);
 
   const fetchCategories = async () => {
     try {
@@ -106,8 +114,15 @@ const StaffProductScreen: React.FC = () => {
       );
       
       setProducts(response.data.data);
-      setTotalElements(response.data.totalElements);
-      setTotalPages(response.data.totalPages);
+      
+      // Filter only active products before setting the total count
+      const activeProducts = response.data.data.filter(product => product.status === "ACTIVE");
+      setTotalElements(activeProducts.length);
+      
+      // If you need to adjust total pages based on active products
+      const calculatedTotalPages = Math.ceil(activeProducts.length / pageSize);
+      setTotalPages(calculatedTotalPages > 0 ? calculatedTotalPages : 1);
+      
       setLoading(false);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -119,52 +134,6 @@ const StaffProductScreen: React.FC = () => {
   const handleSearch = (value: string) => {
     setSearchText(value);
     setCurrentPage(1);
-  };
-
-  const handleCategoryFilter = (value: string) => {
-    setFilterCategory(value);
-    setCurrentPage(1);
-  
-    if (value === "all") {
-      fetchProducts();
-      return;
-    }
-    
-    const selectedCategory = categories.find(category => category.name === value);
-    if (selectedCategory) {
-      fetchProductsByCategory(selectedCategory.id);
-    }
-  };
-
-  const fetchProductsByCategory = async (categoryId: number) => {
-    try {
-      setLoading(true);
-      const response = await axios.get<ApiResponse>(
-        `https://beautiful-unity-production.up.railway.app/api/category/${categoryId}/products?page=${currentPage - 1}&size=${pageSize}`
-      );
-      
-      const productsWithCategory = response.data.data.map(product => ({
-        ...product,
-        category: {
-          id: product.categoryId,
-          name: product.categoryName,
-          description: "",
-          status: "",
-          createAt: "",
-          updateAt: null,
-          deleteAt: null
-        }
-      }));
-      
-      setProducts(productsWithCategory);
-      setTotalElements(response.data.totalElements);
-      setTotalPages(response.data.totalPages);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching products by category:", error);
-      message.error("Không thể tải danh sách sản phẩm theo danh mục");
-      setLoading(false);
-    }
   };
 
   const handleProductClick = (productId: number, productType: string) => {
@@ -189,18 +158,32 @@ const StaffProductScreen: React.FC = () => {
     }
   };
 
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name
-      .toLowerCase()
-      .includes(searchText.toLowerCase());
-    const matchesCategory =
-      filterCategory === "all" || 
-      (product.category && product.categoryName === filterCategory);
-    const isActive = product.status === "ACTIVE";
-    return matchesSearch && matchesCategory && isActive;
-  });
+  const getFilteredProducts = () => {
+    let filtered = products.filter((product) => {
+      const matchesSearch = product.name
+        .toLowerCase()
+        .includes(searchText.toLowerCase());
+      const isActive = product.status === "ACTIVE";
+      
+      if (activeTab === "drinks") {
+        return matchesSearch && isActive && product.categoryName === "Đồ uống" && product.productType === "SINGLE";
+      } else if (activeTab === "toppings") {
+        return matchesSearch && isActive && product.categoryName === "Topping" && product.productType === "SINGLE";
+      } else if (activeTab === "combos") {
+        return matchesSearch && isActive && product.productType === "COMBO";
+      }
+      
+      return false;
+    });
 
-  const sortedProducts = filteredProducts;
+    if (filterCategory !== "all" && activeTab !== "combos") {
+      filtered = filtered.filter(product => product.categoryName === filterCategory);
+    }
+
+    return filtered;
+  };
+
+  const filteredProducts = getFilteredProducts();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -213,25 +196,25 @@ const StaffProductScreen: React.FC = () => {
     if (product.productType !== "COMBO" || !product.comboItems) return null;
 
     return (
-      <div className="mt-2 text-sm text-gray-600">
-        <div className="font-medium mb-1">Bao gồm:</div>
-        <ul className="list-disc pl-5">
+      <ComboDetails>
+        <div className="title">Bao gồm:</div>
+        <ul>
           {product.comboItems.map((item, index) => (
             <li key={index}>
               {item.name} x {item.quantity}
             </li>
           ))}
         </ul>
-      </div>
+      </ComboDetails>
     );
   };
 
   const renderGridView = () => {
     return (
-      <Row gutter={[16, 16]}>
-        {sortedProducts.length > 0 ? (
-          sortedProducts.map((product) => (
-            <Col xs={24} sm={12} md={8} lg={6} key={product.id}>
+      <ProductGrid gutter={[16, 16]}>
+        {filteredProducts.length > 0 ? (
+          filteredProducts.map((product) => (
+            <ProductCol xs={24} sm={12} md={8} lg={6} key={product.id}>
               <Badge.Ribbon
                 text={product.status === "ACTIVE" ? "Đang bán" : "Ngừng bán"}
                 color={product.status === "ACTIVE" ? "green" : "red"}
@@ -239,61 +222,57 @@ const StaffProductScreen: React.FC = () => {
                   display: product.status === "ACTIVE" ? "none" : "block",
                 }}
               >
-                <StyledCard
-                hoverable
-                className="h-full flex flex-col"
-                onClick={() => handleProductClick(product.id, product.productType)}
-                cover={
-                  <div className="h-64 overflow-hidden relative" style={{ width: '100%' }}>
+                <ProductCard
+                  hoverable
+                  onClick={() => handleProductClick(product.id, product.productType)}
+                >
+                  <ProductImage>
                     <img
                       alt={product.name}
                       src={product.imageUrl}
-                      className="w-full h-full object-cover"
-                      style={{ objectPosition: 'center' }}
                     />
                     {product.productType === "COMBO" && (
-                      <div className="absolute top-2 left-2">
+                      <ProductTag>
                         <Tag color="blue">Combo</Tag>
-                      </div>
+                      </ProductTag>
                     )}
-                  </div>
-                }
-              >
-                  <div className="flex flex-col flex-grow">
-                    <h3 className="text-lg font-medium mb-1 line-clamp-2">
-                      {product.name}
-                    </h3>
-                    <div className="text-sm text-gray-500 mb-2">
+                  </ProductImage>
+                  <div>
+                    <ProductName>{product.name}</ProductName>
+                    <ProductCategory>
                       {product.categoryName || 'Không có danh mục'}
-                    </div>
-                    <div className="text-lg font-bold text-red-600 mb-2">
+                    </ProductCategory>
+                    <ProductPrice>
                       {formatCurrency(product.basePrice)}
-                    </div>
+                    </ProductPrice>
                     {product.productType === "COMBO" && renderComboDetails(product)}
-                    <div className="text-sm text-gray-500 mt-2 line-clamp-2">
+                    <ProductDescription>
                       {product.description}
-                    </div>
+                    </ProductDescription>
                   </div>
-                </StyledCard>
+                </ProductCard>
               </Badge.Ribbon>
-            </Col>
+            </ProductCol>
           ))
         ) : (
           <Col span={24}>
-            <Empty description="Không tìm thấy sản phẩm nào" />
+            <StyledEmpty description="Không tìm thấy sản phẩm nào" />
           </Col>
         )}
-      </Row>
+      </ProductGrid>
     );
   };
   
   const renderListView = () => {
     return (
-      <div className="space-y-4">
-        {sortedProducts.length > 0 ? (
-          sortedProducts.map((product) => (
-            <Card key={product.id} className="overflow-hidden" hoverable
-            onClick={() => handleProductClick(product.id, product.productType)}>
+      <div>
+        {filteredProducts.length > 0 ? (
+          filteredProducts.map((product) => (
+            <ListViewCard 
+              key={product.id} 
+              hoverable
+              onClick={() => handleProductClick(product.id, product.productType)}
+            >
               <div className="flex flex-col sm:flex-row">
                 <div className="relative w-full sm:w-64 h-64 flex-shrink-0">
                   <img
@@ -311,32 +290,32 @@ const StaffProductScreen: React.FC = () => {
                   <div>
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="text-xl font-medium">{product.name}</h3>
-                        <div className="text-sm text-gray-500 mt-1">
+                        <ProductName>{product.name}</ProductName>
+                        <ProductCategory>
                           {product.categoryName}
-                        </div>
+                        </ProductCategory>
                       </div>
                       <Tag color={product.status === "ACTIVE" ? "green" : "red"}>
                         {product.status === "ACTIVE" ? "Đang bán" : "Ngừng bán"}
                       </Tag>
                     </div>
-                    <div className="text-xl font-bold text-red-600 mt-2">
+                    <ProductPrice>
                       {formatCurrency(product.basePrice)}
-                    </div>
+                    </ProductPrice>
                     {product.productType === "COMBO" && renderComboDetails(product)}
-                    <div className="text-sm text-gray-500 mt-2 line-clamp-3">
+                    <ProductDescription>
                       {product.description}
-                    </div>
+                    </ProductDescription>
                   </div>
                   <div className="text-xs text-gray-400 mt-2">
                     Mã sản phẩm: {product.productCode}
                   </div>
                 </div>
               </div>
-            </Card>
+            </ListViewCard>
           ))
         ) : (
-          <Empty description="Không tìm thấy sản phẩm nào" />
+          <StyledEmpty description="Không tìm thấy sản phẩm nào" />
         )}
       </div>
     );
@@ -350,6 +329,12 @@ const StaffProductScreen: React.FC = () => {
     </Menu>
   );
 
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+    setCurrentPage(1);
+    setFilterCategory("all");
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -360,7 +345,7 @@ const StaffProductScreen: React.FC = () => {
                 <ShoppingOutlined />
               </IconContainer>
               <TitleContainer>
-                <h1>Milk Tea Shop</h1>
+              <h1>Milk Tea Shop</h1>
                 <p>
                   <span>Danh mục sản phẩm</span>
                 </p>
@@ -379,28 +364,19 @@ const StaffProductScreen: React.FC = () => {
           </HeaderContent>
         </StyledHeader>
 
+        <StyledTabs activeKey={activeTab} onChange={handleTabChange}>
+          <TabPane tab="Đồ uống" key="drinks" />
+          <TabPane tab="Topping" key="toppings" />
+          <TabPane tab="Combo" key="combos" />
+        </StyledTabs>
+
         <FilterSection>
           <FilterContent className="mb-6">
             <FilterControls>
-            <Select
-                placeholder="Danh mục"
-                onChange={handleCategoryFilter}
-                className="w-40"
-                defaultValue="all"
-                suffixIcon={<FilterOutlined />}
-                loading={categories.length === 0}
-              >
-                <Option value="all">Tất cả danh mục</Option>
-                {categories.map((category) => (
-                  <Option key={category.id} value={category.name}>
-                    {category.name}
-                  </Option>
-                ))}
-              </Select>
 
               <Dropdown overlay={sortMenu}>
                 <Button>
-                Sắp xếp theo:{" "}
+                  Sắp xếp theo:{" "}
                   {sortBy === "name"
                     ? "Tên A-Z"
                     : sortBy === "price-asc"
@@ -436,13 +412,13 @@ const StaffProductScreen: React.FC = () => {
             </div>
           ) : (
             <>
-              <div className="mb-6">
+              <ProductContainer>
                 {viewMode === "grid" ? renderGridView() : renderListView()}
-              </div>
+              </ProductContainer>
 
-              <div className="flex justify-between items-center flex-wrap">
-                <div className="text-gray-500 mb-4 sm:mb-0">
-                  Hiển thị {sortedProducts.length} trên tổng số{" "}
+              <PaginationContainer>
+                <div className="pagination-info">
+                  Hiển thị {filteredProducts.length} trên tổng số{" "}
                   {totalElements} sản phẩm
                 </div>
                 <Pagination
@@ -457,7 +433,7 @@ const StaffProductScreen: React.FC = () => {
                   }}
                   pageSizeOptions={["8", "16", "24", "32"]}
                 />
-              </div>
+              </PaginationContainer>
             </>
           )}
         </FilterSection>
