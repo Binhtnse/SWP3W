@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
-import { Table, message, Modal, Button, Form, Input, Select } from 'antd';
+import { Table, message, Modal, Button, Form, Input, Select, Row, Col } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import ManagerLayout from '../components/ManagerLayout';
@@ -32,23 +32,25 @@ const ManagerProductList: React.FC = () => {
   const [form] = Form.useForm();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [filter, setFilter] = useState<{ status?: string; categoryId?: number; productType?: string }>({});
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>(''); 
   const [isDetailModalVisible, setIsDetailModalVisible] = useState<boolean>(false);
+  const [pageSize, setPageSize] = useState<number>(10);
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
-  }, []);
+  }, [pageSize]);
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(
-        'https://beautiful-unity-production.up.railway.app/api/products',
-        {
-          params: { productType: 'SINGLE' },
-        }
-      );
+      const response = await axios.get('https://beautiful-unity-production.up.railway.app/api/products/filter', {
+        params: {
+          productType: 'SINGLE',
+          productUsage: 'MAIN',
+          limit: pageSize,
+        },
+      });
       setData(response.data.data);
     } catch (error) {
       message.error('Không thể tải danh sách sản phẩm');
@@ -150,6 +152,10 @@ const ManagerProductList: React.FC = () => {
     form.resetFields();
   };
 
+  const handlePageSizeChange = (value: number) => {
+    setPageSize(value);
+  };
+
   const filteredData = data.filter((item) => {
     const matchName = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = !filter.status || item.status === filter.status;
@@ -224,7 +230,7 @@ const ManagerProductList: React.FC = () => {
           <Select
             placeholder="Lọc theo trạng thái"
             allowClear
-            onChange={(value) => setFilter((prev) => ({ ...prev, status: value }))}
+            onChange={(value) => setFilter((prev) => ({ ...prev, status: value }))} 
             value={filter.status}
             style={{ width: 200 }}
           >
@@ -232,20 +238,15 @@ const ManagerProductList: React.FC = () => {
             <Select.Option value="INACTIVE">Ngừng hoạt động</Select.Option>
           </Select>
           <Select
-            placeholder="Lọc theo danh mục"
-            allowClear
-            onChange={(value) => setFilter((prev) => ({ ...prev, categoryId: value }))}
-            value={filter.categoryId}
-            style={{ width: 200 }}
+            value={pageSize}
+            onChange={handlePageSizeChange}
+            style={{ width: 150 }}
           >
-            {categories.map((cat) => (
-              <Select.Option key={cat.id} value={cat.id}>
-                {cat.name}
-              </Select.Option>
-            ))}
+            <Select.Option value={10}>10 sản phẩm</Select.Option>
+            <Select.Option value={20}>20 sản phẩm</Select.Option>
+            <Select.Option value={50}>50 sản phẩm</Select.Option>
+            <Select.Option value={100}>100 sản phẩm</Select.Option>
           </Select>
-        
-
           <Button
             icon={<ReloadOutlined />}
             onClick={() => {
@@ -265,94 +266,78 @@ const ManagerProductList: React.FC = () => {
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 10 }}
+          pagination={{ pageSize: pageSize }}
         />
       </div>
 
-      <Modal
-        title={editingProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm'}
-        visible={isModalVisible}
-        onOk={handleOk}
-        onCancel={handleCancel}
-      >
-        <Form form={form} layout="vertical" name="productForm">
-          <Form.Item
-            name="name"
-            label="Tên sản phẩm"
-            rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm!' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="productCode"
-            label="Mã sản phẩm"
-            rules={[{ required: true, message: 'Vui lòng nhập mã sản phẩm!' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="basePrice"
-            label="Giá"
-            rules={[{ required: true, message: 'Vui lòng nhập giá sản phẩm!' }]}
-          >
-            <Input type="number" />
-          </Form.Item>
-          <Form.Item
-            name="categoryId"
-            label="Danh mục"
-            rules={[{ required: true, message: 'Vui lòng chọn danh mục!' }]}
-          >
-            <Select placeholder="Chọn danh mục">
-              {categories.map((category) => (
-                <Select.Option key={category.id} value={category.id}>
-                  {category.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item name="description" label="Mô tả">
-            <Input.TextArea />
-          </Form.Item>
-          <Form.Item name="imageUrl" label="Hình ảnh">
-            <Input placeholder="Nhập URL hình ảnh" />
-          </Form.Item>
-          <Form.Item name="productType" label="Loại sản phẩm" rules={[{ required: true }]}>
-            <Select>
-              <Select.Option value="SINGLE">SINGLE</Select.Option>
-              <Select.Option value="COMBO">COMBO</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="productUsage" label="Mục đích sử dụng" rules={[{ required: true }]}>
-            <Select>
-              <Select.Option value="MAIN">MAIN</Select.Option>
-              <Select.Option value="EXTRA">EXTRA</Select.Option>
-            </Select>
-          </Form.Item>
-        </Form>
-      </Modal>
-
+      {/* Modal Chi tiết sản phẩm */}
       <Modal
         title="Chi tiết sản phẩm"
         visible={isDetailModalVisible}
         footer={null}
         onCancel={closeDetailModal}
+        width={800}
       >
         {selectedProduct && (
-          <div>
-            <img
-              src={selectedProduct.imageUrl}
-              alt="Product"
-              style={{ width: '100%', marginBottom: '16px' }}
-            />
-            <p><strong>Tên sản phẩm:</strong> {selectedProduct.name}</p>
-            <p><strong>Mã sản phẩm:</strong> {selectedProduct.productCode}</p>
-            <p><strong>Giá:</strong> {selectedProduct.basePrice} VND</p>
-            <p><strong>Danh mục:</strong> {selectedProduct.categoryName}</p>
-            <p><strong>Loại sản phẩm:</strong> {selectedProduct.productType}</p>
-            <p><strong>Mục đích sử dụng:</strong> {selectedProduct.productUsage}</p>
-            <p><strong>Trạng thái:</strong> {selectedProduct.status}</p>
-            <p><strong>Mô tả:</strong> {selectedProduct.description}</p>
-            <p><strong>Ngày tạo:</strong> {selectedProduct.createAt}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <img
+                src={selectedProduct.imageUrl}
+                alt="Product"
+                style={{
+                  maxWidth: '100%',
+                  height: 'auto',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                }}
+              />
+            </div>
+
+            {/* Sử dụng Row và Col để chia layout thành 2-3 cột */}
+            <Row gutter={[16, 16]}>
+              <Col span={8}>
+                <p style={{ fontWeight: 'bold' }}>Tên sản phẩm:</p>
+                <p>{selectedProduct.name}</p>
+              </Col>
+              <Col span={8}>
+                <p style={{ fontWeight: 'bold' }}>Mã sản phẩm:</p>
+                <p>{selectedProduct.productCode}</p>
+              </Col>
+              <Col span={8}>
+                <p style={{ fontWeight: 'bold' }}>Giá:</p>
+                <p>{selectedProduct.basePrice} VND</p>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 16]}>
+              <Col span={8}>
+                <p style={{ fontWeight: 'bold' }}>Danh mục:</p>
+                <p>{selectedProduct.categoryName}</p>
+              </Col>
+              <Col span={8}>
+                <p style={{ fontWeight: 'bold' }}>Loại sản phẩm:</p>
+                <p>{selectedProduct.productType}</p>
+              </Col>
+              <Col span={8}>
+                <p style={{ fontWeight: 'bold' }}>Mục đích sử dụng:</p>
+                <p>{selectedProduct.productUsage}</p>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 16]}>
+              <Col span={8}>
+                <p style={{ fontWeight: 'bold' }}>Trạng thái:</p>
+                <p>{selectedProduct.status}</p>
+              </Col>
+              <Col span={8}>
+                <p style={{ fontWeight: 'bold' }}>Mô tả:</p>
+                <p>{selectedProduct.description}</p>
+              </Col>
+              <Col span={8}>
+                <p style={{ fontWeight: 'bold' }}>Ngày tạo:</p>
+                <p>{selectedProduct.createAt}</p>
+              </Col>
+            </Row>
           </div>
         )}
       </Modal>
