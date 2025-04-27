@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import {
@@ -17,6 +16,7 @@ import {
 import { ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import ManagerLayout from '../components/ManagerLayout';
+import { useNavigate } from 'react-router-dom';
 
 const { Option } = Select;
 
@@ -71,24 +71,53 @@ const ManagerComboList: React.FC = () => {
   const [addForm] = Form.useForm();
   const [productList, setProductList] = useState<Product[]>([]);
   const [comboItems, setComboItems] = useState<ComboItem[]>([]);
+  const navigate = useNavigate();
+
+  const getAuthHeader = () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      message.error('Phiên đăng nhập hết hạn, vui lòng đăng nhập lại');
+      navigate('/login');
+      return null;
+    }
+    return { Authorization: `Bearer ${token}` };
+  };
 
   useEffect(() => {
+    // Check if user is authenticated and has manager role
+    const token = localStorage.getItem('accessToken');
+    const role = localStorage.getItem('userRole');
+    
+    if (!token || role !== 'MANAGER') {
+      message.error('Bạn không có quyền truy cập trang này');
+      navigate('/');
+      return;
+    }
+    
     fetchCombos();
     fetchCategories();
   }, []);
 
+
   const fetchCombos = async () => {
     setLoading(true);
     try {
+      const headers = getAuthHeader();
+      if (!headers) return;
+      
       const response = await axios.get(
         'https://beautiful-unity-production.up.railway.app/api/products',
         {
           params: { productType: 'COMBO' },
+          headers
         }
       );
       setData(response.data.data);
     } catch (error) {
       message.error('Không thể tải danh sách combo');
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        navigate('/');
+      }
     } finally {
       setLoading(false);
     }
@@ -96,8 +125,12 @@ const ManagerComboList: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
+      const headers = getAuthHeader();
+      if (!headers) return;
+      
       const res = await axios.get(
-        'https://beautiful-unity-production.up.railway.app/api/category'
+        'https://beautiful-unity-production.up.railway.app/api/category',
+        { headers }
       );
       setCategories(res.data.data);
       const defaultCategory = res.data.data.find((cat: Category) => cat.name === 'Đồ uống');
@@ -106,17 +139,30 @@ const ManagerComboList: React.FC = () => {
       }
     } catch (error) {
       message.error('Không thể tải danh mục');
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        navigate('/');
+      }
     }
   };
 
   const fetchSingleProducts = async () => {
     try {
-      const res = await axios.get('https://beautiful-unity-production.up.railway.app/api/products', {
-        params: { productType: 'SINGLE' }
-      });
+      const headers = getAuthHeader();
+      if (!headers) return;
+      
+      const res = await axios.get(
+        'https://beautiful-unity-production.up.railway.app/api/products', 
+        {
+          params: { productType: 'SINGLE' },
+          headers
+        }
+      );
       setProductList(res.data.data);
-    } catch {
+    } catch (error) {
       message.error('Không thể tải danh sách sản phẩm');
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        navigate('/');
+      }
     }
   };
 
@@ -124,8 +170,12 @@ const ManagerComboList: React.FC = () => {
     setEditingCombo(combo);
     setIsDetailVisible(true);
     try {
+      const headers = getAuthHeader();
+      if (!headers) return;
+      
       const res = await axios.get(
-        `https://beautiful-unity-production.up.railway.app/api/products/${combo.id}/combo`
+        `https://beautiful-unity-production.up.railway.app/api/products/${combo.id}/combo`,
+        { headers }
       );
       const items = res.data.itemsResponse || [];
       if (items.length === 0) {
@@ -135,7 +185,8 @@ const ManagerComboList: React.FC = () => {
       const formattedItems: ComboItem[] = [];
       for (const item of items) {
         const productRes = await axios.get(
-          `https://beautiful-unity-production.up.railway.app/api/products/${item.productId}`
+          `https://beautiful-unity-production.up.railway.app/api/products/${item.productId}`,
+          { headers }
         );
         const product = productRes.data;
 
@@ -157,6 +208,9 @@ const ManagerComboList: React.FC = () => {
       setComboItems(formattedItems);
     } catch (error) {
       message.error('Không thể tải sản phẩm trong combo');
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        navigate('/');
+      }
       setComboItems([]);
     }
   };
@@ -168,16 +222,23 @@ const ManagerComboList: React.FC = () => {
       return;
     }
     try {
-      await axios.post('https://beautiful-unity-production.up.railway.app/api/products', {
-        name: values.name,
-        productCode: values.productCode,
-        basePrice: values.basePrice,
-        description: values.description,
-        imageUrl: values.imageUrl,
-        categoryId: defaultCategory.id,
-        productType: 'COMBO',
-        productUsage: 'MAIN',
-      });
+      const headers = getAuthHeader();
+      if (!headers) return;
+      
+      await axios.post(
+        'https://beautiful-unity-production.up.railway.app/api/products', 
+        {
+          name: values.name,
+          productCode: values.productCode,
+          basePrice: values.basePrice,
+          description: values.description,
+          imageUrl: values.imageUrl,
+          categoryId: defaultCategory.id,
+          productType: 'COMBO',
+          productUsage: 'MAIN',
+        },
+        { headers }
+      );
 
       message.success('Tạo combo thành công!');
       setIsCreateModalVisible(false);
@@ -185,6 +246,9 @@ const ManagerComboList: React.FC = () => {
       fetchCombos();
     } catch (error) {
       message.error('Tạo combo thất bại!');
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        navigate('/');
+      }
     }
   };
 
@@ -198,6 +262,9 @@ const ManagerComboList: React.FC = () => {
     }
 
     try {
+      const headers = getAuthHeader();
+      if (!headers) return;
+      
       await axios.put(
         `https://beautiful-unity-production.up.railway.app/api/products/${editingCombo.id}/combo`,
         {
@@ -206,14 +273,18 @@ const ManagerComboList: React.FC = () => {
             quantity: item.quantity,
             size: item.size,
           })),
-        }
+        },
+        { headers }
       );
       message.success('Thêm sản phẩm vào combo thành công!');
       setIsAddProductModalVisible(false);
       addForm.resetFields();
       showComboDetails(editingCombo);
-    } catch {
+    } catch (error) {
       message.error('Thêm sản phẩm thất bại');
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        navigate('/');
+      }
     }
   };
 
