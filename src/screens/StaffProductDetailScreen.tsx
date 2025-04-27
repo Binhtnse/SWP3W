@@ -1,77 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Card,
-  Button,
-  Image,
-  Typography,
-  Divider,
-  Checkbox,
-  Radio,
-  InputNumber,
-  Spin,
-  message,
-  Tag,
-  Modal,
-  RadioChangeEvent,
-  Badge,
-  Space,
-} from "antd";
-import {
-  ArrowLeftOutlined,
-  ShoppingCartOutlined,
-  PlusOutlined,
-  MinusOutlined,
-  StarFilled,
-  InfoCircleOutlined,
-  CheckCircleFilled,
-  SettingOutlined,
-} from "@ant-design/icons";
+import {Card,Button,Image,Typography,Divider,Checkbox,Radio,InputNumber,Spin,message,Tag,Modal,RadioChangeEvent,Badge,Space,} from "antd";
+import {ArrowLeftOutlined,ShoppingCartOutlined,PlusOutlined,MinusOutlined,StarFilled,InfoCircleOutlined,CheckCircleFilled,SettingOutlined,} from "@ant-design/icons";
 import styled from "styled-components";
 import axios from "axios";
-import {
-  PageContainer,
-  BackButton,
-  ProductCard,
-  ProductContainer,
-  ImageSection,
-  ImageWrapper,
-  DetailsSection,
-  HeaderContainer,
-  ProductInfo,
-  TagsContainer,
-  DescriptionBox,
-  PriceText,
-  ComboBox,
-  ComboList,
-  OptionSection,
-  OptionGrid,
-  ToppingGrid,
-  ToppingContent,
-  QuantityContainer,
-  OrderSummary,
-  SummaryContent,
-  TotalPrice,
-  ActionButtons,
-  RecommendationsSection,
-  RecommendationsGrid,
-  LoadingContainer,
-  LoadingContent,
-  ErrorContainer,
-  ErrorContent,
-  OptionsButton,
-  OptionsSummary,
-  OptionTag,
-  ComboHeader,
-  ComboTitle,
-  ComboIcon,
-  ComboItemCard,
-  ComboItemInfo,
-  ComboItemNumber,
-  ComboItemDetails,
-  ComboItemName,
-  ComboItemMeta,
-} from "../components/styled components/StaffProductDetailStyles";
+import {PageContainer,BackButton,ProductCard,ProductContainer,ImageSection,ImageWrapper,DetailsSection,HeaderContainer,ProductInfo,TagsContainer,DescriptionBox,PriceText,ComboBox,ComboList,OptionSection,
+OptionGrid,ToppingGrid,ToppingContent,QuantityContainer,OrderSummary,SummaryContent,TotalPrice,
+ActionButtons,RecommendationsSection,RecommendationsGrid,LoadingContainer,LoadingContent,ErrorContainer,ErrorContent,OptionsButton,OptionsSummary,OptionTag,ComboHeader,ComboTitle,ComboIcon,
+ComboItemCard,ComboItemInfo,ComboItemNumber,ComboItemDetails,ComboItemName,ComboItemMeta,} from "../components/styled components/StaffProductDetailStyles";
 
 const { Title, Text, Paragraph } = Typography;
 const { Group: RadioGroup } = Radio;
@@ -150,18 +86,6 @@ interface ComboItemCustomization {
   note: string[];
 }
 
-interface OrderItem {
-  productId: number;
-  quantity: number;
-  size: string;
-  ice: string;
-  toppings: number[];
-  note: string[];
-  totalPrice: number;
-  isCombo: boolean;
-  comboItems?: ComboItemCustomization[];
-}
-
 const StaffProductDetailScreen: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
@@ -181,6 +105,16 @@ const StaffProductDetailScreen: React.FC = () => {
   const [currentComboItemIndex, setCurrentComboItemIndex] =
     useState<number>(-1);
 
+    const getAuthAxios = () => {
+      const accessToken = localStorage.getItem("accessToken");
+      return axios.create({
+        baseURL: "https://beautiful-unity-production.up.railway.app",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+    };
+
   const sizeAdjustments = {
     S: -5000,
     M: 0,
@@ -192,15 +126,25 @@ const StaffProductDetailScreen: React.FC = () => {
     const fetchProductDetails = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(
-          `https://beautiful-unity-production.up.railway.app/api/products/${productId}`
+        const authAxios = getAuthAxios();
+
+        // Check if user is authenticated
+        const accessToken = localStorage.getItem("accessToken");
+        if (!accessToken) {
+          message.error("Bạn cần đăng nhập để xem thông tin sản phẩm");
+          navigate("/");
+          return;
+        }
+
+        const response = await authAxios.get(
+          `/api/products/${productId}`
         );
 
         const productData = response.data;
 
         if (productData.productType === "COMBO") {
-          const comboResponse = await axios.get(
-            `https://beautiful-unity-production.up.railway.app/api/products/${productId}/combo`
+          const comboResponse = await authAxios.get(
+            `/api/products/${productId}/combo`
           );
           const comboData = comboResponse.data;
           // Update to use itemsResponse instead of comboItems
@@ -221,8 +165,8 @@ const StaffProductDetailScreen: React.FC = () => {
 
         setProduct(transformedProduct);
 
-        const toppingsResponse = await axios.get<ToppingApiResponse>(
-          "https://beautiful-unity-production.up.railway.app/api/products/filter?page=0&size=20&categoryName=Topping"
+        const toppingsResponse = await authAxios.get<ToppingApiResponse>(
+          "/api/products/filter?page=0&size=20&categoryName=Topping"
         );
 
         const toppingsData = toppingsResponse.data.data.map((item) => ({
@@ -236,7 +180,18 @@ const StaffProductDetailScreen: React.FC = () => {
         setLoading(false);
       } catch (error) {
         console.error("Error fetching product details:", error);
-        message.error("Không thể tải thông tin sản phẩm");
+        
+        // Check if error is due to authentication
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          message.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("userEmail");
+          localStorage.removeItem("userRole");
+          navigate("/");
+        } else {
+          message.error("Không thể tải thông tin sản phẩm");
+        }
+        
         setLoading(false);
       }
     };
@@ -352,29 +307,96 @@ const StaffProductDetailScreen: React.FC = () => {
     }
   };
 
-  const handleAddToOrder = () => {
+  const handleAddToOrder = async () => {
     if (!product) return;
-
-    const orderItem: OrderItem = {
-      productId: product.id,
-      quantity,
-      size: selectedSize,
-      ice: selectedIce,
-      toppings: selectedToppings,
-      note: selectedNotes,
-      totalPrice: calculateTotalPrice(),
-      isCombo: product.isCombo,
-    };
-
-    if (product.isCombo) {
-      orderItem.comboItems = comboItemCustomizations;
+  
+    try {
+      const authAxios = getAuthAxios();
+      
+      // Prepare the request body based on whether it's a combo or regular product
+      let requestBody;
+      
+      if (product.isCombo) {
+        // For combo products - child items are the products in the combo
+        const childItems = comboItemCustomizations.map((customization, index) => {
+          const comboItem = product.comboItems?.[index];
+          return {
+            productId: customization.productId,
+            quantity: comboItem?.quantity || 1,
+            size: customization.size,
+            note: customization.note.join(', '),
+            isCombo: false,
+            childItems: [] // Combo items don't have their own child items
+          };
+        });
+        
+        requestBody = {
+          parentItems: [
+            {
+              productId: product.id,
+              quantity: quantity,
+              size: selectedSize,
+              note: selectedNotes.join(', '),
+              childItems: childItems,
+              isCombo: true
+            }
+          ]
+        };
+      } else {
+        // For regular products - child items are the toppings
+        const toppingItems = selectedToppings.map(toppingId => {
+          const topping = toppings.find(t => t.id === toppingId);
+          console.log(topping)
+          return {
+            productId: toppingId,
+            quantity: 1,
+            size: null,
+            note: "",
+            isCombo: false,
+            childItems: []
+          };
+        });
+        
+        requestBody = {
+          parentItems: [
+            {
+              productId: product.id,
+              quantity: quantity,
+              size: selectedSize,
+              note: selectedNotes.join(', '),
+              childItems: toppingItems,
+              isCombo: false
+            }
+          ]
+        };
+      }
+      
+      // Make the API call
+      const response = await authAxios.post('/api/orders', requestBody);
+      
+      console.log("Order response:", response.data);
+      message.success({
+        content: "Đã thêm vào đơn hàng thành công!",
+        icon: <CheckCircleFilled style={{ color: "#52c41a" }} />,
+      });
+      
+    } catch (error) {
+      console.error("Error adding to order:", error);
+      
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          message.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("userEmail");
+          localStorage.removeItem("userRole");
+          navigate("/");
+        } else {
+          message.error(`Không thể thêm vào đơn hàng: ${error.response?.data?.message || 'Đã xảy ra lỗi'}`);
+        }
+      } else {
+        message.error("Không thể thêm vào đơn hàng. Vui lòng thử lại sau.");
+      }
     }
-
-    console.log("Order item:", orderItem);
-    message.success({
-      content: "Đã thêm vào đơn hàng thành công!",
-      icon: <CheckCircleFilled style={{ color: "#52c41a" }} />,
-    });
   };
 
   const formatCurrency = (amount: number) => {

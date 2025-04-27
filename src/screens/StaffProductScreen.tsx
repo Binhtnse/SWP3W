@@ -20,6 +20,7 @@ import { StyledHeader, HeaderContent, LogoSection, IconContainer, TitleContainer
   ComboDetails,
   ListViewCard,
   PaginationContainer } from "../components/styled components/StaffProductStyles";
+  import { useAuthState } from "../hooks/useAuthState";
 
 interface Category {
   id: number;
@@ -87,22 +88,49 @@ const StaffProductScreen: React.FC = () => {
   console.log(categories)
   const [activeTab, setActiveTab] = useState<string>("drinks");
   const navigate = useNavigate();
+  const { isLoggedIn, role } = useAuthState();
 
   useEffect(() => {
+    // Check if user is logged in and has the correct role
+    if (!isLoggedIn || role !== "STAFF") {
+      message.error("Bạn không có quyền truy cập trang này");
+      navigate("/login");
+      return;
+    }
+    
     fetchCategories();
     fetchProducts();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize, sortParam, activeTab]);
+  }, [currentPage, pageSize, sortParam, activeTab, isLoggedIn, role, navigate]);
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("accessToken");
+    return {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    };
+  };
 
   const fetchCategories = async () => {
     try {
       const response = await axios.get<CategoryApiResponse>(
-        "https://beautiful-unity-production.up.railway.app/api/category?page=0&size=20"
+        "https://beautiful-unity-production.up.railway.app/api/category?page=0&size=20",
+        getAuthHeaders()
       );
       setCategories(response.data.data);
     } catch (error) {
       console.error("Error fetching categories:", error);
       message.error("Không thể tải danh mục sản phẩm");
+      
+      // Handle unauthorized access
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("userEmail");
+        navigate("/");
+      }
     }
   };
 
@@ -110,7 +138,8 @@ const StaffProductScreen: React.FC = () => {
     try {
       setLoading(true);
       const response = await axios.get<ApiResponse>(
-        `https://beautiful-unity-production.up.railway.app/api/products?page=${currentPage - 1}&size=${pageSize}&sort=${sortParam}`
+        `https://beautiful-unity-production.up.railway.app/api/products?page=${currentPage - 1}&size=${pageSize}&sort=${sortParam}`,
+        getAuthHeaders()
       );
       
       setProducts(response.data.data);
@@ -128,6 +157,15 @@ const StaffProductScreen: React.FC = () => {
       console.error("Error fetching products:", error);
       message.error("Không thể tải danh sách sản phẩm");
       setLoading(false);
+      
+      // Handle unauthorized access
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("userEmail");
+        navigate("/");
+      }
     }
   };
 
