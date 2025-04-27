@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useState } from 'react';
 import { Table, message, Modal, Button, Form, Input, Select, Descriptions } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
@@ -24,17 +24,17 @@ interface Product {
   categoryName: string;
 }
 
-const ManagerProductList: React.FC = () => {
+const ManagerExtraScreen: React.FC = () => {
   const [data, setData] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState<boolean>(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [form] = Form.useForm();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [filter, setFilter] = useState<{ status?: string; categoryId?: number; productType?: string }>({});
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [isDetailModalVisible, setIsDetailModalVisible] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>(''); 
   const [pageSize, setPageSize] = useState<number>(10);
 
   useEffect(() => {
@@ -48,7 +48,7 @@ const ManagerProductList: React.FC = () => {
       const response = await axios.get('https://beautiful-unity-production.up.railway.app/api/products/filter', {
         params: {
           productType: 'SINGLE',
-          productUsage: 'MAIN',
+          productUsage: 'EXTRA',
           limit: pageSize,
         },
       });
@@ -77,13 +77,12 @@ const ManagerProductList: React.FC = () => {
       imageUrl: values.imageUrl,
       description: values.description,
       productType: 'SINGLE',
-      productUsage: 'MAIN',
+      productUsage: 'EXTRA',
       categoryId: values.categoryId,
-      status: values.status,
     };
 
     try {
-      await axios.post('https://beautiful-unity-production.up.railway.app/api/products', productData );
+      await axios.post('https://beautiful-unity-production.up.railway.app/api/products', productData);
       message.success('Sản phẩm đã được tạo thành công');
       fetchProducts();
     } catch (error) {
@@ -91,14 +90,9 @@ const ManagerProductList: React.FC = () => {
     }
   };
 
-  const updateProduct = async (values: any) => {
+  const updateProduct = async (product: Product) => {
     try {
-      if (!editingProduct) return;
-      const updatedProduct = {
-        ...editingProduct,
-        ...values,
-      };
-      await axios.put(`https://beautiful-unity-production.up.railway.app/api/products/${editingProduct.id}`, updatedProduct);
+      await axios.put(`https://beautiful-unity-production.up.railway.app/api/products/${product.id}`, product);
       message.success('Sản phẩm đã được cập nhật');
       fetchProducts();
     } catch (error) {
@@ -123,8 +117,8 @@ const ManagerProductList: React.FC = () => {
   };
 
   const showEditProductModal = (product: Product) => {
-    setEditingProduct(product);
     form.setFieldsValue(product);
+    setEditingProduct(product);
     setIsModalVisible(true);
   };
 
@@ -139,11 +133,15 @@ const ManagerProductList: React.FC = () => {
   };
 
   const handleOk = () => {
-    form
-      .validateFields()
+    form.validateFields()
       .then((values) => {
         if (editingProduct) {
-          updateProduct(values);
+          const updatedProduct = {
+            ...editingProduct,
+            ...values,
+            imageUrl: values.imageUrl || editingProduct.imageUrl,
+          };
+          updateProduct(updatedProduct);
         } else {
           createProduct(values);
         }
@@ -213,8 +211,12 @@ const ManagerProductList: React.FC = () => {
       key: 'action',
       render: (_: any, record: Product) => (
         <>
-          <Button type="link" onClick={() => showEditProductModal(record)}>Chỉnh sửa</Button>
-          <Button type="link" danger onClick={() => deleteProduct(record.id)}>Xóa</Button>
+          <Button type="link" onClick={() => showEditProductModal(record)}>
+            Chỉnh sửa
+          </Button>
+          <Button type="link" danger onClick={() => deleteProduct(record.id)}>
+            Xóa
+          </Button>
         </>
       ),
     },
@@ -223,30 +225,61 @@ const ManagerProductList: React.FC = () => {
   return (
     <ManagerLayout>
       <div>
-        <h1>Quản lý sản phẩm</h1>
+        <h1>Quản lý sản phẩm EXTRA</h1>
         <div style={{ marginBottom: 20, display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <Input placeholder="Tìm theo tên sản phẩm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ width: 250 }} />
-          <Select placeholder="Lọc theo trạng thái" allowClear onChange={(value) => setFilter((prev) => ({ ...prev, status: value }))} value={filter.status} style={{ width: 200 }}>
+          <Input
+            placeholder="Tìm theo tên sản phẩm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: 250 }}
+          />
+          <Select
+            placeholder="Lọc theo trạng thái"
+            allowClear
+            onChange={(value) => setFilter((prev) => ({ ...prev, status: value }))}
+            value={filter.status}
+            style={{ width: 200 }}
+          >
             <Select.Option value="ACTIVE">Đang hoạt động</Select.Option>
             <Select.Option value="INACTIVE">Ngừng hoạt động</Select.Option>
           </Select>
-          <Select value={pageSize} onChange={handlePageSizeChange} style={{ width: 150 }}>
+          <Select
+            value={pageSize}
+            onChange={handlePageSizeChange}
+            style={{ width: 150 }}
+          >
             <Select.Option value={10}>10 sản phẩm</Select.Option>
             <Select.Option value={20}>20 sản phẩm</Select.Option>
             <Select.Option value={50}>50 sản phẩm</Select.Option>
             <Select.Option value={100}>100 sản phẩm</Select.Option>
           </Select>
-          <Button icon={<ReloadOutlined />} onClick={() => { setFilter({}); setSearchTerm(''); }}>Đặt lại bộ lọc</Button>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => {
+              setFilter({});
+              setSearchTerm('');
+            }}
+          >
+            Đặt lại bộ lọc
+          </Button>
         </div>
 
-        <Button type="primary" onClick={showAddProductModal} style={{ marginBottom: 20 }}>Thêm sản phẩm</Button>
-        <Table dataSource={filteredData} columns={columns} rowKey="id" loading={loading} pagination={{ pageSize: pageSize }} />
+        <Button type="primary" onClick={showAddProductModal} style={{ marginBottom: 20 }}>
+          Thêm sản phẩm
+        </Button>
+        <Table
+          dataSource={filteredData}
+          columns={columns}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: pageSize }}
+        />
       </div>
 
-      {/* Modal Thêm / Chỉnh sửa sản phẩm */}
+      {/* Modal Thêm/Sửa Sản phẩm */}
       <Modal
         title={editingProduct ? "Chỉnh sửa sản phẩm" : "Thêm sản phẩm"}
-        visible={isModalVisible}
+        open={isModalVisible}
         onOk={handleOk}
         onCancel={handleCancel}
         width={800}
@@ -254,47 +287,86 @@ const ManagerProductList: React.FC = () => {
         <Form
           form={form}
           layout="vertical"
-          initialValues={{ productType: 'SINGLE', productUsage: 'MAIN' }}
+          name="productForm"
+          initialValues={{
+            productType: 'SINGLE',
+            productUsage: 'EXTRA',
+          }}
         >
-          <Form.Item label="Tên sản phẩm" name="name" rules={[{ required: true, message: 'Nhập tên sản phẩm!' }]}> <Input /> </Form.Item>
-          <Form.Item label="Mã sản phẩm" name="productCode" rules={[{ required: true, message: 'Nhập mã sản phẩm!' }]}> <Input /> </Form.Item>
-          <Form.Item label="Giá" name="basePrice" rules={[{ required: true, message: 'Nhập giá!' }]}> <Input type="number" /> </Form.Item>
-          <Form.Item label="URL hình ảnh" name="imageUrl"> <Input /> </Form.Item>
-          <Form.Item label="Mô tả" name="description"> <Input.TextArea /> </Form.Item>
-          <Form.Item label="Danh mục" name="categoryId" rules={[{ required: true, message: 'Chọn danh mục!' }]}> <Select>{categories.map((c) => (<Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>))}</Select> </Form.Item>
-          <Form.Item label="Trạng thái" name="status" rules={[{ required: true, message: 'Chọn trạng thái!' }]}> <Select><Select.Option value="ACTIVE">Đang hoạt động</Select.Option><Select.Option value="INACTIVE">Ngừng hoạt động</Select.Option></Select> </Form.Item>
+          <Form.Item
+            label="Tên sản phẩm"
+            name="name"
+            rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm!' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="Mã sản phẩm"
+            name="productCode"
+            rules={[{ required: true, message: 'Vui lòng nhập mã sản phẩm!' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="Giá"
+            name="basePrice"
+            rules={[{ required: true, message: 'Vui lòng nhập giá sản phẩm!' }]}
+          >
+            <Input type="number" />
+          </Form.Item>
+          <Form.Item label="URL hình ảnh" name="imageUrl">
+            <Input placeholder="Nhập link hình ảnh..." />
+          </Form.Item>
+          <Form.Item label="Mô tả" name="description">
+            <Input.TextArea />
+          </Form.Item>
+          <Form.Item
+            label="Danh mục"
+            name="categoryId"
+            rules={[{ required: true, message: 'Vui lòng chọn danh mục!' }]}
+          >
+            <Select>
+              {categories.map((category) => (
+                <Select.Option key={category.id} value={category.id}>
+                  {category.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
         </Form>
       </Modal>
 
-      {/* Modal Chi tiết sản phẩm */}
+      {/* Modal Xem Chi tiết Sản phẩm */}
       <Modal
-        title="Chi tiết sản phẩm"
-        visible={isDetailModalVisible}
-        footer={null}
+        title="Chi tiết Sản phẩm"
+        open={isDetailModalVisible}
         onCancel={closeDetailModal}
+        footer={null}
         width={800}
       >
-        {selectedProduct && (
-          <div style={{ padding: 20 }}>
-            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <img src={selectedProduct.imageUrl} alt="Product" style={{ width: 300, height: 300, objectFit: 'cover', borderRadius: 8, boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }} />
-            </div>
-            <Descriptions bordered column={1} size="middle">
-              <Descriptions.Item label="Tên sản phẩm">{selectedProduct.name}</Descriptions.Item>
-              <Descriptions.Item label="Mã sản phẩm">{selectedProduct.productCode}</Descriptions.Item>
-              <Descriptions.Item label="Giá">{selectedProduct.basePrice} VND</Descriptions.Item>
-              <Descriptions.Item label="Danh mục">{selectedProduct.categoryName}</Descriptions.Item>
-              <Descriptions.Item label="Loại sản phẩm">{selectedProduct.productType}</Descriptions.Item>
-              <Descriptions.Item label="Mục đích sử dụng">{selectedProduct.productUsage}</Descriptions.Item>
-              <Descriptions.Item label="Trạng thái">{selectedProduct.status}</Descriptions.Item>
-              <Descriptions.Item label="Mô tả">{selectedProduct.description || 'Không có mô tả'}</Descriptions.Item>
-              <Descriptions.Item label="Ngày tạo">{selectedProduct.createAt}</Descriptions.Item>
-            </Descriptions>
-          </div>
+        {selectedProduct ? (
+          <Descriptions bordered column={1} size="default">
+            <Descriptions.Item label="Tên sản phẩm">{selectedProduct.name}</Descriptions.Item>
+            <Descriptions.Item label="Mã sản phẩm">{selectedProduct.productCode}</Descriptions.Item>
+            <Descriptions.Item label="Giá">{selectedProduct.basePrice} VND</Descriptions.Item>
+            <Descriptions.Item label="Mô tả">{selectedProduct.description || 'Không có mô tả'}</Descriptions.Item>
+            <Descriptions.Item label="Danh mục">{selectedProduct.categoryName}</Descriptions.Item>
+            <Descriptions.Item label="Loại sản phẩm">{selectedProduct.productType}</Descriptions.Item>
+            <Descriptions.Item label="Trạng thái">{selectedProduct.status}</Descriptions.Item>
+            <Descriptions.Item label="Hình ảnh">
+              <img
+                src={selectedProduct.imageUrl}
+                alt={selectedProduct.name}
+                style={{ width: '100%', height: 'auto', marginTop: '10px' }}
+              />
+            </Descriptions.Item>
+          </Descriptions>
+        ) : (
+          <p>Không tìm thấy sản phẩm.</p>
         )}
       </Modal>
     </ManagerLayout>
   );
 };
 
-export default ManagerProductList;
+export default ManagerExtraScreen;

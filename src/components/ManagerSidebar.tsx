@@ -25,7 +25,7 @@ const ManagerSidebar: React.FC = () => {
     {
       key: '/manager/listProduct',
       icon: <AppstoreAddOutlined />,
-      label: 'Quản Lý Sản Phẩm',
+      label: 'Quản Lý Trà sữa',
     },
     {
       key: '/manager/listCombo',
@@ -33,7 +33,7 @@ const ManagerSidebar: React.FC = () => {
       label: 'Quản Lý Combo',
     },
     {
-      key: '/manager/manageExtraProduct',
+      key: '/manager/listExtra',
       icon: <PlusCircleOutlined />,
       label: 'Quản Lý Extra Product',
     },

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
@@ -11,6 +12,7 @@ import {
   Form,
   Input,
   Select,
+  Tag,
 } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -98,6 +100,10 @@ const ManagerComboList: React.FC = () => {
         'https://beautiful-unity-production.up.railway.app/api/category'
       );
       setCategories(res.data.data);
+      const defaultCategory = res.data.data.find((cat: Category) => cat.name === 'Đồ uống');
+      if (defaultCategory) {
+        createForm.setFieldsValue({ categoryId: defaultCategory.id });
+      }
     } catch (error) {
       message.error('Không thể tải danh mục');
     }
@@ -121,20 +127,33 @@ const ManagerComboList: React.FC = () => {
       const res = await axios.get(
         `https://beautiful-unity-production.up.railway.app/api/products/${combo.id}/combo`
       );
-      const items = res.data.data.itemsResponse || [];
-      const formattedItems: ComboItem[] = items.map((item: any) => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        size: item.size,
-        product: {
-          id: item.productId,
-          name: item.productName,
-          imageUrl: '',
-          productCode: '',
-          basePrice: 0,
-          productType: '',
-        },
-      }));
+      const items = res.data.itemsResponse || [];
+      if (items.length === 0) {
+        message.warning('Không có sản phẩm trong combo');
+      }
+
+      const formattedItems: ComboItem[] = [];
+      for (const item of items) {
+        const productRes = await axios.get(
+          `https://beautiful-unity-production.up.railway.app/api/products/${item.productId}`
+        );
+        const product = productRes.data;
+
+        formattedItems.push({
+          productId: item.productId,
+          quantity: item.quantity,
+          size: item.size,
+          product: {
+            id: item.productId,
+            name: item.productName,
+            imageUrl: product.imageUrl || '',
+            productCode: '',
+            basePrice: 0,
+            productType: '',
+          },
+        });
+      }
+
       setComboItems(formattedItems);
     } catch (error) {
       message.error('Không thể tải sản phẩm trong combo');
@@ -143,6 +162,11 @@ const ManagerComboList: React.FC = () => {
   };
 
   const handleCreateCombo = async (values: any) => {
+    const defaultCategory = categories.find(cat => cat.name === 'Đồ uống');
+    if (!defaultCategory) {
+      message.error('Không tìm thấy danh mục "Đồ uống".');
+      return;
+    }
     try {
       await axios.post('https://beautiful-unity-production.up.railway.app/api/products', {
         name: values.name,
@@ -150,7 +174,7 @@ const ManagerComboList: React.FC = () => {
         basePrice: values.basePrice,
         description: values.description,
         imageUrl: values.imageUrl,
-        categoryId: values.categoryId,
+        categoryId: defaultCategory.id,
         productType: 'COMBO',
         productUsage: 'MAIN',
       });
@@ -166,17 +190,22 @@ const ManagerComboList: React.FC = () => {
 
   const handleAddProductToCombo = async (values: any) => {
     if (!editingCombo) return;
+    const comboItems = values.comboItems;
+
+    if (comboItems.length === 0) {
+      message.error('Vui lòng thêm ít nhất một sản phẩm');
+      return;
+    }
+
     try {
       await axios.put(
         `https://beautiful-unity-production.up.railway.app/api/products/${editingCombo.id}/combo`,
         {
-          comboItems: [
-            {
-              productId: values.productId,
-              quantity: values.quantity,
-              size: values.size,
-            },
-          ],
+          comboItems: comboItems.map((item: any) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            size: item.size,
+          })),
         }
       );
       message.success('Thêm sản phẩm vào combo thành công!');
@@ -186,6 +215,15 @@ const ManagerComboList: React.FC = () => {
     } catch {
       message.error('Thêm sản phẩm thất bại');
     }
+  };
+
+  const getNotes = (combo: Combo) => {
+    const isProductInCombo = combo.comboItems && combo.comboItems.length > 0;
+    return isProductInCombo ? (
+      <Tag color="green">Đã có sản phẩm</Tag>
+    ) : (
+      <Tag color="red">Chưa có sản phẩm</Tag>
+    );
   };
 
   const columns = [
@@ -217,22 +255,12 @@ const ManagerComboList: React.FC = () => {
       dataIndex: 'categoryName',
     },
     {
-      title: 'Loại sản phẩm',
-      dataIndex: 'productType',
-    },
-    {
       title: 'Trạng thái',
       dataIndex: 'status',
     },
     {
-      title: 'Sản phẩm trong combo',
-      render: (_: any, record: Combo) => (
-        <ul>
-          {(record.comboItems || []).map((item, index) => (
-            <li key={index}>{item.product?.name || 'Chưa có tên'} - SL: {item.quantity} - Size: {item.size}</li>
-          ))}
-        </ul>
-      ),
+      title: 'Ghi chú',
+      render: (_: any, record: Combo) => getNotes(record),
     },
   ];
 
@@ -289,7 +317,7 @@ const ManagerComboList: React.FC = () => {
                         cover={
                           <img
                             alt={item.product.name}
-                            src={item.product.imageUrl}
+                            src={item.product.imageUrl || 'default-image.jpg'}
                             style={{ height: 120, objectFit: 'cover' }}
                           />
                         }
@@ -325,7 +353,6 @@ const ManagerComboList: React.FC = () => {
           <Form.Item label="Giá Cơ Bản" name="basePrice" rules={[{ required: true }]}> <Input type="number" /> </Form.Item>
           <Form.Item label="Mô Tả" name="description"> <Input.TextArea /> </Form.Item>
           <Form.Item label="Link Hình Ảnh" name="imageUrl" rules={[{ required: true }]}> <Input placeholder="https://..." /> </Form.Item>
-          <Form.Item label="Danh mục" name="categoryId" rules={[{ required: true }]}> <Select placeholder="Chọn danh mục"> {categories.map((cat) => (<Option key={cat.id} value={cat.id}>{cat.name}</Option>))} </Select> </Form.Item>
         </Form>
       </Modal>
 
@@ -337,9 +364,87 @@ const ManagerComboList: React.FC = () => {
         okText="Thêm"
       >
         <Form form={addForm} layout="vertical" onFinish={handleAddProductToCombo}>
-          <Form.Item label="Sản phẩm" name="productId" rules={[{ required: true }]}> <Select placeholder="Chọn sản phẩm"> {productList.map((p) => (<Option key={p.id} value={p.id}>{p.name}</Option>))} </Select> </Form.Item>
-          <Form.Item label="Số lượng" name="quantity" rules={[{ required: true }]}> <Input type="number" min={1} /> </Form.Item>
-          <Form.Item label="Size" name="size" rules={[{ required: true }]}> <Select> <Option value="S">S</Option> <Option value="M">M</Option> <Option value="L">L</Option> </Select> </Form.Item>
+          <Form.List
+            name="comboItems"
+            initialValue={[]}
+            rules={[
+              {
+                validator: async (_, names) => {
+                  if (!names || names.length < 1) {
+                    return Promise.reject(new Error('Phải thêm ít nhất một sản phẩm'));
+                  }
+                },
+              },
+            ]}
+          >
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, fieldKey, ...restField }) => (
+                  <div key={key} style={{ display: 'flex', marginBottom: '16px' }}>
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'productId']}
+                      fieldKey={[fieldKey || 'defaultKey', 'productId']} 
+                      label="Sản phẩm"
+                      rules={[{ required: true, message: 'Vui lòng chọn sản phẩm' }]}
+                    >
+                      <Select placeholder="Chọn sản phẩm">
+                        {productList.map((p) => (
+                          <Option key={p.id} value={p.id}>{p.name}</Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'quantity']}
+                      fieldKey={[fieldKey || 'defaultKey', 'quantity']}
+                      label="Số lượng"
+                      rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}
+                    >
+                      <Input type="number" min={1} />
+                    </Form.Item>
+
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'size']}
+                      fieldKey={[fieldKey || 'defaultKey', 'size']}
+                      label="Size"
+                      rules={[{ required: true, message: 'Vui lòng chọn size' }]}
+                    >
+                      <Select>
+                        <Option value="S">S</Option>
+                        <Option value="M">M</Option>
+                        <Option value="L">L</Option>
+                      </Select>
+                    </Form.Item>
+
+                    <Button
+                      type="default"
+                      danger
+                      onClick={() => remove(name)}
+                      icon={<ReloadOutlined />}
+                      style={{ alignSelf: 'center' }}
+                    >
+                      Xoá
+                    </Button>
+                  </div>
+                ))}
+
+                <Form.Item>
+                  <Button type="dashed" onClick={() => add()} icon={<ReloadOutlined />}>
+                    Thêm sản phẩm
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              Thêm sản phẩm vào combo
+            </Button>
+          </Form.Item>
         </Form>
       </Modal>
     </ManagerLayout>
