@@ -5,8 +5,6 @@ import {
   Typography,
   Divider,
   Table,
-  Space,
-  Modal,
   message,
   Spin,
   Tag,
@@ -17,7 +15,6 @@ import {
   ArrowLeftOutlined,
   ShoppingCartOutlined,
   DeleteOutlined,
-  ExclamationCircleOutlined,
   CreditCardOutlined,
   MinusCircleOutlined,
 } from "@ant-design/icons";
@@ -38,7 +35,6 @@ import {
 import axios from "axios";
 
 const { Text } = Typography;
-const { confirm } = Modal;
 
 interface OrderItemChild {
   id: number;
@@ -97,12 +93,19 @@ const StaffCartScreen: React.FC = () => {
       setLoading(true);
       const userId = localStorage.getItem("userId");
       const currentOrderId = localStorage.getItem("currentOrderId");
+      const paymentCompleted = localStorage.getItem("paymentCompleted");
 
       if (!userId) {
         message.error(
           "Không tìm thấy thông tin người dùng, vui lòng đăng nhập lại"
         );
         navigate("/");
+        return;
+      }
+
+      if (paymentCompleted === "true") {
+        localStorage.removeItem("paymentCompleted"); // Clear the flag
+        setLoading(false);
         return;
       }
 
@@ -150,6 +153,23 @@ const StaffCartScreen: React.FC = () => {
       currency: "VND",
     }).format(amount);
   };
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const status = urlParams.get("status");
+    const resultCode = urlParams.get("resultCode");
+
+    if (status === "success" && resultCode === "0") {
+      message.success("Thanh toán thành công!");
+      localStorage.removeItem("currentOrderId");
+
+      setOrder(null);
+      setOrderItems([]);
+      // Add a flag to indicate successful payment
+    localStorage.setItem("paymentCompleted", "true");
+      navigate("/staff/cart", { replace: true });
+    }
+  }, [navigate]);
 
   const formatDate = (dateString: string) => {
     // The date format from API is "28/04/2025 01:59:52"
@@ -280,35 +300,40 @@ const StaffCartScreen: React.FC = () => {
     ));
   };
 
-  const handleCancelOrder = () => {
-    const currentOrderId = localStorage.getItem("currentOrderId");
-    if (!currentOrderId) {
-      message.warning("Không có đơn hàng để hủy");
-      return;
+  const handleCancelOrder = async () => {
+    console.log("handleCancelOrder called"); // Debug line
+    try {
+      const currentOrderId = localStorage.getItem("currentOrderId");
+      console.log("Current order ID:", currentOrderId); // Debug line
+
+      if (!currentOrderId) {
+        message.warning("Không có đơn hàng để hủy");
+        return;
+      }
+
+      setLoading(true);
+      const authAxios = getAuthAxios();
+
+      // Log the order items being deleted
+      console.log("Order items to delete:", orderItems); // Debug line
+
+      // Remove each item individually
+      const removePromises = orderItems.map((item) =>
+        authAxios.delete(`/api/v2/orders/${currentOrderId}/details/${item.id}`)
+      );
+
+      await Promise.all(removePromises);
+
+      localStorage.removeItem("currentOrderId");
+      setOrder(null);
+      setOrderItems([]);
+      message.success("Đã hủy đơn hàng");
+      setLoading(false);
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      message.error("Không thể hủy đơn hàng. Vui lòng thử lại sau.");
+      setLoading(false);
     }
-
-    confirm({
-      title: "Xác nhận hủy đơn hàng",
-      icon: <ExclamationCircleOutlined />,
-      content: "Bạn có chắc chắn muốn hủy đơn hàng này?",
-      okText: "Hủy đơn hàng",
-      okType: "danger",
-      cancelText: "Quay lại",
-      onOk: async () => {
-        try {
-          const authAxios = getAuthAxios();
-          await authAxios.put(`/api/orders/${currentOrderId}/cancel`);
-
-          localStorage.removeItem("currentOrderId");
-          setOrder(null);
-          setOrderItems([]);
-          message.success("Đã hủy đơn hàng");
-        } catch (error) {
-          console.error("Error cancelling order:", error);
-          message.error("Không thể hủy đơn hàng. Vui lòng thử lại sau.");
-        }
-      },
-    });
   };
 
   const handlePayOrder = async () => {
@@ -317,43 +342,40 @@ const StaffCartScreen: React.FC = () => {
       message.warning("Không có đơn hàng để thanh toán");
       return;
     }
-  
+
     try {
       setLoading(true);
       const authAxios = getAuthAxios();
-  
+
       // Call the payment API to get the payment URL
       const paymentResponse = await authAxios.post("/api/payment", {
         orderId: parseInt(currentOrderId),
         paymentMethod: "MOMO",
       });
-  
+
       // Extract the payment URL from the response
       const payUrl = paymentResponse.data.payUrl;
-  
+
       if (payUrl) {
         // Open the payment URL in a new window
         window.open(payUrl, "_blank");
-  
+
         message.success({
-          content:
-            "Đã mở cổng thanh toán MOMO. Vui lòng hoàn tất thanh toán.",
+          content: "Đã mở cổng thanh toán MOMO. Vui lòng hoàn tất thanh toán.",
           duration: 5,
         });
       } else {
         message.error("Không nhận được đường dẫn thanh toán từ MOMO");
       }
-  
+
       setLoading(false);
     } catch (error) {
       setLoading(false);
       console.error("Error initiating payment:", error);
-  
+
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
-          message.error(
-            "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại"
-          );
+          message.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
           localStorage.removeItem("accessToken");
           localStorage.removeItem("userEmail");
           localStorage.removeItem("userRole");
@@ -368,9 +390,7 @@ const StaffCartScreen: React.FC = () => {
           );
         }
       } else {
-        message.error(
-          "Không thể khởi tạo thanh toán. Vui lòng thử lại sau."
-        );
+        message.error("Không thể khởi tạo thanh toán. Vui lòng thử lại sau.");
       }
     }
   };
@@ -444,17 +464,6 @@ const StaffCartScreen: React.FC = () => {
         <div className="text-right font-semibold">
           {formatCurrency(calculateTotalAmount())}
         </div>
-      ),
-    },
-    {
-      title: "Thao tác",
-      key: "action",
-      render: () => (
-        <Space size="small">
-          <Button danger icon={<DeleteOutlined />} onClick={handleCancelOrder}>
-            Hủy
-          </Button>
-        </Space>
       ),
     },
   ];
@@ -542,7 +551,14 @@ const StaffCartScreen: React.FC = () => {
                 <Button
                   danger
                   icon={<DeleteOutlined />}
-                  onClick={handleCancelOrder}
+                  onClick={() => {
+                    console.log("Cancel button clicked"); // Debug line
+                    if (
+                      window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này?")
+                    ) {
+                      handleCancelOrder();
+                    }
+                  }}
                 >
                   Hủy đơn hàng
                 </Button>
