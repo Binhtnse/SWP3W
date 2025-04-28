@@ -350,7 +350,7 @@ const StaffProductDetailScreen: React.FC = () => {
           return {
             productId: toppingId,
             quantity: 1,
-            size: null,
+            size: "NONE",
             note: "",
             isCombo: false,
             childItems: []
@@ -371,12 +371,28 @@ const StaffProductDetailScreen: React.FC = () => {
         };
       }
       
-      // Make the API call
-      const response = await authAxios.post('/api/orders', requestBody);
+      // Check if there's an existing order ID in localStorage
+      const existingOrderId = localStorage.getItem("currentOrderId");
+      let response;
+      
+      if (existingOrderId) {
+        // If order ID exists, use PUT endpoint to update the order
+        response = await authAxios.put(`/api/v2/orders/${existingOrderId}`, requestBody);
+      } else {
+        // If no order ID exists, create a new order with POST
+        response = await authAxios.post('/api/v2/orders', requestBody);
+        
+        // Store the new order ID in localStorage
+        if (response.data && response.data.id) {
+          localStorage.setItem("currentOrderId", response.data.id.toString());
+        }
+      }
       
       console.log("Order response:", response.data);
       message.success({
-        content: "Đã thêm vào đơn hàng thành công!",
+        content: existingOrderId 
+          ? "Đã cập nhật đơn hàng thành công!" 
+          : "Đã thêm vào đơn hàng thành công!",
         icon: <CheckCircleFilled style={{ color: "#52c41a" }} />,
       });
       
@@ -389,6 +405,7 @@ const StaffProductDetailScreen: React.FC = () => {
           localStorage.removeItem("accessToken");
           localStorage.removeItem("userEmail");
           localStorage.removeItem("userRole");
+          localStorage.removeItem("currentOrderId"); // Also remove the order ID
           navigate("/");
         } else {
           message.error(`Không thể thêm vào đơn hàng: ${error.response?.data?.message || 'Đã xảy ra lỗi'}`);

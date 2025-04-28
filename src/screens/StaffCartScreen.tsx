@@ -1,9 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button, Typography, Divider, Table, Space, Modal, message, Spin, Tag, Empty } from 'antd';
-import { ArrowLeftOutlined, ShoppingCartOutlined, DeleteOutlined, ExclamationCircleOutlined, CheckCircleOutlined, CreditCardOutlined } from '@ant-design/icons';
-import { StyledHeader, HeaderContent, LogoSection, IconContainer, TitleContainer, ContentSection, ActionButton, OrderSummary, SummaryInfo, SummaryActions, LoadingContainer, BackButton } from '../components/styled components/StaffCartStyles';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Button,
+  Typography,
+  Divider,
+  Table,
+  Space,
+  Modal,
+  message,
+  Spin,
+  Tag,
+  Empty,
+  Popconfirm,
+} from "antd";
+import {
+  ArrowLeftOutlined,
+  ShoppingCartOutlined,
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+  CreditCardOutlined,
+  MinusCircleOutlined,
+} from "@ant-design/icons";
+import {
+  StyledHeader,
+  HeaderContent,
+  LogoSection,
+  IconContainer,
+  TitleContainer,
+  ContentSection,
+  ActionButton,
+  OrderSummary,
+  SummaryInfo,
+  SummaryActions,
+  LoadingContainer,
+  BackButton,
+} from "../components/styled components/StaffCartStyles";
+import axios from "axios";
 
 const { Text } = Typography;
 const { confirm } = Modal;
@@ -42,20 +74,13 @@ interface Order {
   items?: OrderItem[];
 }
 
-interface ApiResponse {
-  data: Order[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-  last: boolean;
-}
-
 const StaffCartScreen: React.FC = () => {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
   const getAuthAxios = () => {
     const accessToken = localStorage.getItem("accessToken");
@@ -67,69 +92,63 @@ const StaffCartScreen: React.FC = () => {
     });
   };
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        const userId = localStorage.getItem("userId");
-        
-        if (!userId) {
-          message.error("Không tìm thấy thông tin người dùng, vui lòng đăng nhập lại");
-          navigate("/");
-          return;
-        }
+  const fetchOrderDetails = async () => {
+    try {
+      setLoading(true);
+      const userId = localStorage.getItem("userId");
+      const currentOrderId = localStorage.getItem("currentOrderId");
 
-        const authAxios = getAuthAxios();
-        const response = await authAxios.get<ApiResponse>(
-          "/api/orders?page=0&size=20&status=PENDING"
+      if (!userId) {
+        message.error(
+          "Không tìm thấy thông tin người dùng, vui lòng đăng nhập lại"
         );
-
-        // Filter orders to only show those created by the current user
-        const userOrders = response.data.data.filter(
-          (order) => order.userId.toString() === userId
-        );
-
-        // Fetch order details for each order
-        const ordersWithDetails = await Promise.all(
-          userOrders.map(async (order) => {
-            try {
-              const detailsResponse = await authAxios.get<OrderItem[]>(`/api/orders/${order.id}/details`);
-              return {
-                ...order,
-                items: detailsResponse.data
-              };
-            } catch (error) {
-              console.error(`Error fetching details for order ${order.id}:`, error);
-              return order;
-            }
-          })
-        );
-
-        setOrders(ordersWithDetails);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-        
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
-          message.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("userEmail");
-          localStorage.removeItem("userRole");
-          localStorage.removeItem("userId");
-          navigate("/");
-        } else {
-          setError("Không thể tải danh sách đơn hàng. Vui lòng thử lại sau.");
-        }
-        
-        setLoading(false);
+        navigate("/");
+        return;
       }
-    };
 
-    fetchOrders();
-  }, [navigate]);
+      if (!currentOrderId) {
+        setLoading(false);
+        return; // No order to fetch, will show empty cart
+      }
+
+      const authAxios = getAuthAxios();
+
+      // Fetch the order details using the new API endpoint
+      const detailsResponse = await authAxios.get<OrderItem[]>(
+        `/api/v2/orders/${currentOrderId}/details`
+      );
+
+      setOrderItems(detailsResponse.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching order details:", error);
+
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        message.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("userId");
+        localStorage.removeItem("currentOrderId");
+        navigate("/");
+      } else {
+        setError("Không thể tải thông tin giỏ hàng. Vui lòng thử lại sau.");
+      }
+
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrderDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, refreshTrigger]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(amount);
   };
 
   const formatDate = (dateString: string) => {
@@ -137,17 +156,118 @@ const StaffCartScreen: React.FC = () => {
     return dateString;
   };
 
+  // Function to remove an item from the cart
+  const handleRemoveItem = async (orderDetailId: number) => {
+    try {
+      const currentOrderId = localStorage.getItem("currentOrderId");
+      if (!currentOrderId) {
+        message.error("Không tìm thấy thông tin đơn hàng");
+        return;
+      }
+
+      const authAxios = getAuthAxios();
+      await authAxios.delete(
+        `/api/v2/orders/${currentOrderId}/details/${orderDetailId}`
+      );
+
+      message.success("Đã xóa sản phẩm khỏi giỏ hàng");
+
+      // Refresh the order details
+      setRefreshTrigger((prev) => prev + 1);
+
+      // If this was the last item, check if we need to remove the order ID
+      if (orderItems.length === 1) {
+        // Fetch again to confirm if the order is now empty
+        const detailsResponse = await authAxios.get<OrderItem[]>(
+          `/api/v2/orders/${currentOrderId}/details`
+        );
+
+        if (detailsResponse.data.length === 0) {
+          localStorage.removeItem("currentOrderId");
+          setOrder(null);
+          setOrderItems([]);
+        }
+      }
+    } catch (error) {
+      console.error("Error removing item from cart:", error);
+
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          message.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("userEmail");
+          localStorage.removeItem("userRole");
+          localStorage.removeItem("userId");
+          localStorage.removeItem("currentOrderId");
+          navigate("/");
+        } else {
+          message.error(
+            `Không thể xóa sản phẩm: ${
+              error.response?.data?.message || "Đã xảy ra lỗi"
+            }`
+          );
+        }
+      } else {
+        message.error("Không thể xóa sản phẩm. Vui lòng thử lại sau.");
+      }
+    }
+  };
+
   // Helper function to render order items recursively
-  const renderOrderItems = (items: OrderItemChild[], level = 0): React.ReactNode => {
+  const renderOrderItems = (
+    items: OrderItemChild[],
+    level = 0
+  ): React.ReactNode => {
     return items.map((item, index) => (
-      <div key={`${item.id}-${index}`} className={index > 0 ? 'mt-2 pt-2 border-t border-gray-200' : ''}>
-        <div className={`font-medium ${level > 0 ? 'ml-4' : ''}`} style={{ paddingLeft: level * 12 }}>
-          {level > 0 && <Tag color="purple" style={{ marginRight: 8 }}>Topping</Tag>}
-          {item.combo && <Tag color="blue" style={{ marginRight: 8 }}>Combo</Tag>}
-          {item.productName} x{item.quantity}
+      <div
+        key={`${item.id}-${index}`}
+        className={index > 0 ? "mt-2 pt-2 border-t border-gray-200" : ""}
+      >
+        <div
+          className={`font-medium ${level > 0 ? "ml-4" : ""}`}
+          style={{ paddingLeft: level * 12 }}
+        >
+          <div className="flex justify-between items-center">
+            <div>
+              {level > 0 && (
+                <Tag color="purple" style={{ marginRight: 8 }}>
+                  Topping
+                </Tag>
+              )}
+              {item.combo && (
+                <Tag color="blue" style={{ marginRight: 8 }}>
+                  Combo
+                </Tag>
+              )}
+              {item.productName} x{item.quantity}
+            </div>
+
+            {level === 0 && (
+              <Popconfirm
+                title="Xóa sản phẩm"
+                description="Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?"
+                onConfirm={() => handleRemoveItem(item.id)}
+                okText="Xóa"
+                cancelText="Hủy"
+                okButtonProps={{ danger: true }}
+              >
+                <Button
+                  type="text"
+                  danger
+                  icon={<MinusCircleOutlined />}
+                  size="small"
+                >
+                  Xóa
+                </Button>
+              </Popconfirm>
+            )}
+          </div>
         </div>
-        <div className={`text-sm text-gray-500 ${level > 0 ? 'ml-4' : ''}`} style={{ paddingLeft: level * 12 }}>
-          {item.size && `Size: ${item.size}`}
+        <div
+          className={`text-sm text-gray-500 ${level > 0 ? "ml-4" : ""}`}
+          style={{ paddingLeft: level * 12 }}
+        >
+          {item.size && item.size !== "NONE" && `Size: ${item.size}`}
           {item.unitPrice && `, Đơn giá: ${formatCurrency(item.unitPrice)}`}
           {item.note && `, Ghi chú: ${item.note}`}
         </div>
@@ -160,160 +280,178 @@ const StaffCartScreen: React.FC = () => {
     ));
   };
 
-  const handleCancelOrder = (orderId: number) => {
+  const handleCancelOrder = () => {
+    const currentOrderId = localStorage.getItem("currentOrderId");
+    if (!currentOrderId) {
+      message.warning("Không có đơn hàng để hủy");
+      return;
+    }
+
     confirm({
-      title: 'Xác nhận hủy đơn hàng',
+      title: "Xác nhận hủy đơn hàng",
       icon: <ExclamationCircleOutlined />,
-      content: 'Bạn có chắc chắn muốn hủy đơn hàng này?',
-      okText: 'Hủy đơn hàng',
-      okType: 'danger',
-      cancelText: 'Quay lại',
+      content: "Bạn có chắc chắn muốn hủy đơn hàng này?",
+      okText: "Hủy đơn hàng",
+      okType: "danger",
+      cancelText: "Quay lại",
       onOk: async () => {
         try {
           const authAxios = getAuthAxios();
-          await authAxios.put(`/api/orders/${orderId}/cancel`);
-          
-          const updatedOrders = orders.filter(order => order.id !== orderId);
-          setOrders(updatedOrders);
-          message.success('Đã hủy đơn hàng');
+          await authAxios.put(`/api/orders/${currentOrderId}/cancel`);
+
+          localStorage.removeItem("currentOrderId");
+          setOrder(null);
+          setOrderItems([]);
+          message.success("Đã hủy đơn hàng");
         } catch (error) {
           console.error("Error cancelling order:", error);
-          message.error('Không thể hủy đơn hàng. Vui lòng thử lại sau.');
+          message.error("Không thể hủy đơn hàng. Vui lòng thử lại sau.");
         }
-      }
+      },
     });
   };
 
-  const handleCancelAllOrders = () => {
-    if (orders.length === 0) {
-      message.warning('Không có đơn hàng nào để hủy');
+  const handlePayOrder = async () => {
+    const currentOrderId = localStorage.getItem("currentOrderId");
+    if (!currentOrderId) {
+      message.warning("Không có đơn hàng để thanh toán");
       return;
     }
-
-    confirm({
-      title: 'Xác nhận hủy tất cả đơn hàng',
-      icon: <ExclamationCircleOutlined />,
-      content: 'Bạn có chắc chắn muốn hủy tất cả đơn hàng trong giỏ hàng?',
-      okText: 'Hủy tất cả',
-      okType: 'danger',
-      cancelText: 'Quay lại',
-      onOk: async () => {
-        try {
-          const authAxios = getAuthAxios();
-          
-          // Cancel all orders in parallel
-          await Promise.all(
-            orders.map(order => 
-              authAxios.put(`/api/orders/${order.id}/cancel`)
-            )
-          );
-          
-          setOrders([]);
-          message.success('Đã hủy tất cả đơn hàng');
-        } catch (error) {
-          console.error("Error cancelling all orders:", error);
-          message.error('Không thể hủy tất cả đơn hàng. Vui lòng thử lại sau.');
-        }
+  
+    try {
+      setLoading(true);
+      const authAxios = getAuthAxios();
+  
+      // Call the payment API to get the payment URL
+      const paymentResponse = await authAxios.post("/api/payment", {
+        orderId: parseInt(currentOrderId),
+        paymentMethod: "MOMO",
+      });
+  
+      // Extract the payment URL from the response
+      const payUrl = paymentResponse.data.payUrl;
+  
+      if (payUrl) {
+        // Open the payment URL in a new window
+        window.open(payUrl, "_blank");
+  
+        message.success({
+          content:
+            "Đã mở cổng thanh toán MOMO. Vui lòng hoàn tất thanh toán.",
+          duration: 5,
+        });
+      } else {
+        message.error("Không nhận được đường dẫn thanh toán từ MOMO");
       }
-    });
-  };
-
-  const handlePayAllOrders = () => {
-    if (orders.length === 0) {
-      message.warning('Không có đơn hàng nào để thanh toán');
-      return;
+  
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Error initiating payment:", error);
+  
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          message.error(
+            "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại"
+          );
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("userEmail");
+          localStorage.removeItem("userRole");
+          localStorage.removeItem("userId");
+          localStorage.removeItem("currentOrderId");
+          navigate("/");
+        } else {
+          message.error(
+            `Không thể thanh toán: ${
+              error.response?.data?.message || "Đã xảy ra lỗi"
+            }`
+          );
+        }
+      } else {
+        message.error(
+          "Không thể khởi tạo thanh toán. Vui lòng thử lại sau."
+        );
+      }
     }
-
-    confirm({
-      title: 'Xác nhận thanh toán tất cả đơn hàng',
-      icon: <CheckCircleOutlined style={{ color: 'green' }} />,
-      content: `Bạn có chắc chắn muốn thanh toán tất cả ${orders.length} đơn hàng?`,
-      okText: 'Thanh toán',
-      okType: 'primary',
-      cancelText: 'Hủy',
-      onOk: async () => {
-        try {
-          const authAxios = getAuthAxios();
-          
-          // Process payment for all orders in parallel
-          await Promise.all(
-            orders.map(order => 
-              authAxios.put(`/api/orders/${order.id}/pay`)
-            )
-          );
-          
-          setOrders([]);
-          message.success('Thanh toán tất cả đơn hàng thành công!');
-        } catch (error) {
-          console.error("Error paying for all orders:", error);
-          message.error('Không thể thanh toán. Vui lòng thử lại sau.');
-        }
-      }
-    });
   };
 
   const calculateTotalAmount = () => {
-    return orders.reduce((sum, order) => sum + order.totalPrice, 0);
+    if (!orderItems || orderItems.length === 0) {
+      return 0;
+    }
+
+    return orderItems.reduce((total, item) => {
+      // Calculate the price for this item (unitPrice * quantity)
+      const itemTotal = item.unitPrice * item.quantity;
+
+      // Add the price of any child items (toppings)
+      const childTotal = item.childItems.reduce((childSum, childItem) => {
+        return childSum + childItem.unitPrice * childItem.quantity;
+      }, 0);
+
+      return total + itemTotal + childTotal;
+    }, 0);
   };
 
   const columns = [
     {
-      title: 'Mã đơn hàng',
-      dataIndex: 'id',
-      key: 'id',
-      render: (id: number) => (
-        <Tag color="blue" className="text-base px-3 py-1">
-          #{id}
-        </Tag>
-      ),
+      title: "Mã đơn hàng",
+      dataIndex: "id",
+      key: "id",
+      render: () => {
+        const currentOrderId = localStorage.getItem("currentOrderId");
+        return (
+          <Tag color="blue" className="text-base px-3 py-1">
+            #{currentOrderId}
+          </Tag>
+        );
+      },
     },
     {
-      title: 'Thông tin',
-      dataIndex: 'info',
-      key: 'info',
-      render: (_: unknown, record: Order) => (
+      title: "Thông tin",
+      dataIndex: "info",
+      key: "info",
+      render: () => (
         <div>
           <div className="font-semibold">
-            Khách hàng: {record.userName || 'Khách lẻ'}
+            Khách hàng: {order?.userName || "Khách lẻ"}
           </div>
           <div className="text-sm text-gray-500">
-            Thời gian: {formatDate(record.createAt)}
+            Thời gian: {order?.createAt ? formatDate(order.createAt) : "N/A"}
           </div>
         </div>
       ),
     },
     {
-      title: 'Sản phẩm',
-      dataIndex: 'items',
-      key: 'items',
-      render: (items: OrderItem[] | undefined) => (
+      title: "Sản phẩm",
+      dataIndex: "items",
+      key: "items",
+      render: () => (
         <div>
-          {items && items.length > 0 ? (
-            renderOrderItems(items)
+          {orderItems && orderItems.length > 0 ? (
+            renderOrderItems(orderItems)
           ) : (
-            <Text type="secondary">Đang tải chi tiết...</Text>
+            <Text type="secondary">Không có sản phẩm</Text>
           )}
         </div>
       ),
     },
     {
-      title: 'Tổng tiền',
-      dataIndex: 'totalPrice',
-      key: 'totalPrice',
-      render: (amount: number) => (
-        <div className="text-right font-semibold">{formatCurrency(amount)}</div>
+      title: "Tổng tiền",
+      dataIndex: "totalPrice",
+      key: "totalPrice",
+      render: () => (
+        <div className="text-right font-semibold">
+          {formatCurrency(calculateTotalAmount())}
+        </div>
       ),
     },
     {
-      title: 'Thao tác',
-      key: 'action',
-      render: (_: unknown, record: Order) => (
+      title: "Thao tác",
+      key: "action",
+      render: () => (
         <Space size="small">
-          <Button 
-            danger
-            icon={<DeleteOutlined />} 
-            onClick={() => handleCancelOrder(record.id)}
-          >
+          <Button danger icon={<DeleteOutlined />} onClick={handleCancelOrder}>
             Hủy
           </Button>
         </Space>
@@ -333,11 +471,13 @@ const StaffCartScreen: React.FC = () => {
     return (
       <LoadingContainer>
         <div className="text-center">
-          <Text type="danger" style={{ fontSize: '16px' }}>{error}</Text>
-          <Button 
-            type="primary" 
-            onClick={() => window.location.reload()} 
-            style={{ marginTop: '16px' }}
+          <Text type="danger" style={{ fontSize: "16px" }}>
+            {error}
+          </Text>
+          <Button
+            type="primary"
+            onClick={() => window.location.reload()}
+            style={{ marginTop: "16px" }}
           >
             Thử lại
           </Button>
@@ -346,8 +486,10 @@ const StaffCartScreen: React.FC = () => {
     );
   }
 
+  const hasOrder = orderItems.length > 0;
+
   return (
-    <div style={{ padding: '1.5rem' }}>
+    <div style={{ padding: "1.5rem" }}>
       <StyledHeader>
         <HeaderContent>
           <LogoSection>
@@ -361,68 +503,69 @@ const StaffCartScreen: React.FC = () => {
               </p>
             </TitleContainer>
           </LogoSection>
-          <BackButton 
-            icon={<ArrowLeftOutlined />} 
-            onClick={() => navigate('/staff/products')}
+          <BackButton
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate("/staff/products")}
             size="large"
           >
             Quay lại danh sách sản phẩm
           </BackButton>
         </HeaderContent>
       </StyledHeader>
-      
+
       <ContentSection>
-        {orders.length > 0 ? (
+        {hasOrder ? (
           <>
-            <Table 
-              dataSource={orders} 
-              columns={columns} 
+            <Table
+              dataSource={[{ key: "order" }]}
+              columns={columns}
               pagination={false}
-              rowKey="id"
-              style={{ marginBottom: '1rem' }}
+              rowKey="key"
+              style={{ marginBottom: "1rem" }}
             />
-            
+
             <Divider />
-            
+
             <OrderSummary>
               <SummaryInfo>
-                <Text style={{ marginRight: '0.5rem' }}>Tổng cộng:</Text>
-                <Text strong>{orders.length}</Text>
-                <Text style={{ margin: '0 0.5rem' }}>đơn hàng</Text>
-                <Text strong style={{ marginLeft: '1rem', fontSize: '1.125rem' }}>
+                <Text style={{ marginRight: "0.5rem" }}>Tổng cộng:</Text>
+                <Text strong>{orderItems.length}</Text>
+                <Text style={{ margin: "0 0.5rem" }}>sản phẩm</Text>
+                <Text
+                  strong
+                  style={{ marginLeft: "1rem", fontSize: "1.125rem" }}
+                >
                   {formatCurrency(calculateTotalAmount())}
                 </Text>
               </SummaryInfo>
               <SummaryActions>
-                <Button 
+                <Button
                   danger
                   icon={<DeleteOutlined />}
-                  onClick={handleCancelAllOrders}
-                  disabled={orders.length === 0}
+                  onClick={handleCancelOrder}
                 >
-                  Hủy tất cả
+                  Hủy đơn hàng
                 </Button>
-                <ActionButton 
-                  type="primary" 
+                <ActionButton
+                  type="primary"
                   icon={<CreditCardOutlined />}
-                  onClick={handlePayAllOrders}
+                  onClick={handlePayOrder}
                   className="green"
-                  disabled={orders.length === 0}
                 >
-                  Thanh toán tất cả
+                  Thanh toán
                 </ActionButton>
               </SummaryActions>
             </OrderSummary>
           </>
         ) : (
           <Empty
-            description="Không có đơn hàng nào trong giỏ hàng"
+            description="Không có sản phẩm nào trong giỏ hàng"
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           >
-            <ActionButton 
-              type="primary" 
-              onClick={() => navigate('/staff/products')}
-              style={{ marginTop: '1rem' }}
+            <ActionButton
+              type="primary"
+              onClick={() => navigate("/staff/products")}
+              style={{ marginTop: "1rem" }}
             >
               Tạo đơn hàng mới
             </ActionButton>
