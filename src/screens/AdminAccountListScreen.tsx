@@ -6,6 +6,7 @@ import moment from "moment";
 import { TablePaginationConfig } from "antd/lib/table";
 import { FilterValue, SorterResult } from "antd/lib/table/interface";
 import {Container,Header,StyledTitle,FilterContainer,FilterRow,StyledTable,ActionButton,AddButton,ResetButton,} from "../components/styled components/AdminAccountListStyles";
+import { useNavigate } from "react-router-dom";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -60,11 +61,25 @@ const AdminAccountListScreen: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
   console.log(submitting);
+  const navigate = useNavigate();
   const [form] = Form.useForm();
+
+  const getAuthHeader = () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+      navigate("/");
+      return null;
+    }
+    return { Authorization: `Bearer ${token}` };
+  };
 
   const fetchUsers = async (page = 0, size = 20) => {
     setLoading(true);
     try {
+      const headers = getAuthHeader();
+      if (!headers) return;
+
       const { name, gender, role } = filters;
       const params = new URLSearchParams();
       params.append("page", page.toString());
@@ -75,7 +90,8 @@ const AdminAccountListScreen: React.FC = () => {
       if (role) params.append("role", role);
 
       const response = await axios.get<ApiResponse>(
-        `https://beautiful-unity-production.up.railway.app/api/users/filter?${params.toString()}`
+        `https://beautiful-unity-production.up.railway.app/api/users/filter?${params.toString()}`,
+        { headers }
       );
 
       setUsers(response.data.data);
@@ -84,14 +100,18 @@ const AdminAccountListScreen: React.FC = () => {
         current: page + 1,
         total: response.data.totalElements,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching users:", error);
-      message.error("Không thể tải danh sách tài khoản");
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+        navigate("/");
+      } else {
+        message.error("Không thể tải danh sách tài khoản");
+      }
     } finally {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -133,10 +153,14 @@ const AdminAccountListScreen: React.FC = () => {
   };
 
   const registerNewUser = async (userData: RegisterUserRequest) => {
+    const headers = getAuthHeader();
+    if (!headers) return;
+
     try {
       const response = await axios.post(
         "https://beautiful-unity-production.up.railway.app/api/authentication/register",
-        userData
+        userData,
+        { headers }
       );
       return response.data;
     } catch (error) {
@@ -154,6 +178,12 @@ const AdminAccountListScreen: React.FC = () => {
         dateOfBirth: values.dateOfBirth.format("YYYY-MM-DD"),
       };
 
+      const headers = getAuthHeader();
+      if (!headers) {
+        setSubmitting(false);
+        return;
+      }
+
       if (editingUser) {
         const updateData = { ...formattedValues };
         if (formattedValues.newPassword) {
@@ -164,7 +194,8 @@ const AdminAccountListScreen: React.FC = () => {
 
         await axios.put(
           `https://beautiful-unity-production.up.railway.app/api/users/${editingUser.id}`,
-          updateData
+          updateData,
+          { headers }
         );
         message.success(
           `Tài khoản ${formattedValues.fullName} đã được cập nhật thành công`
@@ -199,10 +230,16 @@ const AdminAccountListScreen: React.FC = () => {
         typeof error.response === "object" &&
         "data" in error.response
       ) {
-        const errorResponse = error.response as { data: { message?: string } };
-        message.error(
-          `Lỗi: ${errorResponse.data.message || "Không thể thực hiện thao tác"}`
-        );
+        const errorResponse = error.response as { data: { message?: string }, status?: number };
+        
+        if (errorResponse.status === 401) {
+          message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+          navigate("/");
+        } else {
+          message.error(
+            `Lỗi: ${errorResponse.data.message || "Không thể thực hiện thao tác"}`
+          );
+        }
       } else {
         message.error("Không thể thực hiện thao tác. Vui lòng thử lại sau.");
       }
@@ -221,18 +258,33 @@ const AdminAccountListScreen: React.FC = () => {
       cancelText: "Hủy",
       onOk: async () => {
         try {
+          const headers = getAuthHeader();
+          if (!headers) return;
+
           await axios.delete(
-            `https://beautiful-unity-production.up.railway.app/api/users/${userId}`
+            `https://beautiful-unity-production.up.railway.app/api/users/${userId}`,
+            { headers }
           );
           message.success("Tài khoản đã được xóa thành công");
           fetchUsers(pagination.current - 1, pagination.pageSize);
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Error deleting user:", error);
-          message.error("Không thể xóa tài khoản");
+          if (
+            error &&
+            typeof error === "object" &&
+            "response" in error &&
+            error.response &&
+            typeof error.response === "object" &&
+            "status" in error.response &&
+            error.response.status === 401
+          ) {
+            message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+            navigate("/");
+          } else {
+            message.error("Không thể xóa tài khoản");
+          }
         }
-      },
-    });
-  };
+      },    });  };
 
   const columns = [
     {

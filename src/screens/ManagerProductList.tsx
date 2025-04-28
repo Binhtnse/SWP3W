@@ -1,11 +1,11 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import { Table, message, Modal, Button, Form, Input, Select, Descriptions } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import ManagerLayout from '../components/ManagerLayout';
+import { useNavigate } from 'react-router-dom';
 
 interface Product {
   id: number;
@@ -36,8 +36,31 @@ const ManagerProductList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isDetailModalVisible, setIsDetailModalVisible] = useState<boolean>(false);
   const [pageSize, setPageSize] = useState<number>(10);
+  const navigate = useNavigate();
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      message.error('Phiên đăng nhập hết hạn, vui lòng đăng nhập lại');
+      navigate('/login');
+      return null;
+    }
+    return {
+      Authorization: `Bearer ${token}`
+    };
+  };
 
   useEffect(() => {
+    // Check if user is authenticated
+    const token = localStorage.getItem('accessToken');
+    const userRole = localStorage.getItem('userRole');
+    
+    if (!token || userRole !== 'MANAGER') {
+      message.error('Bạn không có quyền truy cập trang này');
+      navigate('/login');
+      return;
+    }
+    
     fetchProducts();
     fetchCategories();
   }, [pageSize]);
@@ -45,16 +68,23 @@ const ManagerProductList: React.FC = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
       const response = await axios.get('https://beautiful-unity-production.up.railway.app/api/products/filter', {
         params: {
           productType: 'SINGLE',
           productUsage: 'MAIN',
           limit: pageSize,
         },
+        headers
       });
       setData(response.data.data);
     } catch (error) {
       message.error('Không thể tải danh sách sản phẩm');
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        navigate('/');
+      }
     } finally {
       setLoading(false);
     }
@@ -62,14 +92,25 @@ const ManagerProductList: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('https://beautiful-unity-production.up.railway.app/api/category');
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
+      const response = await axios.get('https://beautiful-unity-production.up.railway.app/api/category', {
+        headers
+      });
       setCategories(response.data.data);
     } catch (error) {
       message.error('Không thể tải danh mục');
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        navigate('/');
+      }
     }
   };
 
   const createProduct = async (values: any) => {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
     const productData = {
       name: values.name,
       basePrice: values.basePrice,
@@ -83,36 +124,58 @@ const ManagerProductList: React.FC = () => {
     };
 
     try {
-      await axios.post('https://beautiful-unity-production.up.railway.app/api/products', productData );
+      await axios.post('https://beautiful-unity-production.up.railway.app/api/products', productData, {
+        headers
+      });
       message.success('Sản phẩm đã được tạo thành công');
       fetchProducts();
     } catch (error) {
       message.error('Không thể tạo sản phẩm');
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        navigate('/');
+      }
     }
   };
 
   const updateProduct = async (values: any) => {
     try {
       if (!editingProduct) return;
+      
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
       const updatedProduct = {
         ...editingProduct,
         ...values,
       };
-      await axios.put(`https://beautiful-unity-production.up.railway.app/api/products/${editingProduct.id}`, updatedProduct);
+      await axios.put(`https://beautiful-unity-production.up.railway.app/api/products/${editingProduct.id}`, updatedProduct, {
+        headers
+      });
       message.success('Sản phẩm đã được cập nhật');
       fetchProducts();
     } catch (error) {
       message.error('Không thể cập nhật sản phẩm');
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        navigate('/');
+      }
     }
   };
 
   const deleteProduct = async (productId: number) => {
     try {
-      await axios.delete(`https://beautiful-unity-production.up.railway.app/api/products/${productId}`);
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
+      await axios.delete(`https://beautiful-unity-production.up.railway.app/api/products/${productId}`, {
+        headers
+      });
       message.success('Sản phẩm đã được xóa');
       fetchProducts();
     } catch (error) {
       message.error('Không thể xóa sản phẩm');
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        navigate('/login');
+      }
     }
   };
 

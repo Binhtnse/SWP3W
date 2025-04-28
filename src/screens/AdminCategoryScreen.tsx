@@ -4,6 +4,7 @@ import {EditOutlined,DeleteOutlined,PlusOutlined,ExclamationCircleOutlined,Searc
 import axios from "axios";
 import { ColumnsType } from "antd/es/table";
 import { Container, Header, StyledTitle, FilterContainer, FilterRow, StyledTable, ActionButton, AddButton, ResetButton } from "../components/styled components/AdminCategoryStyles";
+import { useNavigate } from "react-router-dom";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -42,10 +43,24 @@ const AdminCategoryScreen: React.FC = () => {
     name: "",
   });
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const navigate = useNavigate();
+
+  const getAuthHeader = () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      message.error("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại");
+      navigate("/");
+      return null;
+    }
+    return { Authorization: `Bearer ${token}` };
+  };
 
   const fetchCategories = async (page: number = 0, size: number = 10) => {
     setLoading(true);
     try {
+      const headers = getAuthHeader();
+      if (!headers) return;
+
       const { name } = filters;
       const params = new URLSearchParams();
       params.append("page", page.toString());
@@ -56,7 +71,8 @@ const AdminCategoryScreen: React.FC = () => {
         url = `https://beautiful-unity-production.up.railway.app/api/category/${name}`;
       }
       const response = await axios.get<CategoryResponse>(
-        `${url}?${params.toString()}`
+        `${url}?${params.toString()}`,
+        { headers }
       );
       setCategories(response.data.data);
       setPagination({
@@ -64,14 +80,18 @@ const AdminCategoryScreen: React.FC = () => {
         pageSize: response.data.size,
         total: response.data.totalElements,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching categories:", error);
-      message.error("Không thể tải danh mục");
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        message.error("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại");
+        navigate("/");
+      } else {
+        message.error("Không thể tải danh mục");
+      }
     } finally {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchCategories();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,32 +125,41 @@ const AdminCategoryScreen: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
+      const headers = getAuthHeader();
+      if (!headers) return;
+
       setSubmitting(true);
       const values = await form.validateFields();
 
       if (editingCategory) {
         await axios.put(
           `https://beautiful-unity-production.up.railway.app/api/category/${editingCategory.id}`,
-          values
+          values,
+          { headers }
         );
         message.success("Cập nhật danh mục thành công");
       } else {
         await axios.post(
           "https://beautiful-unity-production.up.railway.app/api/category",
-          values
+          values,
+          { headers }
         );
         message.success("Tạo danh mục thành công");
       }
       setModalVisible(false);
       fetchCategories(pagination.current - 1, pagination.pageSize);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error saving category:", error);
-      message.error("Không thể lưu danh mục");
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        message.error("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại");
+        navigate("/");
+      } else {
+        message.error("Không thể lưu danh mục");
+      }
     } finally {
       setSubmitting(false);
     }
   };
-
   const handleDelete = async (id: number) => {
     Modal.confirm({
       title: "Bạn có chắc chắn muốn xóa danh mục này?",
@@ -141,17 +170,25 @@ const AdminCategoryScreen: React.FC = () => {
       icon: <ExclamationCircleOutlined style={{ color: "red" }} />,
       onOk: async () => {
         try {
+          const headers = getAuthHeader();
+          if (!headers) return;
+
           await axios.delete(
-            `https://beautiful-unity-production.up.railway.app/api/category/${id}`
+            `https://beautiful-unity-production.up.railway.app/api/category/${id}`,
+            { headers }
           );
           message.success("Xóa danh mục thành công");
           fetchCategories(pagination.current - 1, pagination.pageSize);
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Error deleting category:", error);
-          message.error("Không thể xóa danh mục");
+          if (axios.isAxiosError(error) && error.response?.status === 401) {
+            message.error("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại");
+            navigate("/");
+          } else {
+            message.error("Không thể xóa danh mục");
+          }
         }
-      },
-    });
+      },    });
   };
 
   const columns: ColumnsType<Category> = [
