@@ -77,6 +77,7 @@ const StaffCartScreen: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+  const [paymentJustCompleted, setPaymentJustCompleted] = useState<boolean>(false);
 
   const getAuthAxios = () => {
     const accessToken = localStorage.getItem("accessToken");
@@ -90,6 +91,10 @@ const StaffCartScreen: React.FC = () => {
 
   const fetchOrderDetails = async () => {
     try {
+      if (paymentJustCompleted) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       const userId = localStorage.getItem("userId");
       const currentOrderId = localStorage.getItem("currentOrderId");
@@ -145,7 +150,7 @@ const StaffCartScreen: React.FC = () => {
   useEffect(() => {
     fetchOrderDetails();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate, refreshTrigger]);
+  }, [navigate, refreshTrigger, paymentJustCompleted]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -158,18 +163,20 @@ const StaffCartScreen: React.FC = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const status = urlParams.get("status");
     const resultCode = urlParams.get("resultCode");
-
+  
     if (status === "success" && resultCode === "0") {
       message.success("Thanh toán thành công!");
       localStorage.removeItem("currentOrderId");
-
+      
+      // Set states to empty
       setOrder(null);
       setOrderItems([]);
-      // Add a flag to indicate successful payment
-    localStorage.setItem("paymentCompleted", "true");
-      navigate("/staff/cart", { replace: true });
+      setPaymentJustCompleted(true);
+      
+      // Remove the query parameters from the URL without triggering a reload
+      window.history.replaceState({}, document.title, "/staff/cart");
     }
-  }, [navigate]);
+  }, []);
 
   const formatDate = (dateString: string) => {
     // The date format from API is "28/04/2025 01:59:52"
@@ -244,11 +251,11 @@ const StaffCartScreen: React.FC = () => {
         className={index > 0 ? "mt-2 pt-2 border-t border-gray-200" : ""}
       >
         <div
-          className={`font-medium ${level > 0 ? "ml-4" : ""}`}
+          className={`${level > 0 ? "ml-4" : ""} flex flex-col`}
           style={{ paddingLeft: level * 12 }}
         >
-          <div className="flex justify-between items-center">
-            <div>
+          <div className="flex justify-between items-center mb-1">
+            <div className="flex items-center">
               {level > 0 && (
                 <Tag color="purple" style={{ marginRight: 8 }}>
                   Topping
@@ -259,9 +266,9 @@ const StaffCartScreen: React.FC = () => {
                   Combo
                 </Tag>
               )}
-              {item.productName} x{item.quantity}
+              <span className="font-medium">{item.productName} x{item.quantity}</span>
             </div>
-
+  
             {level === 0 && (
               <Popconfirm
                 title="Xóa sản phẩm"
@@ -282,15 +289,17 @@ const StaffCartScreen: React.FC = () => {
               </Popconfirm>
             )}
           </div>
+          
+          <div
+            className={`text-sm text-gray-500 ${level > 0 ? "ml-4" : ""}`}
+            style={{ paddingLeft: level > 0 ? 0 : 0 }}
+          >
+            {item.size && item.size !== "NONE" && `Size: ${item.size}`}
+            {item.unitPrice && `, Đơn giá: ${formatCurrency(item.unitPrice)}`}
+            {item.note && `, Ghi chú: ${item.note}`}
+          </div>
         </div>
-        <div
-          className={`text-sm text-gray-500 ${level > 0 ? "ml-4" : ""}`}
-          style={{ paddingLeft: level * 12 }}
-        >
-          {item.size && item.size !== "NONE" && `Size: ${item.size}`}
-          {item.unitPrice && `, Đơn giá: ${formatCurrency(item.unitPrice)}`}
-          {item.note && `, Ghi chú: ${item.note}`}
-        </div>
+        
         {item.childItems && item.childItems.length > 0 && (
           <div className="mt-1">
             {renderOrderItems(item.childItems, level + 1)}
@@ -342,37 +351,65 @@ const StaffCartScreen: React.FC = () => {
       message.warning("Không có đơn hàng để thanh toán");
       return;
     }
-
+  
     try {
       setLoading(true);
       const authAxios = getAuthAxios();
-
-      // Call the payment API to get the payment URL
-      const paymentResponse = await authAxios.post("/api/payment", {
+      const requestBody = {
         orderId: parseInt(currentOrderId),
         paymentMethod: "MOMO",
-      });
-
-      // Extract the payment URL from the response
-      const payUrl = paymentResponse.data.payUrl;
-
-      if (payUrl) {
-        // Open the payment URL in a new window
-        window.open(payUrl, "_blank");
-
-        message.success({
-          content: "Đã mở cổng thanh toán MOMO. Vui lòng hoàn tất thanh toán.",
-          duration: 5,
-        });
-      } else {
-        message.error("Không nhận được đường dẫn thanh toán từ MOMO");
+      };
+  
+      try {
+        // Call the payment API to get the payment URL
+        const paymentResponse = await authAxios.post("/api/payment", requestBody);
+  
+        // Extract the payment URL from the response
+        const payUrl = paymentResponse.data.payUrl;
+  
+        if (payUrl) {
+          // Open the payment URL in a new window
+          window.open(payUrl, "_blank");
+  
+          message.success({
+            content: "Đã mở cổng thanh toán MOMO. Vui lòng hoàn tất thanh toán.",
+            duration: 5,
+          });
+        } else {
+          message.error("Không nhận được đường dẫn thanh toán từ MOMO");
+        }
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 409) {
+          // If we get a 409 error, call the re-momo API with the same request body
+          try {
+            const reMomoResponse = await authAxios.post("/api/payment/re-momo", requestBody);
+            const payUrl = reMomoResponse.data.payUrl;
+            
+            if (payUrl) {
+              // Open the payment URL in a new window
+              window.open(payUrl, "_blank");
+  
+              message.success({
+                content: "Đã mở cổng thanh toán MOMO. Vui lòng hoàn tất thanh toán.",
+                duration: 5,
+              });
+            } else {
+              message.error("Không nhận được đường dẫn thanh toán từ MOMO");
+            }
+          } catch (reMomoError) {
+            console.error("Error with re-momo payment:", reMomoError);
+            message.error("Không thể khởi tạo lại thanh toán. Vui lòng thử lại sau.");
+          }
+        } else {
+          throw error; // Re-throw the error to be caught by the outer catch block
+        }
       }
-
+  
       setLoading(false);
     } catch (error) {
       setLoading(false);
       console.error("Error initiating payment:", error);
-
+  
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
           message.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
