@@ -92,8 +92,10 @@ const StaffCartScreen: React.FC = () => {
   const fetchOrderDetails = async () => {
     try {
       if (paymentJustCompleted) {
-        setLoading(false);
-        return;
+        setOrderItems([]);
+      setOrder(null);
+      setLoading(false);
+      return;
       }
       setLoading(true);
       const userId = localStorage.getItem("userId");
@@ -110,11 +112,15 @@ const StaffCartScreen: React.FC = () => {
 
       if (paymentCompleted === "true") {
         localStorage.removeItem("paymentCompleted"); // Clear the flag
-        setLoading(false);
+        setOrderItems([]);
+      setOrder(null);
+      setLoading(false);
         return;
       }
 
       if (!currentOrderId) {
+        setOrderItems([]);
+        setOrder(null);
         setLoading(false);
         return; // No order to fetch, will show empty cart
       }
