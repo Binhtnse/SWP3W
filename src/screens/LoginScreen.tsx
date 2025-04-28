@@ -36,11 +36,13 @@ const LoginPage: React.FC = () => {
       );
 
       if (response.status === 200) {
-        const { email, role, accessToken } = response.data;
+        const { email, role, accessToken, id, fullNmae } = response.data;
 
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("userEmail", email);
         localStorage.setItem("userRole", role);
+        localStorage.setItem("userId", id);
+        localStorage.setItem("userFullName", fullNmae);
 
         setLoginStatus("success");
         setLoginMessage(`🎉 Đăng nhập thành công! Chào mừng ${email} đến với Trà sữa ngọt ngào!`);

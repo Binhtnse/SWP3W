@@ -1,144 +1,166 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Button, 
-  Typography, 
-  Divider, 
-  Table, 
-  Space, 
-  Modal, 
-  message, 
-  Spin,
-  Tag,
-  Empty,
-} from 'antd';
-import { 
-  ArrowLeftOutlined, 
-  ShoppingCartOutlined, 
-  DeleteOutlined,
-  ExclamationCircleOutlined,
-  CheckCircleOutlined,
-  CreditCardOutlined
-} from '@ant-design/icons';
+import { Button, Typography, Divider, Table, Space, Modal, message, Spin, Tag, Empty } from 'antd';
+import { ArrowLeftOutlined, ShoppingCartOutlined, DeleteOutlined, ExclamationCircleOutlined, CheckCircleOutlined, CreditCardOutlined } from '@ant-design/icons';
 import { StyledHeader, HeaderContent, LogoSection, IconContainer, TitleContainer, ContentSection, ActionButton, OrderSummary, SummaryInfo, SummaryActions, LoadingContainer, BackButton } from '../components/styled components/StaffCartStyles';
+import axios from 'axios';
 
 const { Text } = Typography;
 const { confirm } = Modal;
 
-interface OrderItem {
+interface OrderItemChild {
   id: number;
-  productId: number;
   productName: string;
   quantity: number;
-  size: string;
-  ice: string;
-  toppings: string[];
-  note: string;
   unitPrice: number;
-  totalPrice: number;
+  size: string | null;
+  note: string | null;
+  childItems: OrderItemChild[];
+  combo: boolean;
+}
+
+interface OrderItem {
+  id: number;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  size: string | null;
+  note: string | null;
+  childItems: OrderItemChild[];
+  combo: boolean;
 }
 
 interface Order {
-  id: string;
-  items: OrderItem[];
-  totalAmount: number;
-  note: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'paid';
-  createdAt: Date;
-  table?: string;
-  customer?: string;
+  id: number;
+  totalPrice: number;
+  status: string;
+  createAt: string;
+  updateAt: string | null;
+  deleteAt: string | null;
+  userId: number;
+  userName: string;
+  items?: OrderItem[];
 }
 
-// Mock data for confirmed orders
-const mockOrders: Order[] = [
-  {
-    id: 'ORD' + Math.floor(Math.random() * 10000),
-    items: [
-      {
-        id: 1,
-        productId: 1,
-        productName: 'Trà sữa truyền thống',
-        quantity: 2,
-        size: 'M',
-        ice: '70%',
-        toppings: ['Trân châu đen', 'Pudding'],
-        note: 'Ít đường',
-        unitPrice: 35000,
-        totalPrice: 96000
-      },
-      {
-        id: 2,
-        productId: 3,
-        productName: 'Trà đào',
-        quantity: 1,
-        size: 'L',
-        ice: '100%',
-        toppings: ['Thạch trái cây'],
-        note: '',
-        unitPrice: 30000,
-        totalPrice: 42000
-      }
-    ],
-    totalAmount: 138000,
-    note: '',
-    status: 'confirmed',
-    createdAt: new Date(),
-    table: 'Bàn 01'
-  },
-  {
-    id: 'ORD' + Math.floor(Math.random() * 10000),
-    items: [
-      {
-        id: 3,
-        productId: 2,
-        productName: 'Matcha đá xay',
-        quantity: 1,
-        size: 'L',
-        ice: '50%',
-        toppings: ['Kem phô mai'],
-        note: 'Ít đá',
-        unitPrice: 45000,
-        totalPrice: 55000
-      }
-    ],
-    totalAmount: 55000,
-    note: 'Khách mang đi',
-    status: 'confirmed',
-    createdAt: new Date(),
-    customer: 'Nguyễn Văn A'
-  }
-];
+interface ApiResponse {
+  data: Order[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
 
 const StaffCartScreen: React.FC = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const getAuthAxios = () => {
+    const accessToken = localStorage.getItem("accessToken");
+    return axios.create({
+      baseURL: "https://beautiful-unity-production.up.railway.app",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  };
 
   useEffect(() => {
-    // Simulate loading order data
-    const timer = setTimeout(() => {
-      setOrders(mockOrders);
-      setLoading(false);
-    }, 800);
-    
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const userId = localStorage.getItem("userId");
+        
+        if (!userId) {
+          message.error("Không tìm thấy thông tin người dùng, vui lòng đăng nhập lại");
+          navigate("/");
+          return;
+        }
+
+        const authAxios = getAuthAxios();
+        const response = await authAxios.get<ApiResponse>(
+          "/api/orders?page=0&size=20&status=PENDING"
+        );
+
+        // Filter orders to only show those created by the current user
+        const userOrders = response.data.data.filter(
+          (order) => order.userId.toString() === userId
+        );
+
+        // Fetch order details for each order
+        const ordersWithDetails = await Promise.all(
+          userOrders.map(async (order) => {
+            try {
+              const detailsResponse = await authAxios.get<OrderItem[]>(`/api/orders/${order.id}/details`);
+              return {
+                ...order,
+                items: detailsResponse.data
+              };
+            } catch (error) {
+              console.error(`Error fetching details for order ${order.id}:`, error);
+              return order;
+            }
+          })
+        );
+
+        setOrders(ordersWithDetails);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+        
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          message.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("userEmail");
+          localStorage.removeItem("userRole");
+          localStorage.removeItem("userId");
+          navigate("/");
+        } else {
+          setError("Không thể tải danh sách đơn hàng. Vui lòng thử lại sau.");
+        }
+        
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [navigate]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
+  const formatDate = (dateString: string) => {
+    // The date format from API is "28/04/2025 01:59:52"
+    return dateString;
   };
 
-  const handleCancelOrder = (orderId: string) => {
+  // Helper function to render order items recursively
+  const renderOrderItems = (items: OrderItemChild[], level = 0): React.ReactNode => {
+    return items.map((item, index) => (
+      <div key={`${item.id}-${index}`} className={index > 0 ? 'mt-2 pt-2 border-t border-gray-200' : ''}>
+        <div className={`font-medium ${level > 0 ? 'ml-4' : ''}`} style={{ paddingLeft: level * 12 }}>
+          {level > 0 && <Tag color="purple" style={{ marginRight: 8 }}>Topping</Tag>}
+          {item.combo && <Tag color="blue" style={{ marginRight: 8 }}>Combo</Tag>}
+          {item.productName} x{item.quantity}
+        </div>
+        <div className={`text-sm text-gray-500 ${level > 0 ? 'ml-4' : ''}`} style={{ paddingLeft: level * 12 }}>
+          {item.size && `Size: ${item.size}`}
+          {item.unitPrice && `, Đơn giá: ${formatCurrency(item.unitPrice)}`}
+          {item.note && `, Ghi chú: ${item.note}`}
+        </div>
+        {item.childItems && item.childItems.length > 0 && (
+          <div className="mt-1">
+            {renderOrderItems(item.childItems, level + 1)}
+          </div>
+        )}
+      </div>
+    ));
+  };
+
+  const handleCancelOrder = (orderId: number) => {
     confirm({
       title: 'Xác nhận hủy đơn hàng',
       icon: <ExclamationCircleOutlined />,
@@ -146,15 +168,28 @@ const StaffCartScreen: React.FC = () => {
       okText: 'Hủy đơn hàng',
       okType: 'danger',
       cancelText: 'Quay lại',
-      onOk() {
-        const updatedOrders = orders.filter(order => order.id !== orderId);
-        setOrders(updatedOrders);
-        message.success('Đã hủy đơn hàng');
+      onOk: async () => {
+        try {
+          const authAxios = getAuthAxios();
+          await authAxios.put(`/api/orders/${orderId}/cancel`);
+          
+          const updatedOrders = orders.filter(order => order.id !== orderId);
+          setOrders(updatedOrders);
+          message.success('Đã hủy đơn hàng');
+        } catch (error) {
+          console.error("Error cancelling order:", error);
+          message.error('Không thể hủy đơn hàng. Vui lòng thử lại sau.');
+        }
       }
     });
   };
 
   const handleCancelAllOrders = () => {
+    if (orders.length === 0) {
+      message.warning('Không có đơn hàng nào để hủy');
+      return;
+    }
+
     confirm({
       title: 'Xác nhận hủy tất cả đơn hàng',
       icon: <ExclamationCircleOutlined />,
@@ -162,9 +197,23 @@ const StaffCartScreen: React.FC = () => {
       okText: 'Hủy tất cả',
       okType: 'danger',
       cancelText: 'Quay lại',
-      onOk() {
-        setOrders([]);
-        message.success('Đã hủy tất cả đơn hàng');
+      onOk: async () => {
+        try {
+          const authAxios = getAuthAxios();
+          
+          // Cancel all orders in parallel
+          await Promise.all(
+            orders.map(order => 
+              authAxios.put(`/api/orders/${order.id}/cancel`)
+            )
+          );
+          
+          setOrders([]);
+          message.success('Đã hủy tất cả đơn hàng');
+        } catch (error) {
+          console.error("Error cancelling all orders:", error);
+          message.error('Không thể hủy tất cả đơn hàng. Vui lòng thử lại sau.');
+        }
       }
     });
   };
@@ -182,15 +231,29 @@ const StaffCartScreen: React.FC = () => {
       okText: 'Thanh toán',
       okType: 'primary',
       cancelText: 'Hủy',
-      onOk() {
-        setOrders([]);
-        message.success('Thanh toán tất cả đơn hàng thành công!');
+      onOk: async () => {
+        try {
+          const authAxios = getAuthAxios();
+          
+          // Process payment for all orders in parallel
+          await Promise.all(
+            orders.map(order => 
+              authAxios.put(`/api/orders/${order.id}/pay`)
+            )
+          );
+          
+          setOrders([]);
+          message.success('Thanh toán tất cả đơn hàng thành công!');
+        } catch (error) {
+          console.error("Error paying for all orders:", error);
+          message.error('Không thể thanh toán. Vui lòng thử lại sau.');
+        }
       }
     });
   };
 
   const calculateTotalAmount = () => {
-    return orders.reduce((sum, order) => sum + order.totalAmount, 0);
+    return orders.reduce((sum, order) => sum + order.totalPrice, 0);
   };
 
   const columns = [
@@ -198,9 +261,9 @@ const StaffCartScreen: React.FC = () => {
       title: 'Mã đơn hàng',
       dataIndex: 'id',
       key: 'id',
-      render: (id: string) => (
+      render: (id: number) => (
         <Tag color="blue" className="text-base px-3 py-1">
-          {id}
+          #{id}
         </Tag>
       ),
     },
@@ -211,16 +274,11 @@ const StaffCartScreen: React.FC = () => {
       render: (_: unknown, record: Order) => (
         <div>
           <div className="font-semibold">
-            {record.table ? `${record.table}` : record.customer ? `Khách hàng: ${record.customer}` : 'Khách lẻ'}
+            Khách hàng: {record.userName || 'Khách lẻ'}
           </div>
           <div className="text-sm text-gray-500">
-            Thời gian: {formatDate(record.createdAt)}
+            Thời gian: {formatDate(record.createAt)}
           </div>
-          {record.note && (
-            <div className="text-sm text-gray-500">
-              Ghi chú: {record.note}
-            </div>
-          )}
         </div>
       ),
     },
@@ -228,24 +286,20 @@ const StaffCartScreen: React.FC = () => {
       title: 'Sản phẩm',
       dataIndex: 'items',
       key: 'items',
-      render: (items: OrderItem[]) => (
+      render: (items: OrderItem[] | undefined) => (
         <div>
-          {items.map((item, index) => (
-            <div key={index} className={index > 0 ? 'mt-2 pt-2 border-t border-gray-200' : ''}>
-              <div className="font-medium">{item.productName} x{item.quantity}</div>
-              <div className="text-sm text-gray-500">
-                {item.size}, Đá: {item.ice}
-                {item.toppings.length > 0 && `, Topping: ${item.toppings.join(', ')}`}
-              </div>
-            </div>
-          ))}
+          {items && items.length > 0 ? (
+            renderOrderItems(items)
+          ) : (
+            <Text type="secondary">Đang tải chi tiết...</Text>
+          )}
         </div>
       ),
     },
     {
       title: 'Tổng tiền',
-      dataIndex: 'totalAmount',
-      key: 'totalAmount',
+      dataIndex: 'totalPrice',
+      key: 'totalPrice',
       render: (amount: number) => (
         <div className="text-right font-semibold">{formatCurrency(amount)}</div>
       ),
@@ -271,6 +325,23 @@ const StaffCartScreen: React.FC = () => {
     return (
       <LoadingContainer>
         <Spin size="large" tip="Đang tải..." />
+      </LoadingContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <LoadingContainer>
+        <div className="text-center">
+          <Text type="danger" style={{ fontSize: '16px' }}>{error}</Text>
+          <Button 
+            type="primary" 
+            onClick={() => window.location.reload()} 
+            style={{ marginTop: '16px' }}
+          >
+            Thử lại
+          </Button>
+        </div>
       </LoadingContainer>
     );
   }
@@ -327,6 +398,7 @@ const StaffCartScreen: React.FC = () => {
                   danger
                   icon={<DeleteOutlined />}
                   onClick={handleCancelAllOrders}
+                  disabled={orders.length === 0}
                 >
                   Hủy tất cả
                 </Button>
@@ -335,6 +407,7 @@ const StaffCartScreen: React.FC = () => {
                   icon={<CreditCardOutlined />}
                   onClick={handlePayAllOrders}
                   className="green"
+                  disabled={orders.length === 0}
                 >
                   Thanh toán tất cả
                 </ActionButton>

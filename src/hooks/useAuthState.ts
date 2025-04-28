@@ -4,26 +4,25 @@ export const useAuthState = () => {
   // Initialize state from localStorage immediately
   const accessToken = localStorage.getItem("accessToken");
   const userRole = localStorage.getItem("userRole");
-  const userEmail = localStorage.getItem("userEmail");
+  const userFullName = localStorage.getItem("userFullName");
   
   const [role, setRole] = useState<string>(userRole || "");
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(!!accessToken);
-  const [userName, setUserName] = useState<string>(userEmail || "");
+  const [userName, setUserName] = useState<string>(userFullName || "");
 
   const isLoggedInRef = useRef(!!accessToken);
   const roleRef = useRef(userRole || "");
-  const userNameRef = useRef(userEmail || "");
+  const userNameRef = useRef(userFullName || "");
 
   const checkAuthState = useCallback(() => {
     // Check for tokens directly
     const accessToken = localStorage.getItem("accessToken");
     const userRole = localStorage.getItem("userRole");
-    const userEmail = localStorage.getItem("userEmail");
+    const userFullName = localStorage.getItem("userFullName");
 
     console.log("Auth state check:", { 
       accessToken, 
       userRole, 
-      userEmail,
       currentIsLoggedIn: isLoggedInRef.current,
       currentRole: roleRef.current
     });
@@ -39,9 +38,9 @@ export const useAuthState = () => {
       roleRef.current = role;
       
       // Set username if available
-      if (userEmail) {
-        setUserName(userEmail);
-        userNameRef.current = userEmail;
+      if (userFullName) {
+        setUserName(userFullName);
+        userNameRef.current = userFullName;
       }
       
       console.log("User authenticated:", { 

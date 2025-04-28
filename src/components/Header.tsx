@@ -58,7 +58,11 @@ const Header: React.FC = () => {
 
     message.success('Đăng xuất thành công!');
 
-    navigate('/login');
+    navigate('/');
+
+  };
+  const handleCartClick = () => {
+    navigate('/staff/cart'); // Navigate to the cart page
   };
 
   return (
@@ -79,6 +83,7 @@ const Header: React.FC = () => {
               type="primary" 
               icon={<ShoppingCartOutlined />}
               size="large"
+              onClick={handleCartClick}
               className="bg-amber-700 hover:bg-amber-800 border-amber-700"
             >
               Giỏ Hàng
