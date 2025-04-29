@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {Button,Modal,Form,Input,Space,message,Typography,TableProps,Divider,Tag,} from "antd";
-import {EditOutlined,DeleteOutlined,PlusOutlined,ExclamationCircleOutlined,SearchOutlined,ReloadOutlined,AppstoreOutlined,} from "@ant-design/icons";
+import {EditOutlined,PlusOutlined,SearchOutlined,ReloadOutlined,AppstoreOutlined,} from "@ant-design/icons";
 import axios from "axios";
 import { ColumnsType } from "antd/es/table";
 import { Container, Header, StyledTitle, FilterContainer, FilterRow, StyledTable, ActionButton, AddButton, ResetButton } from "../components/styled components/AdminCategoryStyles";
@@ -160,36 +160,6 @@ const AdminCategoryScreen: React.FC = () => {
       setSubmitting(false);
     }
   };
-  const handleDelete = async (id: number) => {
-    Modal.confirm({
-      title: "Bạn có chắc chắn muốn xóa danh mục này?",
-      content: "Hành động này không thể hoàn tác.",
-      okText: "Đồng ý",
-      okType: "danger",
-      cancelText: "Hủy",
-      icon: <ExclamationCircleOutlined style={{ color: "red" }} />,
-      onOk: async () => {
-        try {
-          const headers = getAuthHeader();
-          if (!headers) return;
-
-          await axios.delete(
-            `https://beautiful-unity-production.up.railway.app/api/category/${id}`,
-            { headers }
-          );
-          message.success("Xóa danh mục thành công");
-          fetchCategories(pagination.current - 1, pagination.pageSize);
-        } catch (error: unknown) {
-          console.error("Error deleting category:", error);
-          if (axios.isAxiosError(error) && error.response?.status === 401) {
-            message.error("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại");
-            navigate("/");
-          } else {
-            message.error("Không thể xóa danh mục");
-          }
-        }
-      },    });
-  };
 
   const columns: ColumnsType<Category> = [
     {
@@ -234,13 +204,6 @@ const AdminCategoryScreen: React.FC = () => {
             icon={<EditOutlined />}
             onClick={() => showEditModal(record)}
             title="Sửa"
-            shape="circle"
-          />
-          <ActionButton
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record.id)}
-            title="Xóa"
             shape="circle"
           />
         </Space>

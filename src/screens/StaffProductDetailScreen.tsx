@@ -142,14 +142,6 @@ interface Topping {
   price: number;
 }
 
-interface ComboItemCustomization {
-  productId: number;
-  size: string;
-  ice: string;
-  toppings: number[];
-  note: string[];
-}
-
 const StaffProductDetailScreen: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
@@ -161,13 +153,7 @@ const StaffProductDetailScreen: React.FC = () => {
   const [selectedIce, setSelectedIce] = useState<string>("100%");
   const [selectedToppings, setSelectedToppings] = useState<number[]>([]);
   const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
-  const [optionsModalVisible, setOptionsModalVisible] =
-    useState<boolean>(false);
-  const [comboItemCustomizations, setComboItemCustomizations] = useState<
-    ComboItemCustomization[]
-  >([]);
-  const [currentComboItemIndex, setCurrentComboItemIndex] =
-    useState<number>(-1);
+  const [optionsModalVisible, setOptionsModalVisible] = useState<boolean>(false);
   const [isAddingToOrder, setIsAddingToOrder] = useState<boolean>(false);
   const [orderSuccess, setOrderSuccess] = useState<boolean>(false);
 
@@ -267,37 +253,6 @@ const StaffProductDetailScreen: React.FC = () => {
     }
   }, [productId, navigate]);
 
-  useEffect(() => {
-    if (
-      product?.isCombo &&
-      product.comboItems &&
-      product.comboItems.length > 0
-    ) {
-      const initialCustomizations = product.comboItems.map((item) => ({
-        productId: item.productId,
-        size: item.size || "M",
-        ice: "100%",
-        toppings: [],
-        note: [],
-      }));
-      setComboItemCustomizations(initialCustomizations);
-    }
-  }, [product]);
-
-  const showComboItemOptionsModal = (index: number) => {
-    setCurrentComboItemIndex(index);
-    setOptionsModalVisible(true);
-
-    // Set the current selections based on the combo item's customization
-    const customization = comboItemCustomizations[index];
-    if (customization) {
-      setSelectedSize(customization.size);
-      setSelectedIce(customization.ice);
-      setSelectedToppings(customization.toppings);
-      setSelectedNotes(customization.note);
-    }
-  };
-
   const handleQuantityChange = (value: number | null) => {
     if (value !== null && value > 0) {
       setQuantity(value);
@@ -346,26 +301,8 @@ const StaffProductDetailScreen: React.FC = () => {
       total *= quantity;
       return total;
     } else {
-      // Combo price calculation
+      // Simplified combo price calculation without customizations
       let total = product.price;
-
-      // Add additional costs for customizations
-      comboItemCustomizations.forEach((customization, index) => {
-        console.log(index);
-        // Add size adjustments
-        total +=
-          sizeAdjustments[customization.size as keyof typeof sizeAdjustments] ||
-          0;
-
-        // Add topping prices
-        const toppingPrice = customization.toppings.reduce((sum, toppingId) => {
-          const topping = toppings.find((t) => t.id === toppingId);
-          return sum + (topping ? topping.price : 0);
-        }, 0);
-
-        total += toppingPrice;
-      });
-
       total *= quantity;
       return total;
     }
@@ -383,28 +320,25 @@ const StaffProductDetailScreen: React.FC = () => {
       let requestBody;
 
       if (product.isCombo) {
-        // For combo products - child items are the products in the combo
-        const childItems = comboItemCustomizations.map(
-          (customization, index) => {
-            const comboItem = product.comboItems?.[index];
-            return {
-              productId: customization.productId,
-              quantity: comboItem?.quantity || 1,
-              size: customization.size,
-              note: customization.note.join(", "),
-              isCombo: false,
-              childItems: [], // Combo items don't have their own child items
-            };
-          }
-        );
+        // For combo products - simplified without customizations
+        const childItems = product.comboItems?.map((comboItem) => {
+          return {
+            productId: comboItem.productId,
+            quantity: comboItem.quantity || 1,
+            size: comboItem.size || "M",
+            note: "",
+            isCombo: false,
+            childItems: [], // Combo items don't have their own child items
+          };
+        }) || [];
 
         requestBody = {
           parentItems: [
             {
               productId: product.id,
               quantity: quantity,
-              size: selectedSize,
-              note: selectedNotes.join(", "),
+              size: "M", // Default size for combo
+              note: "",
               childItems: childItems,
               isCombo: true,
             },
@@ -417,7 +351,7 @@ const StaffProductDetailScreen: React.FC = () => {
           console.log(topping);
           return {
             productId: toppingId,
-            quantity: 1,
+            quantity: quantity,
             size: "NONE",
             note: "",
             isCombo: false,
@@ -515,18 +449,6 @@ const StaffProductDetailScreen: React.FC = () => {
   };
 
   const handleOptionsModalOk = () => {
-    if (product?.isCombo && currentComboItemIndex >= 0) {
-      // Update the customization for the current combo item
-      const updatedCustomizations = [...comboItemCustomizations];
-      updatedCustomizations[currentComboItemIndex] = {
-        ...updatedCustomizations[currentComboItemIndex],
-        size: selectedSize,
-        ice: selectedIce,
-        toppings: selectedToppings,
-        note: selectedNotes,
-      };
-      setComboItemCustomizations(updatedCustomizations);
-    }
     setOptionsModalVisible(false);
   };
 
@@ -658,37 +580,14 @@ const StaffProductDetailScreen: React.FC = () => {
                           <ComboItemName>{item.productName}</ComboItemName>
                           <ComboItemMeta>
                             <Tag color="blue" className="m-0">
-                              Size{" "}
-                              {comboItemCustomizations[index]?.size ||
-                                item.size}
+                              Size {item.size || "M"}
                             </Tag>
                             <Tag color="green" className="m-0">
                               x{item.quantity}
                             </Tag>
-                            {comboItemCustomizations[index]?.toppings.length >
-                              0 && (
-                              <Tag color="purple" className="m-0">
-                                {comboItemCustomizations[index].toppings.length}{" "}
-                                topping
-                              </Tag>
-                            )}
-                            {comboItemCustomizations[index]?.note.length >
-                              0 && (
-                              <Tag color="orange" className="m-0">
-                                Có ghi chú
-                              </Tag>
-                            )}
                           </ComboItemMeta>
                         </ComboItemDetails>
                       </ComboItemInfo>
-                      <Button
-                        type="primary"
-                        size="small"
-                        icon={<SettingOutlined />}
-                        onClick={() => showComboItemOptionsModal(index)}
-                      >
-                        Tùy chỉnh
-                      </Button>
                     </ComboItemCard>
                   ))}
                 </ComboList>
@@ -700,7 +599,7 @@ const StaffProductDetailScreen: React.FC = () => {
             <OptionsSummary>
               <div className="flex justify-between items-center mb-3">
                 <Title level={4} className="mb-0">
-                  {product.isCombo ? "Tùy chọn combo" : "Tùy chọn đã chọn"}
+                  {product.isCombo ? "Thông tin combo" : "Tùy chọn đã chọn"}
                 </Title>
                 {!product.isCombo && (
                   <OptionsButton
@@ -715,116 +614,12 @@ const StaffProductDetailScreen: React.FC = () => {
               {product.isCombo ? (
                 <div>
                   <Text strong>
-                    Tùy chỉnh từng món trong combo bằng cách nhấn nút "Tùy
-                    chỉnh" bên cạnh mỗi món.
+                    Combo được bán theo giá cố định, không thể tùy chỉnh từng món.
                   </Text>
-
-                  {comboItemCustomizations.length > 0 && (
-                    <div className="mt-4">
-                      <Title level={5} className="mb-2">
-                        Chi tiết tùy chỉnh:
-                      </Title>
-                      {product.comboItems?.map((item, index) => {
-                        const customization = comboItemCustomizations[index];
-                        if (!customization) return null;
-
-                        const hasToppings = customization.toppings.length > 0;
-                        const hasNotes = customization.note.length > 0;
-                        const hasCustomizations =
-                          customization.size !== item.size ||
-                          customization.ice !== "100%" ||
-                          hasToppings ||
-                          hasNotes;
-
-                        if (!hasCustomizations) return null;
-
-                        return (
-                          <div
-                            key={index}
-                            className="mb-3 p-3 bg-gray-50 rounded-md"
-                          >
-                            <div className="flex justify-between">
-                              <Text strong>{item.productName}</Text>
-                              <Button
-                                type="link"
-                                size="small"
-                                onClick={() => showComboItemOptionsModal(index)}
-                                icon={<SettingOutlined />}
-                              >
-                                Sửa
-                              </Button>
-                            </div>
-
-                            <div className="mt-1">
-                              <div className="mb-1">
-                                <Text strong className="text-sm">
-                                  Kích cỡ:{" "}
-                                </Text>
-                                <OptionTag color="blue">
-                                  {customization.size}
-                                </OptionTag>
-                              </div>
-
-                              <div className="mb-1">
-                                <Text strong className="text-sm">
-                                  Đá:{" "}
-                                </Text>
-                                <OptionTag color="cyan">
-                                  {customization.ice}
-                                </OptionTag>
-                              </div>
-
-                              {hasToppings && (
-                                <div className="mb-1">
-                                  <Text strong className="text-sm">
-                                    Topping:{" "}
-                                  </Text>
-                                  {customization.toppings.map(
-                                    (toppingId, idx) => {
-                                      const topping = toppings.find(
-                                        (t) => t.id === toppingId
-                                      );
-                                      return topping ? (
-                                        <OptionTag key={idx} color="purple">
-                                          {topping.name}
-                                        </OptionTag>
-                                      ) : null;
-                                    }
-                                  )}
-                                </div>
-                              )}
-
-                              {hasNotes && (
-                                <div className="mb-1">
-                                  <Text strong className="text-sm">
-                                    Ghi chú:{" "}
-                                  </Text>
-                                  {customization.note.map((note, idx) => (
-                                    <OptionTag key={idx} color="orange">
-                                      {note}
-                                    </OptionTag>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  <div className="mt-3">
-                    <Text strong>Tổng phụ phí: </Text>
-                    <OptionTag color="red">
-                      +
-                      {formatCurrency(
-                        calculateTotalPrice() - product.price * quantity
-                      )}
-                    </OptionTag>
-                  </div>
                 </div>
               ) : (
                 <div>
+                  {/* Regular product customization summary remains the same */}
                   <div className="mb-2">
                     <Text strong>Kích cỡ: </Text>
                     <OptionTag color="blue">{selectedSize}</OptionTag>
@@ -937,11 +732,7 @@ const StaffProductDetailScreen: React.FC = () => {
       </ProductCard>
 
       <Modal
-        title={
-          product?.isCombo && currentComboItemIndex >= 0 && product.comboItems
-            ? `Tùy chỉnh: ${product.comboItems[currentComboItemIndex].productName}`
-            : "Tùy chỉnh đồ uống"
-        }
+        title="Tùy chỉnh đồ uống"
         open={optionsModalVisible}
         onCancel={handleOptionsModalCancel}
         onOk={handleOptionsModalOk}
