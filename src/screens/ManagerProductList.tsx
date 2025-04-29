@@ -94,6 +94,7 @@ const ManagerProductScreen: React.FC = () => {
         headers
       });
       setCategories(response.data.data);
+      console.log(categories);
     } catch (error) {
       message.error('Không thể tải danh mục');
       if (axios.isAxiosError(error) && error.response?.status === 401) {
