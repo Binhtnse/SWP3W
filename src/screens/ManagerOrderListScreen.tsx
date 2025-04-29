@@ -66,33 +66,48 @@ const ManagerOrderListScreen: React.FC = () => {
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
   const formatDate = (date: string) => {
-    console.log("Original Date:", date); // Log the raw date for debugging
-
-    // Split the date string into components (DD, MM, YYYY, HH:MM:SS)
-    const [day, month, yearTime] = date.split('/');
-    if (!yearTime) return 'Invalid Date'; // Handle case where the format is not as expected
-
-    const [year, time] = yearTime.split(' ');
-    if (!time) return 'Invalid Date'; // Ensure time exists before proceeding
-
-    // Reformat the date into a valid ISO format (YYYY-MM-DDTHH:MM:SS)
-    const isoDate = `${year}-${month}-${day}T${time}:00`;
-
-    const formattedDate = new Date(isoDate);
+    if (!date) return 'N/A';
     
-    if (isNaN(formattedDate.getTime())) {
-      console.error("Invalid date format:", isoDate); // Log the invalid ISO date format
+    try {
+      // Check if the date is already in ISO format
+      if (date.includes('T') || date.includes('-')) {
+        const dateObj = new Date(date);
+        if (!isNaN(dateObj.getTime())) {
+          return new Intl.DateTimeFormat('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }).format(dateObj);
+        }
+      }
+      
+      // Handle DD/MM/YYYY HH:MM:SS format
+      const parts = date.split(/[/ :]/);
+      if (parts.length >= 6) {
+        const [day, month, year, hours, minutes, seconds] = parts;
+        // Create date in YYYY-MM-DDTHH:MM:SS format
+        const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}`;
+        const dateObj = new Date(isoDate);
+        
+        if (!isNaN(dateObj.getTime())) {
+          return new Intl.DateTimeFormat('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }).format(dateObj);
+        }
+      }
+      
+      // If all parsing attempts fail, return the original string
+      return date;
+    } catch (error) {
+      console.error("Error formatting date:", date, error);
       return 'Invalid Date';
     }
-
-    // Return the formatted date using Intl.DateTimeFormat
-    return new Intl.DateTimeFormat('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(formattedDate);
   };
 
   const columns = [
