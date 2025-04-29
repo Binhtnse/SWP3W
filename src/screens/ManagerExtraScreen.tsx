@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
-import { Table, message, Modal, Button, Form, Input, Select, Descriptions } from 'antd';
+import { Table, message, Modal, Button, Form, Input, Select, Descriptions, Switch } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import ManagerLayout from '../components/ManagerLayout';
@@ -150,19 +150,22 @@ const ManagerExtraScreen: React.FC = () => {
     }
   };
 
-
-  const deleteProduct = async (productId: number) => {
+  // Toggle status API call using DELETE method
+  const toggleProductStatus = async (productId: number, currentStatus: string) => {
+    const newStatus = currentStatus === 'ACTIVE' ? 'DELETED' : 'ACTIVE'; // Toggle status
     try {
       const headers = getAuthHeader();
       if (!headers) return;
 
-      await axios.delete(`https://beautiful-unity-production.up.railway.app/api/products/${productId}`, {
+      // Make DELETE API call to update status
+      await axios.delete(`https://beautiful-unity-production.up.railway.app/api/products/${productId}/status`, {
+        params: { status: newStatus },
         headers
       });
-      message.success('Sản phẩm đã được xóa');
-      fetchProducts();
+      message.success(`Trạng thái sản phẩm đã được cập nhật thành ${newStatus}`);
+      fetchProducts(); // Re-fetch products to update the status in the table
     } catch (error) {
-      message.error('Không thể xóa sản phẩm');
+      message.error('Không thể cập nhật trạng thái sản phẩm');
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         navigate('/login');
       }
@@ -257,13 +260,18 @@ const ManagerExtraScreen: React.FC = () => {
       title: 'Danh mục',
       dataIndex: 'categoryName',
     },
-    {
-      title: 'Loại sản phẩm',
-      dataIndex: 'productType',
-    },
+    // Removed "Loại sản phẩm" column
     {
       title: 'Trạng thái',
       dataIndex: 'status',
+      render: (status: string, record: Product) => (
+        <Switch
+          checked={status === 'ACTIVE'}
+          onChange={() => toggleProductStatus(record.id, status)} // Call the function to toggle the status
+          checkedChildren="Đang hoạt động"
+          unCheckedChildren="Ngừng hoạt động"
+        />
+      ),
     },
     {
       title: 'Hành động',
@@ -272,9 +280,6 @@ const ManagerExtraScreen: React.FC = () => {
         <>
           <Button type="link" onClick={() => showEditProductModal(record)}>
             Chỉnh sửa
-          </Button>
-          <Button type="link" danger onClick={() => deleteProduct(record.id)}>
-            Xóa
           </Button>
         </>
       ),

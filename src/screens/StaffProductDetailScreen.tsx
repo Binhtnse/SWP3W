@@ -1,13 +1,77 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {Card,Button,Image,Typography,Divider,Checkbox,Radio,InputNumber,Spin,message,Tag,Modal,RadioChangeEvent,Badge,Space,} from "antd";
-import {ArrowLeftOutlined,ShoppingCartOutlined,PlusOutlined,MinusOutlined,StarFilled,InfoCircleOutlined,CheckCircleFilled,SettingOutlined,} from "@ant-design/icons";
+import {
+  Card,
+  Button,
+  Image,
+  Typography,
+  Divider,
+  Checkbox,
+  Radio,
+  InputNumber,
+  Spin,
+  message,
+  Tag,
+  Modal,
+  RadioChangeEvent,
+  Badge,
+  Space,
+} from "antd";
+import {
+  ArrowLeftOutlined,
+  ShoppingCartOutlined,
+  PlusOutlined,
+  MinusOutlined,
+  StarFilled,
+  InfoCircleOutlined,
+  CheckCircleFilled,
+  SettingOutlined,
+} from "@ant-design/icons";
 import styled from "styled-components";
 import axios from "axios";
-import {PageContainer,BackButton,ProductCard,ProductContainer,ImageSection,ImageWrapper,DetailsSection,HeaderContainer,ProductInfo,TagsContainer,DescriptionBox,PriceText,ComboBox,ComboList,OptionSection,
-OptionGrid,ToppingGrid,ToppingContent,QuantityContainer,OrderSummary,SummaryContent,TotalPrice,
-ActionButtons,RecommendationsSection,RecommendationsGrid,LoadingContainer,LoadingContent,ErrorContainer,ErrorContent,OptionsButton,OptionsSummary,OptionTag,ComboHeader,ComboTitle,ComboIcon,
-ComboItemCard,ComboItemInfo,ComboItemNumber,ComboItemDetails,ComboItemName,ComboItemMeta,} from "../components/styled components/StaffProductDetailStyles";
+import {
+  PageContainer,
+  BackButton,
+  ProductCard,
+  ProductContainer,
+  ImageSection,
+  ImageWrapper,
+  DetailsSection,
+  HeaderContainer,
+  ProductInfo,
+  TagsContainer,
+  DescriptionBox,
+  PriceText,
+  ComboBox,
+  ComboList,
+  OptionSection,
+  OptionGrid,
+  ToppingGrid,
+  ToppingContent,
+  QuantityContainer,
+  OrderSummary,
+  SummaryContent,
+  TotalPrice,
+  ActionButtons,
+  RecommendationsSection,
+  RecommendationsGrid,
+  LoadingContainer,
+  LoadingContent,
+  ErrorContainer,
+  ErrorContent,
+  OptionsButton,
+  OptionsSummary,
+  OptionTag,
+  ComboHeader,
+  ComboTitle,
+  ComboIcon,
+  ComboItemCard,
+  ComboItemInfo,
+  ComboItemNumber,
+  ComboItemDetails,
+  ComboItemName,
+  ComboItemMeta,
+} from "../components/styled components/StaffProductDetailStyles";
 
 const { Title, Text, Paragraph } = Typography;
 const { Group: RadioGroup } = Radio;
@@ -104,16 +168,18 @@ const StaffProductDetailScreen: React.FC = () => {
   >([]);
   const [currentComboItemIndex, setCurrentComboItemIndex] =
     useState<number>(-1);
+  const [isAddingToOrder, setIsAddingToOrder] = useState<boolean>(false);
+  const [orderSuccess, setOrderSuccess] = useState<boolean>(false);
 
-    const getAuthAxios = () => {
-      const accessToken = localStorage.getItem("accessToken");
-      return axios.create({
-        baseURL: "https://beautiful-unity-production.up.railway.app",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-    };
+  const getAuthAxios = () => {
+    const accessToken = localStorage.getItem("accessToken");
+    return axios.create({
+      baseURL: "https://beautiful-unity-production.up.railway.app",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  };
 
   const sizeAdjustments = {
     S: -5000,
@@ -136,9 +202,7 @@ const StaffProductDetailScreen: React.FC = () => {
           return;
         }
 
-        const response = await authAxios.get(
-          `/api/products/${productId}`
-        );
+        const response = await authAxios.get(`/api/products/${productId}`);
 
         const productData = response.data;
 
@@ -180,7 +244,7 @@ const StaffProductDetailScreen: React.FC = () => {
         setLoading(false);
       } catch (error) {
         console.error("Error fetching product details:", error);
-        
+
         // Check if error is due to authentication
         if (axios.isAxiosError(error) && error.response?.status === 401) {
           message.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
@@ -191,7 +255,7 @@ const StaffProductDetailScreen: React.FC = () => {
         } else {
           message.error("Không thể tải thông tin sản phẩm");
         }
-        
+
         setLoading(false);
       }
     };
@@ -287,7 +351,7 @@ const StaffProductDetailScreen: React.FC = () => {
 
       // Add additional costs for customizations
       comboItemCustomizations.forEach((customization, index) => {
-        console.log(index)
+        console.log(index);
         // Add size adjustments
         total +=
           sizeAdjustments[customization.size as keyof typeof sizeAdjustments] ||
@@ -309,92 +373,128 @@ const StaffProductDetailScreen: React.FC = () => {
 
   const handleAddToOrder = async () => {
     if (!product) return;
-  
+
     try {
+      setIsAddingToOrder(true);
+      setOrderSuccess(false);
       const authAxios = getAuthAxios();
-      
+
       // Prepare the request body based on whether it's a combo or regular product
       let requestBody;
-      
+
       if (product.isCombo) {
         // For combo products - child items are the products in the combo
-        const childItems = comboItemCustomizations.map((customization, index) => {
-          const comboItem = product.comboItems?.[index];
-          return {
-            productId: customization.productId,
-            quantity: comboItem?.quantity || 1,
-            size: customization.size,
-            note: customization.note.join(', '),
-            isCombo: false,
-            childItems: [] // Combo items don't have their own child items
-          };
-        });
-        
+        const childItems = comboItemCustomizations.map(
+          (customization, index) => {
+            const comboItem = product.comboItems?.[index];
+            return {
+              productId: customization.productId,
+              quantity: comboItem?.quantity || 1,
+              size: customization.size,
+              note: customization.note.join(", "),
+              isCombo: false,
+              childItems: [], // Combo items don't have their own child items
+            };
+          }
+        );
+
         requestBody = {
           parentItems: [
             {
               productId: product.id,
               quantity: quantity,
               size: selectedSize,
-              note: selectedNotes.join(', '),
+              note: selectedNotes.join(", "),
               childItems: childItems,
-              isCombo: true
-            }
-          ]
+              isCombo: true,
+            },
+          ],
         };
       } else {
         // For regular products - child items are the toppings
-        const toppingItems = selectedToppings.map(toppingId => {
-          const topping = toppings.find(t => t.id === toppingId);
-          console.log(topping)
+        const toppingItems = selectedToppings.map((toppingId) => {
+          const topping = toppings.find((t) => t.id === toppingId);
+          console.log(topping);
           return {
             productId: toppingId,
             quantity: 1,
-            size: null,
+            size: "NONE",
             note: "",
             isCombo: false,
-            childItems: []
+            childItems: [],
           };
         });
-        
+
         requestBody = {
           parentItems: [
             {
               productId: product.id,
               quantity: quantity,
               size: selectedSize,
-              note: selectedNotes.join(', '),
+              note: selectedNotes.join(", "),
               childItems: toppingItems,
-              isCombo: false
-            }
-          ]
+              isCombo: false,
+            },
+          ],
         };
       }
-      
-      // Make the API call
-      const response = await authAxios.post('/api/orders', requestBody);
-      
+
+      // Check if there's an existing order ID in localStorage
+      const existingOrderId = localStorage.getItem("currentOrderId");
+      let response;
+
+      if (existingOrderId) {
+        // If order ID exists, use PUT endpoint to update the order
+        response = await authAxios.put(
+          `/api/v2/orders/${existingOrderId}`,
+          requestBody
+        );
+      } else {
+        // If no order ID exists, create a new order with POST
+        response = await authAxios.post("/api/v2/orders", requestBody);
+
+        // Store the new order ID in localStorage
+        if (response.data && response.data.id) {
+          localStorage.setItem("currentOrderId", response.data.id.toString());
+        }
+      }
+
       console.log("Order response:", response.data);
+      setOrderSuccess(true);
       message.success({
-        content: "Đã thêm vào đơn hàng thành công!",
+        content: existingOrderId
+          ? "Đã cập nhật đơn hàng thành công!"
+          : "Đã thêm vào đơn hàng thành công!",
         icon: <CheckCircleFilled style={{ color: "#52c41a" }} />,
       });
-      
     } catch (error) {
       console.error("Error adding to order:", error);
-      
+
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
           message.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
           localStorage.removeItem("accessToken");
           localStorage.removeItem("userEmail");
           localStorage.removeItem("userRole");
+          localStorage.removeItem("currentOrderId"); // Also remove the order ID
           navigate("/");
         } else {
-          message.error(`Không thể thêm vào đơn hàng: ${error.response?.data?.message || 'Đã xảy ra lỗi'}`);
+          message.error(
+            `Không thể thêm vào đơn hàng: ${
+              error.response?.data?.message || "Đã xảy ra lỗi"
+            }`
+          );
         }
       } else {
         message.error("Không thể thêm vào đơn hàng. Vui lòng thử lại sau.");
+      }
+    } finally {
+      setIsAddingToOrder(false);
+      // Reset success state after 3 seconds
+      if (orderSuccess) {
+        setTimeout(() => {
+          setOrderSuccess(false);
+        }, 3000);
       }
     }
   };
@@ -806,12 +906,28 @@ const StaffProductDetailScreen: React.FC = () => {
                 <ActionButtons>
                   <Button
                     type="primary"
-                    icon={<ShoppingCartOutlined />}
+                    icon={
+                      orderSuccess ? (
+                        <CheckCircleFilled />
+                      ) : (
+                        <ShoppingCartOutlined />
+                      )
+                    }
                     size="large"
                     onClick={handleAddToOrder}
-                    className="bg-green-500 hover:bg-green-600 h-12 px-8"
+                    loading={isAddingToOrder}
+                    className={`h-12 px-8 ${
+                      orderSuccess
+                        ? "bg-green-600 hover:bg-green-700"
+                        : "bg-green-500 hover:bg-green-600"
+                    }`}
+                    disabled={isAddingToOrder || orderSuccess}
                   >
-                    Thêm vào đơn hàng
+                    {isAddingToOrder
+                      ? "Đang xử lý..."
+                      : orderSuccess
+                      ? "Đã thêm thành công"
+                      : "Thêm vào đơn hàng"}
                   </Button>
                 </ActionButtons>
               </SummaryContent>

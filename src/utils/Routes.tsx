@@ -3,7 +3,6 @@ import { createBrowserRouter } from "react-router-dom";
 import StaffProductScreen from "../screens/StaffProductScreen";
 import StaffProductDetailScreen from "../screens/StaffProductDetailScreen";
 import StaffCartScreen from "../screens/StaffCartScreen";
-import StaffOrderPaymentScreen from "../screens/StaffOrderPaymentScreen";
 import LoginScreen from "../screens/LoginScreen";
 import ManagerOrderListScreen from "../screens/ManagerOrderListScreen";
 import AdminCategoryScreen from "../screens/AdminCategoryScreen";
@@ -47,16 +46,6 @@ export const AppRoutes = createBrowserRouter([
             <Layout>
                 <ProtectedRoute allowedRoles={["STAFF"]}>
                     <StaffCartScreen />
-                </ProtectedRoute>
-            </Layout>
-        ),
-    },
-    {
-        path: "/staff/payment",
-        element: (
-            <Layout>
-                <ProtectedRoute allowedRoles={["STAFF"]}>
-                    <StaffOrderPaymentScreen />
                 </ProtectedRoute>
             </Layout>
         ),

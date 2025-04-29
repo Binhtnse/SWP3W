@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
-import { Table, message, Modal, Button, Form, Input, Select, Descriptions } from 'antd';
+import { Table, message, Modal, Button, Form, Input, Select, Descriptions, Switch } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import ManagerLayout from '../components/ManagerLayout';
@@ -149,18 +149,20 @@ const ManagerProductScreen: React.FC = () => {
     }
   };
 
-  const deleteProduct = async (productId: number) => {
+  const toggleProductStatus = async (productId: number, currentStatus: string) => {
+    const newStatus = currentStatus === 'ACTIVE' ? 'DELETED' : 'ACTIVE'; // Toggle status
     try {
       const headers = getAuthHeader();
       if (!headers) return;
 
-      await axios.delete(`https://beautiful-unity-production.up.railway.app/api/products/${productId}`, {
-        headers
-      });
-      message.success('Sản phẩm đã được xóa');
-      fetchProducts();
+      await axios.delete(
+        `https://beautiful-unity-production.up.railway.app/api/products/${productId}/status`, 
+        { params: { status: newStatus }, headers }
+      );
+      message.success(`Trạng thái sản phẩm đã được cập nhật thành ${newStatus}`);
+      fetchProducts(); // Re-fetch products to update the status in the table
     } catch (error) {
-      message.error('Không thể xóa sản phẩm');
+      message.error('Không thể cập nhật trạng thái sản phẩm');
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         navigate('/login');
       }
@@ -247,22 +249,23 @@ const ManagerProductScreen: React.FC = () => {
       title: 'Mã sản phẩm',
       dataIndex: 'productCode',
     },
+    // Removed the "Loại sản phẩm" column
     {
       title: 'Giá',
       dataIndex: 'basePrice',
       render: (basePrice: number) => `${basePrice} VND`,
     },
     {
-      title: 'Danh mục',
-      dataIndex: 'categoryName',
-    },
-    {
-      title: 'Loại sản phẩm',
-      dataIndex: 'productType',
-    },
-    {
       title: 'Trạng thái',
       dataIndex: 'status',
+      render: (status: string, record: Product) => (
+        <Switch
+          checked={status === 'ACTIVE'}
+          onChange={() => toggleProductStatus(record.id, status)} // Toggle status
+          checkedChildren="Đang hoạt động"
+          unCheckedChildren="Ngừng hoạt động"
+        />
+      ),
     },
     {
       title: 'Hành động',
@@ -272,9 +275,7 @@ const ManagerProductScreen: React.FC = () => {
           <Button type="link" onClick={() => showEditProductModal(record)}>
             Chỉnh sửa
           </Button>
-          <Button type="link" danger onClick={() => deleteProduct(record.id)}>
-            Xóa
-          </Button>
+          {/* Removed "Xóa" button */}
         </>
       ),
     },
@@ -395,8 +396,6 @@ const ManagerProductScreen: React.FC = () => {
             <Descriptions.Item label="Mã sản phẩm">{selectedProduct.productCode}</Descriptions.Item>
             <Descriptions.Item label="Giá">{selectedProduct.basePrice} VND</Descriptions.Item>
             <Descriptions.Item label="Mô tả">{selectedProduct.description || 'Không có mô tả'}</Descriptions.Item>
-            <Descriptions.Item label="Danh mục">{selectedProduct.categoryName}</Descriptions.Item>
-            <Descriptions.Item label="Loại sản phẩm">{selectedProduct.productType}</Descriptions.Item>
             <Descriptions.Item label="Trạng thái">{selectedProduct.status}</Descriptions.Item>
             <Descriptions.Item label="Hình ảnh">
               <img

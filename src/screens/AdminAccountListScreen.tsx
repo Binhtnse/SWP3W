@@ -1,11 +1,39 @@
 import React, { useEffect, useState } from "react";
-import {Input,Select,Space,Modal,Form,DatePicker,message,Tag,Typography,Divider,} from "antd";
-import {EditOutlined,DeleteOutlined,PlusOutlined,SearchOutlined,ReloadOutlined,UserOutlined,} from "@ant-design/icons";
+import {
+  Input,
+  Select,
+  Space,
+  Modal,
+  Form,
+  DatePicker,
+  message,
+  Tag,
+  Typography,
+  Divider,
+} from "antd";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  ReloadOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import axios from "axios";
 import moment from "moment";
 import { TablePaginationConfig } from "antd/lib/table";
 import { FilterValue, SorterResult } from "antd/lib/table/interface";
-import {Container,Header,StyledTitle,FilterContainer,FilterRow,StyledTable,ActionButton,AddButton,ResetButton,} from "../components/styled components/AdminAccountListStyles";
+import {
+  Container,
+  Header,
+  StyledTitle,
+  FilterContainer,
+  FilterRow,
+  StyledTable,
+  ActionButton,
+  AddButton,
+  ResetButton,
+} from "../components/styled components/AdminAccountListStyles";
 import { useNavigate } from "react-router-dom";
 
 const { Option } = Select;
@@ -61,6 +89,9 @@ const AdminAccountListScreen: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
   console.log(submitting);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] =
+    useState<boolean>(false);
+  const [userToDelete, setUserToDelete] = useState<number | null>(null);
   const navigate = useNavigate();
   const [form] = Form.useForm();
 
@@ -230,14 +261,25 @@ const AdminAccountListScreen: React.FC = () => {
         typeof error.response === "object" &&
         "data" in error.response
       ) {
-        const errorResponse = error.response as { data: { message?: string }, status?: number };
-        
+        const errorResponse = error.response as {
+          data: { message?: string };
+          status?: number;
+        };
+
         if (errorResponse.status === 401) {
           message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
           navigate("/");
+        } else if (errorResponse.status === 409) {
+          message.error(
+            `Lỗi: ${
+              errorResponse.data.message || "Email đã tồn tại trong hệ thống"
+            }`
+          );
         } else {
           message.error(
-            `Lỗi: ${errorResponse.data.message || "Không thể thực hiện thao tác"}`
+            `Lỗi: ${
+              errorResponse.data.message || "Không thể thực hiện thao tác"
+            }`
           );
         }
       } else {
@@ -249,42 +291,45 @@ const AdminAccountListScreen: React.FC = () => {
     }
   };
 
-  const handleDelete = async (userId: number) => {
-    Modal.confirm({
-      title: "Bạn có chắc chắn muốn xóa tài khoản này?",
-      content: "Hành động này không thể hoàn tác.",
-      okText: "Đồng ý",
-      okType: "danger",
-      cancelText: "Hủy",
-      onOk: async () => {
-        try {
-          const headers = getAuthHeader();
-          if (!headers) return;
+  const showDeleteModal = (userId: number) => {
+    setUserToDelete(userId);
+    setIsDeleteModalVisible(true);
+  };
 
-          await axios.delete(
-            `https://beautiful-unity-production.up.railway.app/api/users/${userId}`,
-            { headers }
-          );
-          message.success("Tài khoản đã được xóa thành công");
-          fetchUsers(pagination.current - 1, pagination.pageSize);
-        } catch (error: unknown) {
-          console.error("Error deleting user:", error);
-          if (
-            error &&
-            typeof error === "object" &&
-            "response" in error &&
-            error.response &&
-            typeof error.response === "object" &&
-            "status" in error.response &&
-            error.response.status === 401
-          ) {
-            message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
-            navigate("/");
-          } else {
-            message.error("Không thể xóa tài khoản");
-          }
-        }
-      },    });  };
+  const handleDelete = async () => {
+    if (!userToDelete) return;
+
+    try {
+      const headers = getAuthHeader();
+      if (!headers) return;
+
+      await axios.delete(
+        `https://beautiful-unity-production.up.railway.app/api/users/${userToDelete}`,
+        { headers }
+      );
+      message.success("Tài khoản đã được xóa thành công");
+      fetchUsers(pagination.current - 1, pagination.pageSize);
+    } catch (error: unknown) {
+      console.error("Error deleting user:", error);
+      if (
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        error.response &&
+        typeof error.response === "object" &&
+        "status" in error.response &&
+        error.response.status === 401
+      ) {
+        message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+        navigate("/");
+      } else {
+        message.error("Không thể xóa tài khoản");
+      }
+    } finally {
+      setIsDeleteModalVisible(false);
+      setUserToDelete(null);
+    }
+  };
 
   const columns = [
     {
@@ -369,7 +414,7 @@ const AdminAccountListScreen: React.FC = () => {
           <ActionButton
             danger
             icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record.id)}
+            onClick={() => showDeleteModal(record.id)}
             title="Xóa"
             shape="circle"
           />
@@ -654,6 +699,18 @@ const AdminAccountListScreen: React.FC = () => {
             </Select>
           </Form.Item>
         </Form>
+      </Modal>
+      <Modal
+        title="Xác nhận xóa tài khoản"
+        visible={isDeleteModalVisible}
+        onOk={handleDelete}
+        onCancel={() => setIsDeleteModalVisible(false)}
+        okText="Đồng ý"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true }}
+      >
+        <p>Bạn có chắc chắn muốn xóa tài khoản này?</p>
+        <p>Hành động này không thể hoàn tác.</p>
       </Modal>
     </Container>
   );
