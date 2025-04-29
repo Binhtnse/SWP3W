@@ -12,6 +12,7 @@ import {
   Input,
   Select,
   Tag,
+  Switch,
 } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -97,7 +98,6 @@ const ManagerComboList: React.FC = () => {
     fetchCombos();
     fetchCategories();
   }, []);
-
 
   const fetchCombos = async () => {
     setLoading(true);
@@ -288,6 +288,26 @@ const ManagerComboList: React.FC = () => {
     }
   };
 
+  const toggleStatus = async (comboId: number, currentStatus: string) => {
+    const newStatus = currentStatus === 'ACTIVE' ? 'DELETED' : 'ACTIVE'; // Toggle status
+    try {
+      const headers = getAuthHeader();
+      if (!headers) return;
+
+      await axios.delete(
+        `https://beautiful-unity-production.up.railway.app/api/products/${comboId}/status`, 
+        { params: { status: newStatus }, headers }
+      );
+      message.success(`Trạng thái combo đã được cập nhật thành ${newStatus}`);
+      fetchCombos(); // Re-fetch combos to update the status in the table
+    } catch (error) {
+      message.error('Không thể cập nhật trạng thái combo');
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        navigate('/');
+      }
+    }
+  };
+
   const getNotes = (combo: Combo) => {
     const isProductInCombo = combo.comboItems && combo.comboItems.length > 0;
     return isProductInCombo ? (
@@ -321,13 +341,18 @@ const ManagerComboList: React.FC = () => {
       dataIndex: 'basePrice',
       render: (basePrice: number) => `${basePrice} VND`,
     },
-    {
-      title: 'Danh mục',
-      dataIndex: 'categoryName',
-    },
+    // Removed the "Danh mục" column
     {
       title: 'Trạng thái',
       dataIndex: 'status',
+      render: (status: string, record: Combo) => (
+        <Switch
+          checked={status === 'ACTIVE'}
+          onChange={() => toggleStatus(record.id, status)} // Toggle status
+          checkedChildren="Đang hoạt động"
+          unCheckedChildren="Ngừng hoạt động"
+        />
+      ),
     },
     {
       title: 'Ghi chú',
@@ -357,6 +382,7 @@ const ManagerComboList: React.FC = () => {
         />
       </div>
 
+      {/* Modal for Combo Details */}
       <Modal
         title="Chi tiết Combo"
         visible={isDetailVisible}
@@ -411,6 +437,7 @@ const ManagerComboList: React.FC = () => {
         )}
       </Modal>
 
+      {/* Modal to Create Combo */}
       <Modal
         title="Tạo Combo Mới"
         visible={isCreateModalVisible}
@@ -427,6 +454,7 @@ const ManagerComboList: React.FC = () => {
         </Form>
       </Modal>
 
+      {/* Modal to Add Products */}
       <Modal
         title="Thêm sản phẩm vào combo"
         visible={isAddProductModalVisible}

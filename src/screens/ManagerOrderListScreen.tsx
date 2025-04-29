@@ -1,153 +1,99 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
-import { Table, Tag, Typography, Spin, Button, Modal, Descriptions, Layout } from 'antd';
+import { Table, Tag, Typography, Spin, Button, Modal, Descriptions, Layout, message } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
-
+import axios from 'axios';
 import ManagerLayout from '../components/ManagerLayout';
 
 const { Title } = Typography;
 const { Content } = Layout;
 
-interface OrderItem {
-  id: number;
-  productId: number;
-  productName: string;
-  quantity: number;
-  size: string;
-  ice: string;
-  toppings: string[];
-  note: string;
-  unitPrice: number;
-  totalPrice: number;
-}
-
 interface Order {
   id: string;
-  items: OrderItem[];
-  totalAmount: number;
-  note: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'paid';
-  createdAt: Date;
-  staff: string;
+  totalPrice: number;
+  status: string;
+  createAt: string;
+  updateAt: string;
+  userName: string;
 }
-
-const mockOrders: Order[] = [
-  {
-    id: 'ORD1001',
-    items: [
-      {
-        id: 1,
-        productId: 1,
-        productName: 'Trà sữa truyền thống',
-        quantity: 2,
-        size: 'M',
-        ice: '70%',
-        toppings: ['Trân châu đen'],
-        note: 'Ít đường',
-        unitPrice: 35000,
-        totalPrice: 80000,
-      }
-    ],
-    totalAmount: 80000,
-    note: '',
-    status: 'confirmed',
-    createdAt: new Date(),
-    staff: 'Nguyễn Văn B'
-  },
-  {
-    id: 'ORD1002',
-    items: [
-      {
-        id: 2,
-        productId: 2,
-        productName: 'Matcha đá xay',
-        quantity: 1,
-        size: 'L',
-        ice: '50%',
-        toppings: ['Kem phô mai'],
-        note: '',
-        unitPrice: 45000,
-        totalPrice: 50000,
-      }
-    ],
-    totalAmount: 50000,
-    note: 'Mang đi',
-    status: 'paid',
-    createdAt: new Date(),
-    staff: 'Trần Thị C'
-  },
-  {
-    id: 'ORD1003',
-    items: [
-      {
-        id: 3,
-        productId: 3,
-        productName: 'Trà đào',
-        quantity: 2,
-        size: 'M',
-        ice: '100%',
-        toppings: [],
-        note: '',
-        unitPrice: 30000,
-        totalPrice: 60000,
-      }
-    ],
-    totalAmount: 60000,
-    note: '',
-    status: 'completed',
-    createdAt: new Date(),
-    staff: 'Lê Quốc D'
-  },
-  {
-    id: 'ORD1004',
-    items: [
-      {
-        id: 4,
-        productId: 4,
-        productName: 'Cà phê sữa đá',
-        quantity: 1,
-        size: 'M',
-        ice: '100%',
-        toppings: [],
-        note: 'Không đường',
-        unitPrice: 25000,
-        totalPrice: 25000,
-      }
-    ],
-    totalAmount: 25000,
-    note: 'Phục vụ tại chỗ',
-    status: 'pending',
-    createdAt: new Date(),
-    staff: 'Ngô Minh E'
-  }
-];
 
 const ManagerOrderListScreen: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [page, setPage] = useState(1); // for pagination
+  const [totalPages, setTotalPages] = useState(1); // to track the total number of pages
+
+  const getAuthHeader = () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      message.error('Phiên đăng nhập hết hạn, vui lòng đăng nhập lại');
+      return null;
+    }
+    return { Authorization: `Bearer ${token}` };
+  };
+
+  const fetchOrders = async (page: number) => {
+    setLoading(true);
+    try {
+      const headers = getAuthHeader();
+      if (!headers) return;
+
+      const response = await axios.get('https://beautiful-unity-production.up.railway.app/api/v2/orders/all', {
+        params: { page },
+        headers,
+      });
+
+      const ordersData = response.data.data || [];
+      setOrders(ordersData);
+      setTotalPages(response.data.totalPages);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      message.error('Không thể tải danh sách đơn hàng');
+    }
+  };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setOrders(mockOrders);
-      setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
+    fetchOrders(page);
+  }, [page]);
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
-  const formatDate = (date: Date) =>
-    new Intl.DateTimeFormat('vi-VN', {
+  const formatDate = (date: string) => {
+    console.log("Original Date:", date); // Log the raw date for debugging
+
+    // Split the date string into components (DD, MM, YYYY, HH:MM:SS)
+    const [day, month, yearTime] = date.split('/');
+    if (!yearTime) return 'Invalid Date'; // Handle case where the format is not as expected
+
+    const [year, time] = yearTime.split(' ');
+    if (!time) return 'Invalid Date'; // Ensure time exists before proceeding
+
+    // Reformat the date into a valid ISO format (YYYY-MM-DDTHH:MM:SS)
+    const isoDate = `${year}-${month}-${day}T${time}:00`;
+
+    const formattedDate = new Date(isoDate);
+    
+    if (isNaN(formattedDate.getTime())) {
+      console.error("Invalid date format:", isoDate); // Log the invalid ISO date format
+      return 'Invalid Date';
+    }
+
+    // Return the formatted date using Intl.DateTimeFormat
+    return new Intl.DateTimeFormat('vi-VN', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
+      minute: '2-digit',
+    }).format(formattedDate);
+  };
 
   const columns = [
     {
@@ -158,13 +104,13 @@ const ManagerOrderListScreen: React.FC = () => {
     },
     {
       title: 'Người thực hiện',
-      dataIndex: 'staff',
-      key: 'staff',
+      dataIndex: 'userName',
+      key: 'userName',
     },
     {
       title: 'Tổng tiền',
-      dataIndex: 'totalAmount',
-      key: 'totalAmount',
+      dataIndex: 'totalPrice',
+      key: 'totalPrice',
       render: (amount: number) => formatCurrency(amount),
     },
     {
@@ -173,20 +119,17 @@ const ManagerOrderListScreen: React.FC = () => {
       key: 'status',
       render: (status: string) => {
         const color = {
-          pending: 'orange',
-          confirmed: 'blue',
-          completed: 'green',
-          cancelled: 'red',
-          paid: 'purple'
-        }[status];
+          PENDING: 'orange',
+          PAID: 'green',
+        }[status] || 'default';
         return <Tag color={color}>{status.toUpperCase()}</Tag>;
       },
     },
     {
-      title: 'Thời gian',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date: Date) => formatDate(date),
+      title: 'Thời gian tạo',
+      dataIndex: 'createAt',
+      key: 'createAt',
+      render: (date: string) => formatDate(date),
     },
     {
       title: 'Thao tác',
@@ -202,8 +145,8 @@ const ManagerOrderListScreen: React.FC = () => {
         >
           Xem chi tiết
         </Button>
-      )
-    }
+      ),
+    },
   ];
 
   const handleCloseModal = () => {
@@ -227,7 +170,12 @@ const ManagerOrderListScreen: React.FC = () => {
             columns={columns}
             rowKey="id"
             bordered
-            pagination={{ pageSize: 5 }}
+            pagination={{
+              pageSize: 5,
+              current: page,
+              total: totalPages * 5, // Assuming 5 items per page
+              onChange: (newPage) => setPage(newPage),
+            }}
           />
         </Content>
 
@@ -242,23 +190,13 @@ const ManagerOrderListScreen: React.FC = () => {
           {selectedOrder && (
             <Descriptions bordered column={1} size="small">
               <Descriptions.Item label="Mã đơn">{selectedOrder.id}</Descriptions.Item>
-              <Descriptions.Item label="Người thực hiện">{selectedOrder.staff}</Descriptions.Item>
-              <Descriptions.Item label="Tổng tiền">{formatCurrency(selectedOrder.totalAmount)}</Descriptions.Item>
+              <Descriptions.Item label="Người thực hiện">{selectedOrder.userName}</Descriptions.Item>
+              <Descriptions.Item label="Tổng tiền">{formatCurrency(selectedOrder.totalPrice)}</Descriptions.Item>
               <Descriptions.Item label="Trạng thái">
                 <Tag color="blue">{selectedOrder.status.toUpperCase()}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Thời gian">{formatDate(selectedOrder.createdAt)}</Descriptions.Item>
-              <Descriptions.Item label="Ghi chú">{selectedOrder.note || 'Không có'}</Descriptions.Item>
-              <Descriptions.Item label="Sản phẩm">
-                {selectedOrder.items.map((item) => (
-                  <div key={item.id}>
-                    <strong>{item.productName}</strong>
-                    <p>Size: {item.size}, Số lượng: {item.quantity}, Giá: {formatCurrency(item.unitPrice)}</p>
-                    <p>Ghi chú: {item.note}</p>
-                    <p>Topping: {item.toppings.join(', ')}</p>
-                  </div>
-                ))}
-              </Descriptions.Item>
+              <Descriptions.Item label="Thời gian tạo">{formatDate(selectedOrder.createAt)}</Descriptions.Item>
+              <Descriptions.Item label="Thời gian cập nhật">{formatDate(selectedOrder.updateAt)}</Descriptions.Item>
             </Descriptions>
           )}
         </Modal>
