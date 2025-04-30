@@ -351,7 +351,7 @@ const StaffProductDetailScreen: React.FC = () => {
           console.log(topping);
           return {
             productId: toppingId,
-            quantity: quantity,
+            quantity: 1,
             size: "NONE",
             note: "",
             isCombo: false,
