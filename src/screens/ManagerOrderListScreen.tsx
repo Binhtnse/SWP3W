@@ -2,7 +2,19 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
-import { Table, Tag, Typography, Spin, Button, Modal, Descriptions, Layout, message } from 'antd';
+import {
+  Table,
+  Tag,
+  Typography,
+  Button,
+  Modal,
+  Descriptions,
+  Layout,
+  message,
+  Input,
+  Select,
+  Space,
+} from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
 import axios from 'axios';
@@ -10,9 +22,10 @@ import ManagerLayout from '../components/ManagerLayout';
 
 const { Title } = Typography;
 const { Content } = Layout;
+const { Option } = Select;
 
 interface Order {
-  id: string;
+  id: number;
   totalPrice: number;
   status: string;
   createAt: string;
@@ -25,8 +38,12 @@ const ManagerOrderListScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [page, setPage] = useState(1); // for pagination
-  const [totalPages, setTotalPages] = useState(1); // to track the total number of pages
+  const [orderDetails, setOrderDetails] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+  const [totalPages, setTotalPages] = useState(1);
+  const [filterStatus, setFilterStatus] = useState<string | undefined>(undefined);
+  const [filterUserName, setFilterUserName] = useState<string>('');
 
   const getAuthHeader = () => {
     const token = localStorage.getItem('accessToken');
@@ -37,14 +54,19 @@ const ManagerOrderListScreen: React.FC = () => {
     return { Authorization: `Bearer ${token}` };
   };
 
-  const fetchOrders = async (page: number) => {
+  const fetchOrders = async (page: number, size: number) => {
     setLoading(true);
     try {
       const headers = getAuthHeader();
       if (!headers) return;
 
-      const response = await axios.get('https://beautiful-unity-production.up.railway.app/api/v2/orders/all', {
-        params: { page },
+      const response = await axios.get('https://beautiful-unity-production.up.railway.app/api/orders', {
+        params: {
+          page: page - 1,
+          size: size,
+          status: filterStatus,
+          staffName: filterUserName || undefined,
+        },
         headers,
       });
 
@@ -52,6 +74,7 @@ const ManagerOrderListScreen: React.FC = () => {
       setOrders(ordersData);
       setTotalPages(response.data.totalPages);
       setLoading(false);
+      console.log(loading)
     } catch (error) {
       setLoading(false);
       message.error('Không thể tải danh sách đơn hàng');
@@ -59,38 +82,29 @@ const ManagerOrderListScreen: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchOrders(page);
-  }, [page]);
+    fetchOrders(page, pageSize);
+  }, [page, pageSize]);
+
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setPage(1);
+      fetchOrders(1, pageSize);
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [filterStatus, filterUserName]);
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
   const formatDate = (date: string) => {
     if (!date) return 'N/A';
-    
     try {
-      // Check if the date is already in ISO format
-      if (date.includes('T') || date.includes('-')) {
-        const dateObj = new Date(date);
-        if (!isNaN(dateObj.getTime())) {
-          return new Intl.DateTimeFormat('vi-VN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          }).format(dateObj);
-        }
-      }
-      
-      // Handle DD/MM/YYYY HH:MM:SS format
       const parts = date.split(/[/ :]/);
       if (parts.length >= 6) {
         const [day, month, year, hours, minutes, seconds] = parts;
-        // Create date in YYYY-MM-DDTHH:MM:SS format
         const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}`;
         const dateObj = new Date(isoDate);
-        
         if (!isNaN(dateObj.getTime())) {
           return new Intl.DateTimeFormat('vi-VN', {
             day: '2-digit',
@@ -101,8 +115,6 @@ const ManagerOrderListScreen: React.FC = () => {
           }).format(dateObj);
         }
       }
-      
-      // If all parsing attempts fail, return the original string
       return date;
     } catch (error) {
       console.error("Error formatting date:", date, error);
@@ -115,7 +127,7 @@ const ManagerOrderListScreen: React.FC = () => {
       title: 'Mã đơn',
       dataIndex: 'id',
       key: 'id',
-      render: (id: string) => <Tag color="blue">{id}</Tag>,
+      render: (id: number) => <Tag color="blue">{id}</Tag>,
     },
     {
       title: 'Người thực hiện',
@@ -153,9 +165,17 @@ const ManagerOrderListScreen: React.FC = () => {
         <Button
           type="link"
           icon={<EyeOutlined />}
-          onClick={() => {
+          onClick={async () => {
             setSelectedOrder(record);
             setIsModalVisible(true);
+            try {
+              const headers = getAuthHeader();
+              if (!headers) return;
+              const res = await axios.get(`https://beautiful-unity-production.up.railway.app/api/orders/${record.id}/details`, { headers });
+              setOrderDetails(res.data || []);
+            } catch {
+              message.error("Không thể tải chi tiết đơn hàng");
+            }
           }}
         >
           Xem chi tiết
@@ -166,12 +186,9 @@ const ManagerOrderListScreen: React.FC = () => {
 
   const handleCloseModal = () => {
     setSelectedOrder(null);
+    setOrderDetails([]);
     setIsModalVisible(false);
   };
-
-  if (loading) {
-    return <Spin tip="Đang tải danh sách đơn hàng..." style={{ marginTop: 100 }} />;
-  }
 
   return (
     <ManagerLayout>
@@ -180,21 +197,48 @@ const ManagerOrderListScreen: React.FC = () => {
           <StyledHeader>
             <StyledTitle level={2}>Danh sách đơn hàng</StyledTitle>
           </StyledHeader>
+
+          <Space style={{ marginBottom: 16 }} wrap>
+            <Select
+              placeholder="Chọn trạng thái"
+              allowClear
+              style={{ width: 180 }}
+              value={filterStatus}
+              onChange={(value) => setFilterStatus(value)}
+            >
+              <Option value="PENDING">PENDING</Option>
+              <Option value="PAID">PAID</Option>
+            </Select>
+
+            <Input
+              placeholder="Nhập tên người thực hiện"
+              value={filterUserName}
+              onChange={(e) => setFilterUserName(e.target.value)}
+              style={{ width: 220 }}
+            />
+          </Space>
+
           <Table
             dataSource={orders}
             columns={columns}
             rowKey="id"
             bordered
             pagination={{
-              pageSize: 5,
               current: page,
-              total: totalPages * 5, // Assuming 5 items per page
+              pageSize: pageSize,
+              total: totalPages * pageSize,
+              showSizeChanger: true,
+              pageSizeOptions: ['5', '10', '20', '50'],
+              onShowSizeChange: (current, size) => {
+                setPageSize(size);
+                setPage(1);
+                console.log(current)
+              },
               onChange: (newPage) => setPage(newPage),
             }}
           />
         </Content>
 
-        {/* Order Detail Modal */}
         <Modal
           title="Chi tiết đơn hàng"
           visible={isModalVisible}
@@ -203,16 +247,107 @@ const ManagerOrderListScreen: React.FC = () => {
           width={800}
         >
           {selectedOrder && (
-            <Descriptions bordered column={1} size="small">
-              <Descriptions.Item label="Mã đơn">{selectedOrder.id}</Descriptions.Item>
-              <Descriptions.Item label="Người thực hiện">{selectedOrder.userName}</Descriptions.Item>
-              <Descriptions.Item label="Tổng tiền">{formatCurrency(selectedOrder.totalPrice)}</Descriptions.Item>
-              <Descriptions.Item label="Trạng thái">
-                <Tag color="blue">{selectedOrder.status.toUpperCase()}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Thời gian tạo">{formatDate(selectedOrder.createAt)}</Descriptions.Item>
-              <Descriptions.Item label="Thời gian cập nhật">{formatDate(selectedOrder.updateAt)}</Descriptions.Item>
-            </Descriptions>
+            <>
+              <Descriptions bordered column={1} size="small">
+                <Descriptions.Item label="Mã đơn">{selectedOrder.id}</Descriptions.Item>
+                <Descriptions.Item label="Người thực hiện">{selectedOrder.userName}</Descriptions.Item>
+                <Descriptions.Item label="Tổng tiền">{formatCurrency(selectedOrder.totalPrice)}</Descriptions.Item>
+                <Descriptions.Item label="Trạng thái">
+                  <Tag color="blue">{selectedOrder.status.toUpperCase()}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Thời gian tạo">{formatDate(selectedOrder.createAt)}</Descriptions.Item>
+                <Descriptions.Item label="Thời gian cập nhật">{formatDate(selectedOrder.updateAt)}</Descriptions.Item>
+              </Descriptions>
+
+              {orderDetails.length > 0 && (
+                <>
+                  <Typography.Title level={5} style={{ marginTop: 24 }}>Sản phẩm đã đặt</Typography.Title>
+                  <Table
+                    dataSource={orderDetails}
+                    rowKey="id"
+                    size="small"
+                    pagination={false}
+                    columns={[
+                      {
+                        title: 'Sản phẩm',
+                        dataIndex: 'productName',
+                        key: 'productName',
+                        render: (text, record) => (
+                          <>
+                            <strong>{text}</strong>
+                            {record.childItems?.length > 0 && (
+                              <ul style={{ marginTop: 4, paddingLeft: 20 }}>
+                                {record.childItems.map((child: any) => (
+                                  <li key={child.id}>
+                                    {child.productName} - Size: {child.size} - SL: {child.quantity} - Giá: {formatCurrency(child.unitPrice)}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </>
+                        ),
+                      },
+                      {
+                        title: 'Size',
+                        dataIndex: 'size',
+                        key: 'size',
+                      },
+                      {
+                        title: 'Số lượng',
+                        dataIndex: 'quantity',
+                        key: 'quantity',
+                      },
+                      {
+                        title: 'Đơn giá',
+                        dataIndex: 'unitPrice',
+                        key: 'unitPrice',
+                        render: (price: number, record: any) => {
+                          const extraPrice = record.childItems?.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0);
+                          return (
+                            <>
+                              {formatCurrency(price)}
+                              {extraPrice > 0 && ` + ${formatCurrency(extraPrice)} (Sản phẩm kèm theo)`}
+                            </>
+                          );
+                        },
+                      },
+                      {
+                        title: 'Tổng tiền',
+                        key: 'total',
+                        render: (_: any, record: any) => {
+                          const price = record.unitPrice;
+                          const quantity = record.quantity;
+
+
+                          const extraPrice = record.childItems?.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0);
+                          const totalPrice = (price * quantity) + (extraPrice || 0);
+                          return formatCurrency(totalPrice);
+                        },
+                      },
+
+                      {
+                        title: 'Ghi chú',
+                        dataIndex: 'note',
+                        key: 'note',
+                      },
+                    ]}
+                  />
+                  <Descriptions bordered column={1} size="small">
+                    <Descriptions.Item label="Tổng hóa đơn">
+                      <strong>{formatCurrency(
+                        orderDetails.reduce((total: number, item: any) => {
+
+                          const itemTotal = (item.unitPrice * item.quantity) +
+                            (item.childItems?.reduce((sum: number, child: any) => sum + (child.unitPrice * child.quantity), 0) || 0);
+                          return total + itemTotal;
+                        }, 0)
+                      )}</strong>
+                    </Descriptions.Item>
+                  </Descriptions>
+
+                </>
+              )}
+            </>
           )}
         </Modal>
       </div>

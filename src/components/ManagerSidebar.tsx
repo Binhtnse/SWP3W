@@ -3,9 +3,9 @@ import { Layout, Menu } from 'antd';
 import {
   DashboardOutlined,
   ShoppingCartOutlined,
-  AppstoreAddOutlined, // Icon cho quản lý sản phẩm
-  AppstoreOutlined, // Icon cho quản lý combo
-  PlusCircleOutlined, // Icon cho quản lý extra product
+  AppstoreAddOutlined, 
+  AppstoreOutlined, 
+  PlusCircleOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -17,6 +17,11 @@ const ManagerSidebar: React.FC = () => {
   const location = useLocation();
 
   const menuItems = [
+    {
+      key: '/manager/manageIncome',
+      icon: <DashboardOutlined />,
+      label: 'Tổng Quan',
+    },
     {
       key: '/manager/orderList',
       icon: <ShoppingCartOutlined />,
@@ -37,11 +42,7 @@ const ManagerSidebar: React.FC = () => {
       icon: <PlusCircleOutlined />,
       label: 'Quản Lý Extra Product',
     },
-    {
-      key: '/manager/manageIncome',
-      icon: <DashboardOutlined />,
-      label: 'Tổng Quan',
-    },
+    
   ];
 
   const handleMenuClick = (key: string) => {
