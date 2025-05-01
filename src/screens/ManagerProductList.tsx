@@ -35,7 +35,7 @@ const ManagerProductScreen: React.FC = () => {
   const [form] = Form.useForm();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [filter, setFilter] = useState<{ status?: string; categoryId?: number; productType?: string }>({});
-  const [searchTerm, setSearchTerm] = useState<string>(''); 
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [pageSize, setPageSize] = useState<number>(10);
   const navigate = useNavigate();
 
@@ -115,7 +115,7 @@ const ManagerProductScreen: React.FC = () => {
       description: values.description,
       productType: 'SINGLE',
       productUsage: 'MAIN',
-      categoryId: 1,  // Assuming "Đồ uống" is the category ID, or use the ID for "Đồ uống"
+      categoryId: 1,
     };
 
     try {
@@ -151,17 +151,17 @@ const ManagerProductScreen: React.FC = () => {
   };
 
   const toggleProductStatus = async (productId: number, currentStatus: string) => {
-    const newStatus = currentStatus === 'ACTIVE' ? 'DELETED' : 'ACTIVE'; // Toggle status
+    const newStatus = currentStatus === 'ACTIVE' ? 'DELETED' : 'ACTIVE';
     try {
       const headers = getAuthHeader();
       if (!headers) return;
 
       await axios.delete(
-        `https://beautiful-unity-production.up.railway.app/api/products/${productId}/status`, 
+        `https://beautiful-unity-production.up.railway.app/api/products/${productId}/status`,
         { params: { status: newStatus }, headers }
       );
       message.success(`Trạng thái sản phẩm đã được cập nhật thành ${newStatus}`);
-      fetchProducts(); // Re-fetch products to update the status in the table
+      fetchProducts();
     } catch (error) {
       message.error('Không thể cập nhật trạng thái sản phẩm');
       if (axios.isAxiosError(error) && error.response?.status === 401) {
@@ -200,7 +200,7 @@ const ManagerProductScreen: React.FC = () => {
             ...editingProduct,
             ...values,
             imageUrl: values.imageUrl || editingProduct.imageUrl,
-            categoryId: 1, // Set category as Đồ uống for both creation and updates
+            categoryId: 1,
           };
           updateProduct(updatedProduct);
         } else {
@@ -233,9 +233,8 @@ const ManagerProductScreen: React.FC = () => {
 
   const columns = [
     {
-      title: 'Hình ảnh',
-      dataIndex: 'imageUrl',
-      render: (imageUrl: string) => <img src={imageUrl} alt="Product" style={{ width: 100, height: 100 }} />,
+      title: 'Mã sản phẩm',
+      dataIndex: 'productCode',
     },
     {
       title: 'Tên sản phẩm',
@@ -247,10 +246,10 @@ const ManagerProductScreen: React.FC = () => {
       ),
     },
     {
-      title: 'Mã sản phẩm',
-      dataIndex: 'productCode',
+      title: 'Hình ảnh',
+      dataIndex: 'imageUrl',
+      render: (imageUrl: string) => <img src={imageUrl} alt="Product" style={{ width: 100, height: 100 }} />,
     },
-    // Removed the "Loại sản phẩm" column
     {
       title: 'Giá',
       dataIndex: 'basePrice',
@@ -262,7 +261,7 @@ const ManagerProductScreen: React.FC = () => {
       render: (status: string, record: Product) => (
         <Switch
           checked={status === 'ACTIVE'}
-          onChange={() => toggleProductStatus(record.id, status)} // Toggle status
+          onChange={() => toggleProductStatus(record.id, status)}
           checkedChildren="Đang hoạt động"
           unCheckedChildren="Ngừng hoạt động"
         />
@@ -276,7 +275,7 @@ const ManagerProductScreen: React.FC = () => {
           <Button type="link" onClick={() => showEditProductModal(record)}>
             Chỉnh sửa
           </Button>
-          {/* Removed "Xóa" button */}
+
         </>
       ),
     },
@@ -296,9 +295,9 @@ const ManagerProductScreen: React.FC = () => {
           <Select
             placeholder="Lọc theo trạng thái"
             allowClear
-            onChange={(value) => setFilter((prev) => ({ ...prev, status: value }))} 
-            value={filter.status} 
-            style={{ width: 200 }} 
+            onChange={(value) => setFilter((prev) => ({ ...prev, status: value }))}
+            value={filter.status}
+            style={{ width: 200 }}
           >
             <Select.Option value="ACTIVE">Đang hoạt động</Select.Option>
             <Select.Option value="INACTIVE">Ngừng hoạt động</Select.Option>
@@ -354,19 +353,20 @@ const ManagerProductScreen: React.FC = () => {
           }}
         >
           <Form.Item
-            label="Tên sản phẩm"
-            name="name"
-            rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm!' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
             label="Mã sản phẩm"
             name="productCode"
             rules={[{ required: true, message: 'Vui lòng nhập mã sản phẩm!' }]}
           >
             <Input />
           </Form.Item>
+          <Form.Item
+            label="Tên sản phẩm"
+            name="name"
+            rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm!' }]}
+          >
+            <Input />
+          </Form.Item>
+
           <Form.Item
             label="Giá"
             name="basePrice"
@@ -393,8 +393,8 @@ const ManagerProductScreen: React.FC = () => {
       >
         {selectedProduct ? (
           <Descriptions bordered column={1} size="default">
-            <Descriptions.Item label="Tên sản phẩm">{selectedProduct.name}</Descriptions.Item>
             <Descriptions.Item label="Mã sản phẩm">{selectedProduct.productCode}</Descriptions.Item>
+            <Descriptions.Item label="Tên sản phẩm">{selectedProduct.name}</Descriptions.Item>
             <Descriptions.Item label="Giá">{selectedProduct.basePrice} VND</Descriptions.Item>
             <Descriptions.Item label="Mô tả">{selectedProduct.description || 'Không có mô tả'}</Descriptions.Item>
             <Descriptions.Item label="Trạng thái">{selectedProduct.status}</Descriptions.Item>
