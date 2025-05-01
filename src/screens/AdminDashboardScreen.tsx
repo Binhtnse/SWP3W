@@ -297,7 +297,7 @@ const AdminDashboardScreen: React.FC = () => {
                   label
                   onClick={handlePieClick}
                 >
-                  {pieChartData.map((entry, index) => (
+                  {pieChartData.map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index]} />
                   ))}
                 </Pie>
