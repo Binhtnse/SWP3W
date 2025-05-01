@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
-import { Table, message, Modal, Button, Form, Input, Select, Descriptions, Switch } from 'antd';
+import { Table, message, Modal, Button, Form, Input, Select, Descriptions, Switch, InputNumber } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import ManagerLayout from '../components/ManagerLayout';
@@ -357,26 +357,48 @@ const ManagerExtraScreen: React.FC = () => {
           }}
         >
           <Form.Item
-            label="Mã sản phẩm"
             name="productCode"
-            rules={[{ required: true, message: 'Vui lòng nhập mã sản phẩm!' }]}
+            label="Mã sản phẩm"
+            rules={[
+              { required: true, message: 'Vui lòng nhập mã sản phẩm!' },
+              {
+                validator: async (_, value) => {
+                  const exists = data.some(item => item.productCode.toLowerCase() === value.toLowerCase());
+                  if (exists) {
+                    return Promise.reject(new Error('Mã sản phẩm đã tồn tại'));
+                  }
+                }
+              }
+            ]}
           >
             <Input />
           </Form.Item>
           <Form.Item
-            label="Tên sản phẩm"
             name="name"
-            rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm!' }]}
+            label="Tên sản phẩm"
+            rules={[
+              { required: true, message: 'Vui lòng nhập tên sản phẩm!' },
+              {
+                validator: async (_, value) => {
+                  const exists = data.some(item => item.name.toLowerCase() === value.toLowerCase());
+                  if (exists) {
+                    return Promise.reject(new Error('Tên sản phẩm đã tồn tại'));
+                  }
+                }
+              }
+            ]}
           >
             <Input />
           </Form.Item>
-
           <Form.Item
-            label="Giá"
             name="basePrice"
-            rules={[{ required: true, message: 'Vui lòng nhập giá sản phẩm!' }]}
+            label="Giá sản phẩm"
+            rules={[
+              { required: true, message: 'Vui lòng nhập giá sản phẩm!' },
+              { type: 'number', min: 0.01, message: 'Giá phải lớn hơn 0!' }
+            ]}
           >
-            <Input type="number" />
+            <InputNumber min={0.01} />
           </Form.Item>
           <Form.Item label="URL hình ảnh" name="imageUrl">
             <Input placeholder="Nhập link hình ảnh..." />

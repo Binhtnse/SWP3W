@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
-import { Table, Typography, Select, Card, Statistic, Spin, message, Image } from 'antd';
+import { Table, Typography, Select, Card, Statistic, Spin, message, Image, Row, Col } from 'antd';
 import axios from 'axios';
 import ManagerLayout from '../components/ManagerLayout';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -9,13 +9,18 @@ import moment from 'moment';
 const { Title } = Typography;
 const { Option } = Select;
 
+interface TopProduct {
+    name: string;
+    quantity: number;
+    imageUrl: string;
+}
+
 const ManagerIncomeScreen: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [filterType, setFilterType] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
     const [aggregatedData, setAggregatedData] = useState<any[]>([]);
     const [totalIncome, setTotalIncome] = useState(0);
-    const [topProducts, setTopProducts] = useState<any[]>([]);
-    const [productImages, setProductImages] = useState<{ [key: string]: string }>({});
+    const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
 
     const getAuthHeader = () => {
         const token = localStorage.getItem('accessToken');
@@ -58,7 +63,6 @@ const ManagerIncomeScreen: React.FC = () => {
 
             setAggregatedData(data);
 
-     
             const totalIncome = data.reduce((sum: number, item: any) => sum + item.totalRevenue, 0);
             setTotalIncome(totalIncome);
 
@@ -80,41 +84,10 @@ const ManagerIncomeScreen: React.FC = () => {
             });
             const data = response.data;
 
-            setTopProducts(data.top3Products); 
-
-
-            fetchProductImages(data.top3Products);
+            setTopProducts(data.top3Products);
         } catch (error) {
             console.error("Error fetching top products:", error);
             message.error('Không thể tải dữ liệu sản phẩm');
-        }
-    };
-
-
-    const fetchProductImages = async (topProducts: any[]) => {
-        try {
-            const headers = getAuthHeader();
-            if (!headers) return;
-
-
-            const productRequests = topProducts.map(product =>
-                axios.get(`https://beautiful-unity-production.up.railway.app/api/products/filter?productName=${product.name}`, { headers })
-            );
-
-            const responses = await Promise.all(productRequests);
-            const images: { [key: string]: string } = {};
-
-            responses.forEach((response, index) => {
-
-                const imageUrl = response.data[0]?.image || '';
-                images[topProducts[index].name] = imageUrl;
-            });
-
-            setProductImages(images);
-
-        } catch (error) {
-            console.error("Error fetching product images:", error);
-            message.error('Không thể tải hình ảnh sản phẩm');
         }
     };
 
@@ -122,7 +95,6 @@ const ManagerIncomeScreen: React.FC = () => {
         fetchAggregatedData(filterType);
         fetchTopProducts();
     }, [filterType]);
-
 
     const formatPeriod = (date: string, filterType: string) => {
         const momentDate = moment(date);
@@ -134,7 +106,7 @@ const ManagerIncomeScreen: React.FC = () => {
             case 'monthly':
                 return momentDate.format('MM/YYYY');
             case 'yearly':
-                return date;
+                return momentDate.format('YYYY');
             default:
                 return date;
         }
@@ -147,7 +119,7 @@ const ManagerIncomeScreen: React.FC = () => {
 
 
     const chartData = aggregatedData.map((item: any) => ({
-        period: item[filterType],
+        period: formatPeriod(item.orderDate, filterType),
         revenue: item.totalRevenue,
         quantity: item.totalOrders,
     }));
@@ -157,28 +129,27 @@ const ManagerIncomeScreen: React.FC = () => {
             <div style={{ padding: 24 }}>
                 <Title level={2}>📊 Quản lý thu nhập</Title>
 
-                {/* Highlight Top 3 Products */}
                 <Card title="Top 3 Sản Phẩm" style={{ marginBottom: 24, backgroundColor: '#f5f5f5', padding: '16px' }}>
-                    <Table
-                        columns={[
-                            { title: 'Sản phẩm', dataIndex: 'name', key: 'name' },
-                            { title: 'Số lượng bán', dataIndex: 'quantity', key: 'quantity' },
-                            {
-                                title: 'Hình ảnh', dataIndex: 'image', key: 'image', render: (text: string, record: any) => (
-                                    <Image width={50} src={productImages[record.name]} fallback="fallback-image-url.jpg" />
-                                )
-                            },
-                        ]}
-                        dataSource={topProducts.map((item, idx) => ({
-                            key: idx,
-                            name: item.name,
-                            quantity: item.quantity,
-                        }))}
-                        pagination={false}
-                    />
+                    <Row gutter={[16, 16]}>
+                        {topProducts.map((item, idx) => (
+                            <Col key={idx} span={8}>
+                                <Card hoverable style={{ textAlign: 'center' }}>
+                                    <Image
+                                        width={250}
+                                        height={250}
+                                        style={{ objectFit: 'cover' }}
+                                        src={item.imageUrl}
+                                        fallback="fallback-image-url.jpg"
+                                    />
+                                    <Title level={4}>{item.name}</Title>
+                                    <p>Số lượng bán: {item.quantity}</p>
+                                </Card>
+                            </Col>
+                        ))}
+                    </Row>
                 </Card>
 
-                {/* Total Income */}
+
                 <Card style={{ marginBottom: 24 }}>
                     <Statistic title="Tổng thu nhập" value={totalIncome} suffix="₫" valueStyle={{ color: '#3f8600' }} formatter={(val) => Number(val).toLocaleString('vi-VN')} />
                 </Card>
@@ -197,12 +168,11 @@ const ManagerIncomeScreen: React.FC = () => {
                     <Spin size="large" />
                 ) : (
                     <>
-                        {/* Bar Chart */}
                         <Card style={{ marginBottom: 24 }}>
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={chartData}>
                                     <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="period" />
+                                    <XAxis dataKey="period" /> {/* Mốc thời gian dưới các cột */}
                                     <YAxis />
                                     <Tooltip />
                                     <Legend />

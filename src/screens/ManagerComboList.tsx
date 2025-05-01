@@ -416,14 +416,49 @@ const ManagerComboList = () => {
       >
 
         <Form form={form} layout="vertical">
-          <Form.Item name="productCode" label="Mã sản phẩm" rules={[{ required: true }]}>
+          <Form.Item
+            name="productCode"
+            label="Mã sản phẩm"
+            rules={[
+              { required: true, message: 'Vui lòng nhập mã sản phẩm!' },
+              {
+                validator: async (_, value) => {
+                  const exists = combos.some(combo => combo.productCode.toLowerCase() === value.toLowerCase());
+                  if (exists) {
+                    return Promise.reject(new Error('Mã sản phẩm đã tồn tại'));
+                  }
+                }
+              }
+            ]}
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="name" label="Tên combo" rules={[{ required: true }]}>
+          <Form.Item
+            name="name"
+            label="Tên combo"
+            rules={[
+              { required: true, message: 'Vui lòng nhập tên combo!' },
+              {
+                validator: async (_, value) => {
+                  const exists = combos.some(combo => combo.name.toLowerCase() === value.toLowerCase());
+                  if (exists) {
+                    return Promise.reject(new Error('Tên combo đã tồn tại'));
+                  }
+                }
+              }
+            ]}
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="basePrice" label="Giá combo" rules={[{ required: true }]}>
-            <InputNumber min={0} />
+          <Form.Item
+            name="basePrice"
+            label="Giá combo"
+            rules={[
+              { required: true, message: 'Vui lòng nhập giá combo!' },
+              { type: 'number', min: 0.01, message: 'Giá phải lớn hơn 0!' }
+            ]}
+          >
+            <InputNumber min={0.01} />
           </Form.Item>
           <Form.Item name="imageUrl" label="URL hình ảnh">
             <Input />

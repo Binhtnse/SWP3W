@@ -74,6 +74,7 @@ const ManagerOrderListScreen: React.FC = () => {
       setOrders(ordersData);
       setTotalPages(response.data.totalPages);
       setLoading(false);
+      console.log(loading)
     } catch (error) {
       setLoading(false);
       message.error('Không thể tải danh sách đơn hàng');
@@ -231,6 +232,7 @@ const ManagerOrderListScreen: React.FC = () => {
               onShowSizeChange: (current, size) => {
                 setPageSize(size);
                 setPage(1);
+                console.log(current)
               },
               onChange: (newPage) => setPage(newPage),
             }}
