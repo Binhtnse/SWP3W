@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
@@ -194,26 +195,49 @@ const ManagerExtraScreen: React.FC = () => {
     setSelectedProduct(null);
   };
 
-  const handleOk = () => {
-    form.validateFields()
-      .then((values) => {
-        if (editingProduct) {
-          const updatedProduct = {
-            ...editingProduct,
-            ...values,
-            imageUrl: values.imageUrl || editingProduct.imageUrl,
-          };
-          updateProduct(updatedProduct);
-        } else {
-          createProduct(values);
+  const handleOk = async () => {
+    try {
+      const values = await form.validateFields();
+      const isEditing = editingProduct !== null;
+
+      if (!getAuthHeader()) return;
+
+      if (!isEditing || (editingProduct &&
+        (values.productCode.toLowerCase() !== editingProduct.productCode.toLowerCase() ||
+          values.name.toLowerCase() !== editingProduct.name.toLowerCase()))) {
+        const existsCode = data.some(item => item.productCode.toLowerCase() === values.productCode.toLowerCase());
+        const existsName = data.some(item => item.name.toLowerCase() === values.name.toLowerCase());
+        if (existsCode) {
+          form.setFields([{ name: 'productCode', errors: ['Mã sản phẩm đã tồn tại'] }]);
+          return;
         }
-        setIsModalVisible(false);
-        form.resetFields();
-      })
-      .catch((info) => {
-        console.log('Kiểm tra lỗi:', info);
-      });
+        if (existsName) {
+          form.setFields([{ name: 'name', errors: ['Tên sản phẩm đã tồn tại'] }]);
+          return;
+        }
+      }
+
+      const productData = {
+        ...values,
+        productType: 'SINGLE',
+        productUsage: 'EXTRA',
+      };
+
+      if (isEditing && editingProduct) {
+        await updateProduct({ ...editingProduct, ...productData });
+      } else {
+        await createProduct(productData);
+      }
+
+      fetchProducts();
+      form.resetFields();
+      setIsModalVisible(false);
+    } catch (error) {
+      message.error('Không thể lưu sản phẩm');
+    }
   };
+
+
 
   const handleCancel = () => {
     setIsModalVisible(false);
@@ -226,11 +250,12 @@ const ManagerExtraScreen: React.FC = () => {
 
   const filteredData = data.filter((item) => {
     const matchName = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = !filter.status || item.status === filter.status;
+    const matchStatus = !filter.status || item.status.toLowerCase() === filter.status.toLowerCase();
     const matchCategory = !filter.categoryId || item.categoryId === filter.categoryId;
     const matchType = !filter.productType || item.productType === filter.productType;
     return matchName && matchStatus && matchCategory && matchType;
   });
+
 
   const columns = [
     {
@@ -304,8 +329,9 @@ const ManagerExtraScreen: React.FC = () => {
             style={{ width: 200 }}
           >
             <Select.Option value="ACTIVE">Đang hoạt động</Select.Option>
-            <Select.Option value="INACTIVE">Ngừng hoạt động</Select.Option>
+            <Select.Option value="DELETED">Ngừng hoạt động</Select.Option>
           </Select>
+
           <Select
             value={pageSize}
             onChange={handlePageSizeChange}
@@ -361,14 +387,6 @@ const ManagerExtraScreen: React.FC = () => {
             label="Mã sản phẩm"
             rules={[
               { required: true, message: 'Vui lòng nhập mã sản phẩm!' },
-              {
-                validator: async (_, value) => {
-                  const exists = data.some(item => item.productCode.toLowerCase() === value.toLowerCase());
-                  if (exists) {
-                    return Promise.reject(new Error('Mã sản phẩm đã tồn tại'));
-                  }
-                }
-              }
             ]}
           >
             <Input />
@@ -378,14 +396,6 @@ const ManagerExtraScreen: React.FC = () => {
             label="Tên sản phẩm"
             rules={[
               { required: true, message: 'Vui lòng nhập tên sản phẩm!' },
-              {
-                validator: async (_, value) => {
-                  const exists = data.some(item => item.name.toLowerCase() === value.toLowerCase());
-                  if (exists) {
-                    return Promise.reject(new Error('Tên sản phẩm đã tồn tại'));
-                  }
-                }
-              }
             ]}
           >
             <Input />
@@ -410,13 +420,14 @@ const ManagerExtraScreen: React.FC = () => {
             label="Danh mục"
             name="categoryId"
             rules={[{ required: true, message: 'Vui lòng chọn danh mục!' }]}
-          >
-            <Select>
-              {categories.map((category) => (
-                <Select.Option key={category.id} value={category.id}>
-                  {category.name}
-                </Select.Option>
-              ))}
+          ><Select>
+              {categories
+                .filter((category) => category.name !== 'Đồ uống')
+                .map((category) => (
+                  <Select.Option key={category.id} value={category.id}>
+                    {category.name}
+                  </Select.Option>
+                ))}
             </Select>
           </Form.Item>
         </Form>
