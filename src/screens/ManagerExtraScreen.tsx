@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
@@ -194,26 +195,49 @@ const ManagerExtraScreen: React.FC = () => {
     setSelectedProduct(null);
   };
 
-  const handleOk = () => {
-    form.validateFields()
-      .then((values) => {
-        if (editingProduct) {
-          const updatedProduct = {
-            ...editingProduct,
-            ...values,
-            imageUrl: values.imageUrl || editingProduct.imageUrl,
-          };
-          updateProduct(updatedProduct);
-        } else {
-          createProduct(values);
-        }
-        setIsModalVisible(false);
-        form.resetFields();
-      })
-      .catch((info) => {
-        console.log('Kiểm tra lỗi:', info);
-      });
-  };
+ const handleOk = async () => {
+  try {
+    const values = await form.validateFields();
+    const isEditing = editingProduct !== null;
+
+    if (!getAuthHeader()) return;
+
+    if (!isEditing || (editingProduct &&
+        (values.productCode.toLowerCase() !== editingProduct.productCode.toLowerCase() ||
+         values.name.toLowerCase() !== editingProduct.name.toLowerCase()))) {
+      const existsCode = data.some(item => item.productCode.toLowerCase() === values.productCode.toLowerCase());
+      const existsName = data.some(item => item.name.toLowerCase() === values.name.toLowerCase());
+      if (existsCode) {
+        form.setFields([{ name: 'productCode', errors: ['Mã sản phẩm đã tồn tại'] }]);
+        return;
+      }
+      if (existsName) {
+        form.setFields([{ name: 'name', errors: ['Tên sản phẩm đã tồn tại'] }]);
+        return;
+      }
+    }
+
+    const productData = {
+      ...values,
+      productType: 'SINGLE',
+      productUsage: 'EXTRA',
+    };
+
+    if (isEditing && editingProduct) {
+      await updateProduct({ ...editingProduct, ...productData });
+    } else {
+      await createProduct(productData);
+    }
+
+    fetchProducts();
+    form.resetFields();
+    setIsModalVisible(false);
+  } catch (error) {
+    message.error('Không thể lưu sản phẩm');
+  }
+};
+
+
 
   const handleCancel = () => {
     setIsModalVisible(false);
@@ -361,14 +385,6 @@ const ManagerExtraScreen: React.FC = () => {
             label="Mã sản phẩm"
             rules={[
               { required: true, message: 'Vui lòng nhập mã sản phẩm!' },
-              {
-                validator: async (_, value) => {
-                  const exists = data.some(item => item.productCode.toLowerCase() === value.toLowerCase());
-                  if (exists) {
-                    return Promise.reject(new Error('Mã sản phẩm đã tồn tại'));
-                  }
-                }
-              }
             ]}
           >
             <Input />
@@ -378,14 +394,6 @@ const ManagerExtraScreen: React.FC = () => {
             label="Tên sản phẩm"
             rules={[
               { required: true, message: 'Vui lòng nhập tên sản phẩm!' },
-              {
-                validator: async (_, value) => {
-                  const exists = data.some(item => item.name.toLowerCase() === value.toLowerCase());
-                  if (exists) {
-                    return Promise.reject(new Error('Tên sản phẩm đã tồn tại'));
-                  }
-                }
-              }
             ]}
           >
             <Input />
@@ -410,15 +418,16 @@ const ManagerExtraScreen: React.FC = () => {
             label="Danh mục"
             name="categoryId"
             rules={[{ required: true, message: 'Vui lòng chọn danh mục!' }]}
-          >
-            <Select>
-              {categories.map((category) => (
-                <Select.Option key={category.id} value={category.id}>
-                  {category.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
+          ><Select>
+          {categories
+            .filter((category) => category.name !== 'Đồ uống')
+            .map((category) => (
+              <Select.Option key={category.id} value={category.id}>
+                {category.name}
+              </Select.Option>
+            ))}
+        </Select>
+      </Form.Item>
         </Form>
       </Modal>
 

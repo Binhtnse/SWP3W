@@ -192,27 +192,49 @@ const ManagerProductScreen: React.FC = () => {
     setSelectedProduct(null);
   };
 
-  const handleOk = () => {
-    form.validateFields()
-      .then((values) => {
-        if (editingProduct) {
-          const updatedProduct = {
-            ...editingProduct,
-            ...values,
-            imageUrl: values.imageUrl || editingProduct.imageUrl,
-            categoryId: 1,
-          };
-          updateProduct(updatedProduct);
-        } else {
-          createProduct(values);
+  const handleOk = async () => {
+    try {
+      const values = await form.validateFields();
+      const isEditing = editingProduct !== null;
+  
+      if (!getAuthHeader()) return;
+  
+      if (!isEditing || (editingProduct &&
+          (values.productCode.toLowerCase() !== editingProduct.productCode.toLowerCase() ||
+           values.name.toLowerCase() !== editingProduct.name.toLowerCase()))) {
+        const existsCode = data.some(item => item.productCode.toLowerCase() === values.productCode.toLowerCase());
+        const existsName = data.some(item => item.name.toLowerCase() === values.name.toLowerCase());
+        if (existsCode) {
+          form.setFields([{ name: 'productCode', errors: ['Mã sản phẩm đã tồn tại'] }]);
+          return;
         }
-        setIsModalVisible(false);
-        form.resetFields();
-      })
-      .catch((info) => {
-        console.log('Kiểm tra lỗi:', info);
-      });
+        if (existsName) {
+          form.setFields([{ name: 'name', errors: ['Tên sản phẩm đã tồn tại'] }]);
+          return;
+        }
+      }
+  
+      const productData = {
+        ...values,
+        productType: 'SINGLE',
+        productUsage: 'MAIN',
+      };
+  
+      if (isEditing && editingProduct) {
+        await updateProduct({ ...editingProduct, ...productData });
+      } else {
+        await createProduct(productData);
+      }
+  
+      fetchProducts();
+      form.resetFields();
+      setIsModalVisible(false);
+    } catch (error) {
+      message.error('Không thể lưu sản phẩm');
+    }
   };
+  
+
 
   const handleCancel = () => {
     setIsModalVisible(false);
@@ -357,14 +379,6 @@ const ManagerProductScreen: React.FC = () => {
             label="Mã sản phẩm"
             rules={[
               { required: true, message: 'Vui lòng nhập mã sản phẩm!' },
-              {
-                validator: async (_, value) => {
-                  const exists = data.some(item => item.productCode.toLowerCase() === value.toLowerCase());
-                  if (exists) {
-                    return Promise.reject(new Error('Mã sản phẩm đã tồn tại'));
-                  }
-                }
-              }
             ]}
           >
             <Input />
@@ -374,14 +388,6 @@ const ManagerProductScreen: React.FC = () => {
             label="Tên sản phẩm"
             rules={[
               { required: true, message: 'Vui lòng nhập tên sản phẩm!' },
-              {
-                validator: async (_, value) => {
-                  const exists = data.some(item => item.name.toLowerCase() === value.toLowerCase());
-                  if (exists) {
-                    return Promise.reject(new Error('Tên sản phẩm đã tồn tại'));
-                  }
-                }
-              }
             ]}
           >
             <Input />
