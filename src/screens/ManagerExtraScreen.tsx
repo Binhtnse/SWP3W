@@ -49,7 +49,7 @@ const ManagerExtraScreen: React.FC = () => {
   };
 
   useEffect(() => {
-    // Check if user is authenticated and has the right role
+
     const userRole = localStorage.getItem('userRole');
     if (!localStorage.getItem('accessToken') || userRole !== 'MANAGER') {
       message.error('Bạn không có quyền truy cập trang này');
@@ -150,20 +150,20 @@ const ManagerExtraScreen: React.FC = () => {
     }
   };
 
-  // Toggle status API call using DELETE method
+
   const toggleProductStatus = async (productId: number, currentStatus: string) => {
-    const newStatus = currentStatus === 'ACTIVE' ? 'DELETED' : 'ACTIVE'; // Toggle status
+    const newStatus = currentStatus === 'ACTIVE' ? 'DELETED' : 'ACTIVE';
     try {
       const headers = getAuthHeader();
       if (!headers) return;
 
-      // Make DELETE API call to update status
+
       await axios.delete(`https://beautiful-unity-production.up.railway.app/api/products/${productId}/status`, {
         params: { status: newStatus },
         headers
       });
       message.success(`Trạng thái sản phẩm đã được cập nhật thành ${newStatus}`);
-      fetchProducts(); // Re-fetch products to update the status in the table
+      fetchProducts();
     } catch (error) {
       message.error('Không thể cập nhật trạng thái sản phẩm');
       if (axios.isAxiosError(error) && error.response?.status === 401) {
@@ -260,7 +260,6 @@ const ManagerExtraScreen: React.FC = () => {
       title: 'Danh mục',
       dataIndex: 'categoryName',
     },
-    // Removed "Loại sản phẩm" column
     {
       title: 'Trạng thái',
       dataIndex: 'status',

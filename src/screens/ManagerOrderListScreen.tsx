@@ -6,7 +6,6 @@ import {
   Table,
   Tag,
   Typography,
-  Spin,
   Button,
   Modal,
   Descriptions,
@@ -81,12 +80,11 @@ const ManagerOrderListScreen: React.FC = () => {
     }
   };
 
-  // Gọi lại khi chuyển trang hoặc đổi pageSize
   useEffect(() => {
     fetchOrders(page, pageSize);
   }, [page, pageSize]);
 
-  // Gọi lại khi người dùng thay đổi filter (debounced)
+
   useEffect(() => {
     const timeout = setTimeout(() => {
       setPage(1);
@@ -263,88 +261,87 @@ const ManagerOrderListScreen: React.FC = () => {
                 <>
                   <Typography.Title level={5} style={{ marginTop: 24 }}>Sản phẩm đã đặt</Typography.Title>
                   <Table
-  dataSource={orderDetails}
-  rowKey="id"
-  size="small"
-  pagination={false}
-  columns={[
-    {
-      title: 'Sản phẩm',
-      dataIndex: 'productName',
-      key: 'productName',
-      render: (text, record) => (
-        <>
-          <strong>{text}</strong>
-          {record.childItems?.length > 0 && (
-            <ul style={{ marginTop: 4, paddingLeft: 20 }}>
-              {record.childItems.map((child: any) => (
-                <li key={child.id}>
-                  {child.productName} - Size: {child.size} - SL: {child.quantity} - Giá: {formatCurrency(child.unitPrice)}
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      ),
-    },
-    {
-      title: 'Size',
-      dataIndex: 'size',
-      key: 'size',
-    },
-    {
-      title: 'Số lượng',
-      dataIndex: 'quantity',
-      key: 'quantity',
-    },
-    {
-      title: 'Đơn giá',
-      dataIndex: 'unitPrice',
-      key: 'unitPrice',
-      render: (price: number, record: any) => {
-        // Hiển thị giá của sản phẩm chính
-        const extraPrice = record.childItems?.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0);
-        return (
-          <>
-            {formatCurrency(price)} 
-            {extraPrice > 0 && ` + ${formatCurrency(extraPrice)} (Sản phẩm kèm theo)`}
-          </>
-        );
-      },
-    },
-    {
-      title: 'Tổng tiền',
-      key: 'total',
-      render: (_: any, record: any) => {
-        const price = record.unitPrice;
-        const quantity = record.quantity;
+                    dataSource={orderDetails}
+                    rowKey="id"
+                    size="small"
+                    pagination={false}
+                    columns={[
+                      {
+                        title: 'Sản phẩm',
+                        dataIndex: 'productName',
+                        key: 'productName',
+                        render: (text, record) => (
+                          <>
+                            <strong>{text}</strong>
+                            {record.childItems?.length > 0 && (
+                              <ul style={{ marginTop: 4, paddingLeft: 20 }}>
+                                {record.childItems.map((child: any) => (
+                                  <li key={child.id}>
+                                    {child.productName} - Size: {child.size} - SL: {child.quantity} - Giá: {formatCurrency(child.unitPrice)}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </>
+                        ),
+                      },
+                      {
+                        title: 'Size',
+                        dataIndex: 'size',
+                        key: 'size',
+                      },
+                      {
+                        title: 'Số lượng',
+                        dataIndex: 'quantity',
+                        key: 'quantity',
+                      },
+                      {
+                        title: 'Đơn giá',
+                        dataIndex: 'unitPrice',
+                        key: 'unitPrice',
+                        render: (price: number, record: any) => {
+                          const extraPrice = record.childItems?.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0);
+                          return (
+                            <>
+                              {formatCurrency(price)}
+                              {extraPrice > 0 && ` + ${formatCurrency(extraPrice)} (Sản phẩm kèm theo)`}
+                            </>
+                          );
+                        },
+                      },
+                      {
+                        title: 'Tổng tiền',
+                        key: 'total',
+                        render: (_: any, record: any) => {
+                          const price = record.unitPrice;
+                          const quantity = record.quantity;
 
-        // Tính tổng tiền cho sản phẩm chính cộng với giá extra (childItems)
-        const extraPrice = record.childItems?.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0);
-        const totalPrice = (price * quantity) + (extraPrice || 0); // Cộng với giá extra
-        return formatCurrency(totalPrice); // Hiển thị tổng tiền
-      },
-    },
-   
-    {
-      title: 'Ghi chú',
-      dataIndex: 'note',
-      key: 'note',
-    },
-  ]}
-/>
-<Descriptions bordered column={1} size="small">
-            <Descriptions.Item label="Tổng hóa đơn">
-              <strong>{formatCurrency(
-                orderDetails.reduce((total: number, item: any) => {
-                  // Tính tổng tiền cho tất cả các sản phẩm
-                  const itemTotal = (item.unitPrice * item.quantity) + 
-                    (item.childItems?.reduce((sum: number, child: any) => sum + (child.unitPrice * child.quantity), 0) || 0);
-                  return total + itemTotal;
-                }, 0)
-              )}</strong>
-            </Descriptions.Item>
-          </Descriptions>
+
+                          const extraPrice = record.childItems?.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0);
+                          const totalPrice = (price * quantity) + (extraPrice || 0);
+                          return formatCurrency(totalPrice);
+                        },
+                      },
+
+                      {
+                        title: 'Ghi chú',
+                        dataIndex: 'note',
+                        key: 'note',
+                      },
+                    ]}
+                  />
+                  <Descriptions bordered column={1} size="small">
+                    <Descriptions.Item label="Tổng hóa đơn">
+                      <strong>{formatCurrency(
+                        orderDetails.reduce((total: number, item: any) => {
+
+                          const itemTotal = (item.unitPrice * item.quantity) +
+                            (item.childItems?.reduce((sum: number, child: any) => sum + (child.unitPrice * child.quantity), 0) || 0);
+                          return total + itemTotal;
+                        }, 0)
+                      )}</strong>
+                    </Descriptions.Item>
+                  </Descriptions>
 
                 </>
               )}

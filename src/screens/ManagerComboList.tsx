@@ -286,12 +286,11 @@ const ManagerComboList = () => {
         if (mergedExtraItems[key]) {
           mergedExtraItems[key].quantity += item.quantity;
         } else {
-          // Gán size = 'EXTRA' để phân biệt
+
           mergedExtraItems[key] = { ...item, size: 'EXTRA' };
         }
       });
 
-      // Tạo payload chung
       const payload = {
         ...values,
         basePrice: values.basePrice,
@@ -398,23 +397,23 @@ const ManagerComboList = () => {
         ]}
       />
 
-<Modal
-  title={editingCombo ? 'Chỉnh sửa combo' : 'Tạo combo mới'}
-  open={isModalVisible}
-  onCancel={() => setIsModalVisible(false)}
-  width={1000}
-  footer={[
-    <Button key="reset" onClick={() => form.resetFields()}>
-      Reset form
-    </Button>,
-    <Button key="cancel" onClick={() => setIsModalVisible(false)}>
-      Hủy
-    </Button>,
-    <Button key="submit" type="primary" onClick={handleOk}>
-      OK
-    </Button>,
-  ]}
->
+      <Modal
+        title={editingCombo ? 'Chỉnh sửa combo' : 'Tạo combo mới'}
+        open={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        width={1000}
+        footer={[
+          <Button key="reset" onClick={() => form.resetFields()}>
+            Reset form
+          </Button>,
+          <Button key="cancel" onClick={() => setIsModalVisible(false)}>
+            Hủy
+          </Button>,
+          <Button key="submit" type="primary" onClick={handleOk}>
+            OK
+          </Button>,
+        ]}
+      >
 
         <Form form={form} layout="vertical">
           <Form.Item name="productCode" label="Mã sản phẩm" rules={[{ required: true }]}>
