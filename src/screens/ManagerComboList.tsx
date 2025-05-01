@@ -1,77 +1,54 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useState } from 'react';
-import {
-  Table,
-  message,
-  Modal,
-  Button,
-  Descriptions,
-  Card,
-  Form,
-  Input,
-  Select,
-  Tag,
-  Switch,
-} from 'antd';
-import { ReloadOutlined } from '@ant-design/icons';
+import { Button, Modal, Form, Input, InputNumber, Select, Table, Space, message, Descriptions, Card, Switch } from 'antd';
 import axios from 'axios';
 import ManagerLayout from '../components/ManagerLayout';
 import { useNavigate } from 'react-router-dom';
 
 const { Option } = Select;
 
-interface Combo {
-  id: number;
-  name: string;
-  basePrice: number;
-  productCode: string;
-  imageUrl: string;
-  description: string;
-  productType: string;
-  productUsage: string;
-  status: string;
-  createAt: string;
-  updateAt: string | null;
-  deleteAt: string | null;
-  categoryId: number;
-  categoryName: string;
-  comboItems: ComboItem[];
-}
-
 interface ComboItem {
-  productId: number;
+  productId: string;
   quantity: number;
   size: string;
-  product: Product;
+  productName?: string;
+  imageUrl?: string;
 }
 
 interface Product {
-  id: number;
+  id: string;
   name: string;
-  basePrice: number;
-  productCode: string;
-  imageUrl: string;
-  productType: string;
+  imageUrl?: string;
 }
 
 interface Category {
-  id: number;
+  id: string;
   name: string;
 }
 
-const ManagerComboList: React.FC = () => {
-  const [data, setData] = useState<Combo[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [isDetailVisible, setIsDetailVisible] = useState<boolean>(false);
-  const [editingCombo, setEditingCombo] = useState<Combo | null>(null);
-  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
-  const [createForm] = Form.useForm();
+interface Combo {
+  id: string;
+  name: string;
+  productCode: string;
+  description?: string;
+  imageUrl?: string;
+  basePrice: number;
+  status: string;
+  itemsResponse?: ComboItem[];
+}
+
+const ManagerComboList = () => {
+  const [combos, setCombos] = useState<Combo[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [isAddProductModalVisible, setIsAddProductModalVisible] = useState(false);
-  const [addForm] = Form.useForm();
-  const [productList, setProductList] = useState<Product[]>([]);
-  const [comboItems, setComboItems] = useState<ComboItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
+  const [editingCombo, setEditingCombo] = useState<Combo | null>(null);
+  const [selectedCombo, setSelectedCombo] = useState<Combo | null>(null);
+  const [filteredCombos, setFilteredCombos] = useState<Combo[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [form] = Form.useForm();
   const navigate = useNavigate();
 
   const getAuthHeader = () => {
@@ -84,468 +61,402 @@ const ManagerComboList: React.FC = () => {
     return { Authorization: `Bearer ${token}` };
   };
 
-  useEffect(() => {
-    // Check if user is authenticated and has manager role
-    const token = localStorage.getItem('accessToken');
-    const role = localStorage.getItem('userRole');
-    
-    if (!token || role !== 'MANAGER') {
-      message.error('Bạn không có quyền truy cập trang này');
-      navigate('/');
-      return;
-    }
-    
-    fetchCombos();
-    fetchCategories();
-  }, []);
-
   const fetchCombos = async () => {
     setLoading(true);
     try {
       const headers = getAuthHeader();
       if (!headers) return;
-      
-      const response = await axios.get(
-        'https://beautiful-unity-production.up.railway.app/api/products',
-        {
-          params: { productType: 'COMBO' },
-          headers
-        }
+      const res = await axios.get('https://beautiful-unity-production.up.railway.app/api/products/filter', {
+        params: { productType: 'COMBO' },
+        headers
+      });
+      const combosData = res.data.data;
+
+      const updatedCombos = await Promise.all(
+        combosData.map(async (combo: Combo) => {
+          const comboRes = await axios.get(`https://beautiful-unity-production.up.railway.app/api/products/v2/${combo.id}`, { headers });
+          const comboDetails = comboRes.data;
+
+          const updatedItems = await Promise.all(
+            (comboDetails.itemsResponse || []).map(async (item: ComboItem) => {
+              const productRes = await axios.get(`https://beautiful-unity-production.up.railway.app/api/products/${item.productId}`, { headers });
+              return {
+                ...item,
+                productName: productRes.data.name,
+                imageUrl: productRes.data.imageUrl,
+              };
+            })
+          );
+
+          return { ...comboDetails, itemsResponse: updatedItems };
+        })
       );
-      setData(response.data.data);
+
+      setCombos(updatedCombos);
+      setFilteredCombos(updatedCombos);
     } catch (error) {
       message.error('Không thể tải danh sách combo');
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        navigate('/');
-      }
     } finally {
       setLoading(false);
     }
   };
 
+
+  const fetchProducts = async () => {
+    try {
+      const headers = getAuthHeader();
+      if (!headers) return;
+
+      const res = await axios.get('https://beautiful-unity-production.up.railway.app/api/products/filter', {
+        params: { productType: 'SINGLE', productUsage: 'MAIN' },
+        headers
+      });
+      setProducts(res.data.data);
+    } catch (error) {
+      message.error('Không thể tải sản phẩm');
+    }
+  };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+
+    const filtered = combos.filter(combo => combo.name.toLowerCase().includes(value.toLowerCase()));
+    setFilteredCombos(filtered);
+  };
+
+  const handleResetSearch = () => {
+    setSearchTerm('');
+    setFilteredCombos(combos);
+  };
+
+  const handleStatusChange = async (combo: Combo) => {
+    const newStatus = combo.status === 'ACTIVE' ? 'DELETED' : 'ACTIVE';
+    try {
+      const headers = getAuthHeader();
+      if (!headers) return;
+
+      await axios.delete(`https://beautiful-unity-production.up.railway.app/api/products/${combo.id}/status`, {
+        headers,
+        params: { status: newStatus },
+      });
+
+      message.success(`Trạng thái combo đã được cập nhật thành ${newStatus}`);
+      fetchCombos();
+    } catch {
+      message.error('Không thể thay đổi trạng thái combo');
+    }
+  };
+
+
   const fetchCategories = async () => {
     try {
       const headers = getAuthHeader();
       if (!headers) return;
-      
-      const res = await axios.get(
-        'https://beautiful-unity-production.up.railway.app/api/category',
-        { headers }
-      );
+
+      const res = await axios.get('https://beautiful-unity-production.up.railway.app/api/category', { headers });
       setCategories(res.data.data);
-      const defaultCategory = res.data.data.find((cat: Category) => cat.name === 'Đồ uống');
-      if (defaultCategory) {
-        createForm.setFieldsValue({ categoryId: defaultCategory.id });
-      }
     } catch (error) {
       message.error('Không thể tải danh mục');
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        navigate('/');
-      }
     }
   };
 
-  const fetchSingleProducts = async () => {
-    try {
-      const headers = getAuthHeader();
-      if (!headers) return;
-      
-      const res = await axios.get(
-        'https://beautiful-unity-production.up.railway.app/api/products', 
-        {
-          params: { productType: 'SINGLE' },
-          headers
-        }
-      );
-      setProductList(res.data.data);
-    } catch (error) {
-      message.error('Không thể tải danh sách sản phẩm');
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        navigate('/');
+  useEffect(() => {
+    fetchCombos();
+    fetchProducts();
+    fetchCategories();
+  }, []);
+
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const showModal = async (record: Combo | null = null) => {
+    if (!record) {
+      const defaultCategory = categories.find(c => c.name === 'Đồ uống');
+      if (!defaultCategory) {
+        message.error('Không tìm thấy danh mục Đồ uống');
+        return;
       }
-    }
-  };
-
-  const showComboDetails = async (combo: Combo) => {
-    setEditingCombo(combo);
-    setIsDetailVisible(true);
-    try {
-      const headers = getAuthHeader();
-      if (!headers) return;
-      
-      const res = await axios.get(
-        `https://beautiful-unity-production.up.railway.app/api/products/${combo.id}/combo`,
-        { headers }
-      );
-      const items = res.data.itemsResponse || [];
-      if (items.length === 0) {
-        message.warning('Không có sản phẩm trong combo');
-      }
-
-      const formattedItems: ComboItem[] = [];
-      for (const item of items) {
-        const productRes = await axios.get(
-          `https://beautiful-unity-production.up.railway.app/api/products/${item.productId}`,
-          { headers }
-        );
-        const product = productRes.data;
-
-        formattedItems.push({
-          productId: item.productId,
-          quantity: item.quantity,
-          size: item.size,
-          product: {
-            id: item.productId,
-            name: item.productName,
-            imageUrl: product.imageUrl || '',
-            productCode: '',
-            basePrice: 0,
-            productType: '',
-          },
-        });
-      }
-
-      setComboItems(formattedItems);
-    } catch (error) {
-      message.error('Không thể tải sản phẩm trong combo');
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        navigate('/');
-      }
-      setComboItems([]);
-    }
-  };
-
-  const handleCreateCombo = async (values: any) => {
-    const defaultCategory = categories.find(cat => cat.name === 'Đồ uống');
-    if (!defaultCategory) {
-      message.error('Không tìm thấy danh mục "Đồ uống".');
-      return;
-    }
-    try {
-      const headers = getAuthHeader();
-      if (!headers) return;
-      
-      await axios.post(
-        'https://beautiful-unity-production.up.railway.app/api/products', 
-        {
-          name: values.name,
-          productCode: values.productCode,
-          basePrice: values.basePrice,
-          description: values.description,
-          imageUrl: values.imageUrl,
-          categoryId: defaultCategory.id,
-          productType: 'COMBO',
-          productUsage: 'MAIN',
-        },
-        { headers }
-      );
-
-      message.success('Tạo combo thành công!');
-      setIsCreateModalVisible(false);
-      createForm.resetFields();
-      fetchCombos();
-    } catch (error) {
-      message.error('Tạo combo thất bại!');
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        navigate('/');
-      }
-    }
-  };
-
-  const handleAddProductToCombo = async (values: any) => {
-    if (!editingCombo) return;
-    const comboItems = values.comboItems;
-
-    if (comboItems.length === 0) {
-      message.error('Vui lòng thêm ít nhất một sản phẩm');
-      return;
-    }
-
-    try {
-      const headers = getAuthHeader();
-      if (!headers) return;
-      
-      await axios.put(
-        `https://beautiful-unity-production.up.railway.app/api/products/${editingCombo.id}/combo`,
-        {
-          comboItems: comboItems.map((item: any) => ({
+      form.setFieldsValue({
+        name: undefined,
+        productCode: undefined,
+        comboItems: [],
+        categoryId: defaultCategory.id,
+        basePrice: 0
+      });
+      setEditingCombo(null);
+      setIsModalVisible(true);
+    } else {
+      try {
+        const headers = getAuthHeader();
+        if (!headers) return;
+        const res = await axios.get(`https://beautiful-unity-production.up.railway.app/api/products/v2/${record.id}`, { headers });
+        const detail = res.data;
+        form.setFieldsValue({
+          ...detail,
+          comboItems: (detail.itemsResponse || []).map((item: ComboItem) => ({
             productId: item.productId,
             quantity: item.quantity,
-            size: item.size,
+            size: item.size
           })),
-        },
-        { headers }
-      );
-      message.success('Thêm sản phẩm vào combo thành công!');
-      setIsAddProductModalVisible(false);
-      addForm.resetFields();
-      showComboDetails(editingCombo);
-    } catch (error) {
-      message.error('Thêm sản phẩm thất bại');
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        navigate('/');
+          basePrice: detail.basePrice,
+        });
+        setEditingCombo(record);
+        setIsModalVisible(true);
+      } catch {
+        message.error('Không thể tải dữ liệu combo');
       }
     }
   };
 
-  const toggleStatus = async (comboId: number, currentStatus: string) => {
-    const newStatus = currentStatus === 'ACTIVE' ? 'DELETED' : 'ACTIVE'; // Toggle status
+
+  const showDetailModal = async (combo: Combo) => {
     try {
       const headers = getAuthHeader();
       if (!headers) return;
 
-      await axios.delete(
-        `https://beautiful-unity-production.up.railway.app/api/products/${comboId}/status`, 
-        { params: { status: newStatus }, headers }
-      );
-      message.success(`Trạng thái combo đã được cập nhật thành ${newStatus}`);
-      fetchCombos(); // Re-fetch combos to update the status in the table
-    } catch (error) {
-      message.error('Không thể cập nhật trạng thái combo');
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        navigate('/');
-      }
+      const res = await axios.get(`https://beautiful-unity-production.up.railway.app/api/products/v2/${combo.id}`, { headers });
+      const comboDetails = res.data;
+
+      const productDetailsPromises = comboDetails.itemsResponse.map(async (item: ComboItem) => {
+        const productRes = await axios.get(`https://beautiful-unity-production.up.railway.app/api/products/${item.productId}`, { headers });
+        return {
+          ...item,
+          imageUrl: productRes.data.imageUrl,
+          productName: productRes.data.name
+        };
+      });
+
+      const updatedItems = await Promise.all(productDetailsPromises);
+
+
+      setSelectedCombo({
+        ...comboDetails,
+        itemsResponse: updatedItems,
+      });
+
+      setIsDetailModalVisible(true);
+    } catch {
+      message.error('Không thể tải chi tiết combo');
     }
   };
 
-  const getNotes = (combo: Combo) => {
-    const isProductInCombo = combo.comboItems && combo.comboItems.length > 0;
-    return isProductInCombo ? (
-      <Tag color="green">Đã có sản phẩm</Tag>
-    ) : (
-      <Tag color="red">Chưa có sản phẩm</Tag>
-    );
+  const handleOk = async () => {
+    try {
+      const headers = getAuthHeader();
+      if (!headers) return;
+
+      const values = await form.validateFields();
+      const comboItems: ComboItem[] = values.comboItems || [];
+      const merged: Record<string, ComboItem> = {};
+
+
+      comboItems.forEach(item => {
+        const key = `${item.productId}_${item.size}`;
+        if (merged[key]) {
+          merged[key].quantity += item.quantity;
+        } else {
+          merged[key] = { ...item };
+        }
+      });
+
+      const payload = {
+        ...values,
+        basePrice: values.basePrice,
+        productType: 'COMBO',
+        productUsage: 'MAIN',
+        status: 'ACTIVE',
+        comboItems: Object.values(merged),
+      };
+
+      if (editingCombo) {
+        await axios.put(`https://beautiful-unity-production.up.railway.app/api/products/v2/${editingCombo.id}/combo`, payload, { headers });
+        message.success('Combo đã được cập nhật');
+        fetchCombos();
+      } else {
+        await axios.post('https://beautiful-unity-production.up.railway.app/api/products/v2', payload, { headers });
+        message.success('Combo đã được tạo');
+        fetchCombos();
+      }
+
+      setIsModalVisible(false);
+    } catch {
+      message.error('Thao tác thất bại');
+    }
   };
 
-  const columns = [
-    {
-      title: 'Hình ảnh',
-      dataIndex: 'imageUrl',
-      render: (imageUrl: string) => (
-        <img src={imageUrl} alt="Combo" style={{ width: 100, height: 100 }} />
-      ),
-    },
-    {
-      title: 'Tên combo',
-      dataIndex: 'name',
-      render: (text: string, record: Combo) => (
-        <a onClick={() => showComboDetails(record)}>{text}</a>
-      ),
-    },
-    {
-      title: 'Mã combo',
-      dataIndex: 'productCode',
-    },
-    {
-      title: 'Giá',
-      dataIndex: 'basePrice',
-      render: (basePrice: number) => `${basePrice} VND`,
-    },
-    // Removed the "Danh mục" column
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      render: (status: string, record: Combo) => (
-        <Switch
-          checked={status === 'ACTIVE'}
-          onChange={() => toggleStatus(record.id, status)} // Toggle status
-          checkedChildren="Đang hoạt động"
-          unCheckedChildren="Ngừng hoạt động"
-        />
-      ),
-    },
-    {
-      title: 'Ghi chú',
-      render: (_: any, record: Combo) => getNotes(record),
-    },
-  ];
 
   return (
     <ManagerLayout>
-      <div>
-        <h1>Quản lý combo</h1>
-        <div style={{ marginBottom: 20, display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <Button icon={<ReloadOutlined />} onClick={() => fetchCombos()}>
-            Tải lại
-          </Button>
-          <Button type="primary" onClick={() => setIsCreateModalVisible(true)}>
-            Tạo combo mới
-          </Button>
-        </div>
-
-        <Table
-          dataSource={data}
-          columns={columns}
-          rowKey="id"
-          loading={loading}
-          pagination={{ pageSize: 10 }}
+      <div style={{ marginBottom: 16 }}>
+        <Input
+          placeholder="Tìm theo tên combo"
+          value={searchTerm}
+          onChange={handleSearch}
+          style={{ width: 300 }}
         />
+        <Button
+          style={{ marginLeft: 8 }}
+          onClick={handleResetSearch}
+          type="default"
+        >
+          Đặt lại tìm kiếm
+        </Button>
       </div>
 
-      {/* Modal for Combo Details */}
-      <Modal
-        title="Chi tiết Combo"
-        visible={isDetailVisible}
-        onCancel={() => setIsDetailVisible(false)}
-        footer={null}
-        width={800}
-      >
-        {editingCombo ? (
-          <>
-            <Button type="dashed" onClick={() => { setIsAddProductModalVisible(true); fetchSingleProducts(); }} style={{ marginBottom: '16px' }}>
-              Thêm sản phẩm vào combo
-            </Button>
-            <Descriptions bordered column={1} size="default" style={{ marginBottom: 16 }}>
-              <Descriptions.Item label="Tên Combo">{editingCombo.name}</Descriptions.Item>
-              <Descriptions.Item label="Mã Combo">{editingCombo.productCode}</Descriptions.Item>
-              <Descriptions.Item label="Giá">{editingCombo.basePrice} VND</Descriptions.Item>
-              <Descriptions.Item label="Mô tả">{editingCombo.description}</Descriptions.Item>
-              <Descriptions.Item label="Hình ảnh">
-                <img src={editingCombo.imageUrl} alt="Combo" style={{ width: '100%', height: 'auto' }} />
-              </Descriptions.Item>
-              <Descriptions.Item label="Sản phẩm trong combo">
-                {comboItems.length > 0 ? (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                    {comboItems.map((item) => (
-                      <Card
-                        key={item.productId}
-                        style={{ width: 180, marginBottom: '16px' }}
-                        hoverable
-                        cover={
-                          <img
-                            alt={item.product.name}
-                            src={item.product.imageUrl || 'default-image.jpg'}
-                            style={{ height: 120, objectFit: 'cover' }}
-                          />
-                        }
-                      >
-                        <Card.Meta
-                          title={item.product.name}
-                          description={`${item.quantity} x ${item.size}`}
-                        />
-                      </Card>
-                    ))}
+      <Button type="primary" onClick={() => showModal()}>Tạo combo mới</Button>
+      <Table
+        dataSource={filteredCombos}
+        rowKey="id"
+        loading={loading}
+        columns={[
+          {
+            title: 'Mã sản phẩm',
+            dataIndex: 'productCode',
+          },
+          {
+            title: 'Tên combo',
+            dataIndex: 'name',
+            render: (_, record) => (
+              <Button type="link" onClick={() => showDetailModal(record)}>{record.name}</Button>
+            ),
+          },
+          {
+            title: 'Hình ảnh combo',
+            render: (_, record) => (
+              <img src={record.imageUrl} alt={record.name} style={{ width: 50, height: 50, objectFit: 'cover' }} />
+            ),
+          },
+          {
+            title: 'Giá combo',
+            dataIndex: 'basePrice',
+            render: (price) => `${price} VND`,
+          },
+          {
+            title: 'Sản phẩm trong combo',
+            render: (_, record) => (
+              <div>
+                {record.itemsResponse && record.itemsResponse.map((item: ComboItem, idx: number) => (
+                  <div key={idx}>
+                    <span>{item.productName} - {item.quantity} - Size: {item.size}</span>
                   </div>
-                ) : (
-                  <p>Không có sản phẩm trong combo.</p>
-                )}
-              </Descriptions.Item>
-            </Descriptions>
-          </>
-        ) : (
-          <p>Không có dữ liệu combo.</p>
+                ))}
+              </div>
+            ),
+          },
+          {
+            title: 'Trạng thái',
+            render: (_, record) => (
+              <Switch
+                checked={record.status === 'ACTIVE'}
+                onChange={() => handleStatusChange(record)}
+                checkedChildren="Đang hoạt động"
+                unCheckedChildren="Ngừng hoạt động"
+              />
+            ),
+          },
+          {
+            title: 'Hành động',
+            render: (_, record) => <Button type="link" onClick={() => showModal(record)}>Sửa</Button>
+          }
+        ]}
+      />
+
+      <Modal title={editingCombo ? 'Chỉnh sửa combo' : 'Tạo combo mới'} open={isModalVisible} onOk={handleOk} onCancel={() => setIsModalVisible(false)} width={1000}>
+        <Form form={form} layout="vertical">
+          <Form.Item name="productCode" label="Mã sản phẩm" rules={[{ required: true }]}><Input /></Form.Item>
+          <Form.Item name="name" label="Tên combo" rules={[{ required: true }]}><Input /></Form.Item>
+          <Form.Item name="basePrice" label="Giá combo" rules={[{ required: true }]}>
+            <InputNumber min={0} />
+          </Form.Item>
+          <Form.Item name="imageUrl" label="URL hình ảnh"><Input /></Form.Item>
+          <Form.Item name="description" label="Mô tả"><Input.TextArea rows={2} /></Form.Item>
+          <Form.Item name="categoryId" hidden rules={[{ required: true }]}><Input /></Form.Item>
+
+          <Form.List name="comboItems">
+            {(fields, { add, remove }) => {
+              const currentItems = form.getFieldValue('comboItems') || [];
+              const usedKeys = new Set(currentItems.map((item: ComboItem) => `${item.productId}_${item.size}`));
+
+              const handleAdd = () => {
+                const allCombinations = filteredProducts.flatMap(p => ['S', 'M', 'L', 'XL'].map(size => ({
+                  key: `${p.id}_${size}`,
+                  label: `${p.name} - ${size}`,
+                  productId: p.id,
+                  size,
+                  imageUrl: p.imageUrl
+                })));
+                const available = allCombinations.find(c => !usedKeys.has(c.key));
+
+                if (!available) {
+                  message.warning('Đã thêm tất cả sản phẩm với các size');
+                  return;
+                }
+
+                add({ productId: available.productId, size: available.size, quantity: 1, imageUrl: available.imageUrl });
+              };
+
+              return (
+                <>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                      <Form.Item {...restField} name={[name, 'productId']} rules={[{ required: true }]} >
+                        <Select placeholder="Chọn sản phẩm" style={{ width: 250 }}>
+                          {filteredProducts.map(product => (
+                            <Option key={product.id} value={product.id}>{product.name}</Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                      <Form.Item {...restField} name={[name, 'quantity']} rules={[{ required: true }]}>
+                        <InputNumber min={1} />
+                      </Form.Item>
+                      <Form.Item {...restField} name={[name, 'size']} rules={[{ required: true }]}>
+                        <Select style={{ width: 80 }}>
+                          <Option value="S">S</Option>
+                          <Option value="M">M</Option>
+                          <Option value="L">L</Option>
+                          <Option value="XL">XL</Option>
+                        </Select>
+                      </Form.Item>
+                      <Button danger onClick={() => remove(name)}>Xóa</Button>
+                    </Space>
+                  ))}
+                  <Form.Item>
+                    <Button type="dashed" onClick={handleAdd} block>Thêm sản phẩm</Button>
+                  </Form.Item>
+                </>
+              );
+            }}
+          </Form.List>
+        </Form>
+      </Modal>
+
+      <Modal title="Chi tiết combo" open={isDetailModalVisible} onCancel={() => setIsDetailModalVisible(false)} footer={null} width={750}>
+        {selectedCombo && (
+          <Descriptions bordered column={1} size="default">
+            <Descriptions.Item label="Mã sản phẩm">{selectedCombo.productCode}</Descriptions.Item>
+            <Descriptions.Item label="Tên combo">{selectedCombo.name}</Descriptions.Item>
+            <Descriptions.Item label="Giá combo">{selectedCombo.basePrice} VND</Descriptions.Item>
+            <Descriptions.Item label="Mô tả">{selectedCombo.description}</Descriptions.Item>
+            <Descriptions.Item label="Hình ảnh combo">
+              <img src={selectedCombo.imageUrl} alt="combo" style={{ width: '100%', maxHeight: 300 }} />
+            </Descriptions.Item>
+            <Descriptions.Item label="Danh sách sản phẩm">
+              <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                {(selectedCombo.itemsResponse || []).map((item, idx) => (
+                  <Card key={idx} style={{ width: 150, margin: 8 }}>
+                    <img src={item.imageUrl} alt={item.productName} style={{ width: '100%', height: 100, objectFit: 'cover' }} />
+                    <div>{item.productName}</div>
+                    <div>SL: {item.quantity} - Size: {item.size}</div>
+                  </Card>
+                ))}
+              </div>
+            </Descriptions.Item>
+          </Descriptions>
         )}
       </Modal>
 
-      {/* Modal to Create Combo */}
-      <Modal
-        title="Tạo Combo Mới"
-        visible={isCreateModalVisible}
-        onCancel={() => setIsCreateModalVisible(false)}
-        onOk={() => createForm.submit()}
-        okText="Tạo"
-      >
-        <Form form={createForm} layout="vertical" onFinish={handleCreateCombo}>
-          <Form.Item label="Tên Combo" name="name" rules={[{ required: true }]}> <Input /> </Form.Item>
-          <Form.Item label="Mã Combo" name="productCode" rules={[{ required: true }]}> <Input /> </Form.Item>
-          <Form.Item label="Giá Cơ Bản" name="basePrice" rules={[{ required: true }]}> <Input type="number" /> </Form.Item>
-          <Form.Item label="Mô Tả" name="description"> <Input.TextArea /> </Form.Item>
-          <Form.Item label="Link Hình Ảnh" name="imageUrl" rules={[{ required: true }]}> <Input placeholder="https://..." /> </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Modal to Add Products */}
-      <Modal
-        title="Thêm sản phẩm vào combo"
-        visible={isAddProductModalVisible}
-        onCancel={() => setIsAddProductModalVisible(false)}
-        onOk={() => addForm.submit()}
-        okText="Thêm"
-      >
-        <Form form={addForm} layout="vertical" onFinish={handleAddProductToCombo}>
-          <Form.List
-            name="comboItems"
-            initialValue={[]}
-            rules={[
-              {
-                validator: async (_, names) => {
-                  if (!names || names.length < 1) {
-                    return Promise.reject(new Error('Phải thêm ít nhất một sản phẩm'));
-                  }
-                },
-              },
-            ]}
-          >
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map(({ key, name, fieldKey, ...restField }) => (
-                  <div key={key} style={{ display: 'flex', marginBottom: '16px' }}>
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'productId']}
-                      fieldKey={[fieldKey || 'defaultKey', 'productId']} 
-                      label="Sản phẩm"
-                      rules={[{ required: true, message: 'Vui lòng chọn sản phẩm' }]}
-                    >
-                      <Select placeholder="Chọn sản phẩm">
-                        {productList.map((p) => (
-                          <Option key={p.id} value={p.id}>{p.name}</Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'quantity']}
-                      fieldKey={[fieldKey || 'defaultKey', 'quantity']}
-                      label="Số lượng"
-                      rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}
-                    >
-                      <Input type="number" min={1} />
-                    </Form.Item>
-
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'size']}
-                      fieldKey={[fieldKey || 'defaultKey', 'size']}
-                      label="Size"
-                      rules={[{ required: true, message: 'Vui lòng chọn size' }]}
-                    >
-                      <Select>
-                        <Option value="S">S</Option>
-                        <Option value="M">M</Option>
-                        <Option value="L">L</Option>
-                      </Select>
-                    </Form.Item>
-
-                    <Button
-                      type="default"
-                      danger
-                      onClick={() => remove(name)}
-                      icon={<ReloadOutlined />}
-                      style={{ alignSelf: 'center' }}
-                    >
-                      Xoá
-                    </Button>
-                  </div>
-                ))}
-
-                <Form.Item>
-                  <Button type="dashed" onClick={() => add()} icon={<ReloadOutlined />}>
-                    Thêm sản phẩm
-                  </Button>
-                </Form.Item>
-              </>
-            )}
-          </Form.List>
-
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              Thêm sản phẩm vào combo
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
     </ManagerLayout>
   );
 };

@@ -34,7 +34,7 @@ const ManagerExtraScreen: React.FC = () => {
   const [form] = Form.useForm();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [filter, setFilter] = useState<{ status?: string; categoryId?: number; productType?: string }>({});
-  const [searchTerm, setSearchTerm] = useState<string>(''); 
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [pageSize, setPageSize] = useState<number>(10);
   const navigate = useNavigate();
 
@@ -56,7 +56,7 @@ const ManagerExtraScreen: React.FC = () => {
       navigate('/login');
       return;
     }
-    
+
     fetchProducts();
     fetchCategories();
   }, [pageSize]);
@@ -234,9 +234,8 @@ const ManagerExtraScreen: React.FC = () => {
 
   const columns = [
     {
-      title: 'Hình ảnh',
-      dataIndex: 'imageUrl',
-      render: (imageUrl: string) => <img src={imageUrl} alt="Product" style={{ width: 100, height: 100 }} />,
+      title: 'Mã sản phẩm',
+      dataIndex: 'productCode',
     },
     {
       title: 'Tên sản phẩm',
@@ -248,8 +247,9 @@ const ManagerExtraScreen: React.FC = () => {
       ),
     },
     {
-      title: 'Mã sản phẩm',
-      dataIndex: 'productCode',
+      title: 'Hình ảnh',
+      dataIndex: 'imageUrl',
+      render: (imageUrl: string) => <img src={imageUrl} alt="Product" style={{ width: 100, height: 100 }} />,
     },
     {
       title: 'Giá',
@@ -358,19 +358,20 @@ const ManagerExtraScreen: React.FC = () => {
           }}
         >
           <Form.Item
-            label="Tên sản phẩm"
-            name="name"
-            rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm!' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
             label="Mã sản phẩm"
             name="productCode"
             rules={[{ required: true, message: 'Vui lòng nhập mã sản phẩm!' }]}
           >
             <Input />
           </Form.Item>
+          <Form.Item
+            label="Tên sản phẩm"
+            name="name"
+            rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm!' }]}
+          >
+            <Input />
+          </Form.Item>
+
           <Form.Item
             label="Giá"
             name="basePrice"
@@ -400,7 +401,7 @@ const ManagerExtraScreen: React.FC = () => {
         </Form>
       </Modal>
 
-      {/* Modal Xem Chi tiết Sản phẩm */}
+
       <Modal
         title="Chi tiết Sản phẩm"
         open={isDetailModalVisible}
@@ -410,8 +411,8 @@ const ManagerExtraScreen: React.FC = () => {
       >
         {selectedProduct ? (
           <Descriptions bordered column={1} size="default">
-            <Descriptions.Item label="Tên sản phẩm">{selectedProduct.name}</Descriptions.Item>
             <Descriptions.Item label="Mã sản phẩm">{selectedProduct.productCode}</Descriptions.Item>
+            <Descriptions.Item label="Tên sản phẩm">{selectedProduct.name}</Descriptions.Item>
             <Descriptions.Item label="Giá">{selectedProduct.basePrice} VND</Descriptions.Item>
             <Descriptions.Item label="Mô tả">{selectedProduct.description || 'Không có mô tả'}</Descriptions.Item>
             <Descriptions.Item label="Danh mục">{selectedProduct.categoryName}</Descriptions.Item>
