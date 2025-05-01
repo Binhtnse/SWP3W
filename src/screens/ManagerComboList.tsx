@@ -46,6 +46,7 @@ const ManagerComboList = () => {
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [editingCombo, setEditingCombo] = useState<Combo | null>(null);
   const [selectedCombo, setSelectedCombo] = useState<Combo | null>(null);
+  const [extraProducts, setExtraProducts] = useState<Product[]>([]);
   const [filteredCombos, setFilteredCombos] = useState<Combo[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [form] = Form.useForm();
@@ -161,10 +162,26 @@ const ManagerComboList = () => {
     }
   };
 
+  const fetchExtraProducts = async () => {
+    try {
+      const headers = getAuthHeader();
+      if (!headers) return;
+
+      const res = await axios.get('https://beautiful-unity-production.up.railway.app/api/products/filter', {
+        params: { productType: 'SINGLE', productUsage: 'EXTRA' },
+        headers
+      });
+      setExtraProducts(res.data.data);
+    } catch (error) {
+      message.error('Không thể tải sản phẩm extra');
+    }
+  };
+
   useEffect(() => {
     fetchCombos();
     fetchProducts();
     fetchCategories();
+    fetchExtraProducts();
   }, []);
 
   const filteredProducts = products.filter(product =>
@@ -249,42 +266,60 @@ const ManagerComboList = () => {
 
       const values = await form.validateFields();
       const comboItems: ComboItem[] = values.comboItems || [];
-      const merged: Record<string, ComboItem> = {};
+      const extraItems: ComboItem[] = values.extraItems || [];
 
-
+      // Gộp sản phẩm chính (có size)
+      const mergedComboItems: Record<string, ComboItem> = {};
       comboItems.forEach(item => {
         const key = `${item.productId}_${item.size}`;
-        if (merged[key]) {
-          merged[key].quantity += item.quantity;
+        if (mergedComboItems[key]) {
+          mergedComboItems[key].quantity += item.quantity;
         } else {
-          merged[key] = { ...item };
+          mergedComboItems[key] = { ...item };
         }
       });
 
+      // Gộp sản phẩm extra (không có size)
+      const mergedExtraItems: Record<string, ComboItem> = {};
+      extraItems.forEach(item => {
+        const key = item.productId;
+        if (mergedExtraItems[key]) {
+          mergedExtraItems[key].quantity += item.quantity;
+        } else {
+          // Gán size = 'EXTRA' để phân biệt
+          mergedExtraItems[key] = { ...item, size: 'EXTRA' };
+        }
+      });
+
+      // Tạo payload chung
       const payload = {
         ...values,
         basePrice: values.basePrice,
         productType: 'COMBO',
         productUsage: 'MAIN',
         status: 'ACTIVE',
-        comboItems: Object.values(merged),
+        comboItems: [
+          ...Object.values(mergedComboItems),
+          ...Object.values(mergedExtraItems)
+        ],
       };
 
       if (editingCombo) {
         await axios.put(`https://beautiful-unity-production.up.railway.app/api/products/v2/${editingCombo.id}/combo`, payload, { headers });
         message.success('Combo đã được cập nhật');
-        fetchCombos();
       } else {
         await axios.post('https://beautiful-unity-production.up.railway.app/api/products/v2', payload, { headers });
         message.success('Combo đã được tạo');
-        fetchCombos();
       }
-
+      form.resetFields();
+      fetchCombos();
       setIsModalVisible(false);
-    } catch {
+    } catch (err) {
+      console.error(err);
       message.error('Thao tác thất bại');
     }
   };
+
 
 
   return (
@@ -339,7 +374,7 @@ const ManagerComboList = () => {
               <div>
                 {record.itemsResponse && record.itemsResponse.map((item: ComboItem, idx: number) => (
                   <div key={idx}>
-                    <span>{item.productName} - {item.quantity} - Size: {item.size}</span>
+                    <span>{item.productName} - {item.quantity}  {item.size !== 'EXTRA' && <>  Size: {item.size}</>}</span>
                   </div>
                 ))}
               </div>
@@ -363,45 +398,74 @@ const ManagerComboList = () => {
         ]}
       />
 
-      <Modal title={editingCombo ? 'Chỉnh sửa combo' : 'Tạo combo mới'} open={isModalVisible} onOk={handleOk} onCancel={() => setIsModalVisible(false)} width={1000}>
+<Modal
+  title={editingCombo ? 'Chỉnh sửa combo' : 'Tạo combo mới'}
+  open={isModalVisible}
+  onCancel={() => setIsModalVisible(false)}
+  width={1000}
+  footer={[
+    <Button key="reset" onClick={() => form.resetFields()}>
+      Reset form
+    </Button>,
+    <Button key="cancel" onClick={() => setIsModalVisible(false)}>
+      Hủy
+    </Button>,
+    <Button key="submit" type="primary" onClick={handleOk}>
+      OK
+    </Button>,
+  ]}
+>
+
         <Form form={form} layout="vertical">
-          <Form.Item name="productCode" label="Mã sản phẩm" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="name" label="Tên combo" rules={[{ required: true }]}><Input /></Form.Item>
+          <Form.Item name="productCode" label="Mã sản phẩm" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="name" label="Tên combo" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
           <Form.Item name="basePrice" label="Giá combo" rules={[{ required: true }]}>
             <InputNumber min={0} />
           </Form.Item>
-          <Form.Item name="imageUrl" label="URL hình ảnh"><Input /></Form.Item>
-          <Form.Item name="description" label="Mô tả"><Input.TextArea rows={2} /></Form.Item>
-          <Form.Item name="categoryId" hidden rules={[{ required: true }]}><Input /></Form.Item>
+          <Form.Item name="imageUrl" label="URL hình ảnh">
+            <Input />
+          </Form.Item>
+          <Form.Item name="description" label="Mô tả">
+            <Input.TextArea rows={2} />
+          </Form.Item>
+          <Form.Item name="categoryId" hidden rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
 
+          {/* Combo Items (Có size) */}
           <Form.List name="comboItems">
             {(fields, { add, remove }) => {
               const currentItems = form.getFieldValue('comboItems') || [];
               const usedKeys = new Set(currentItems.map((item: ComboItem) => `${item.productId}_${item.size}`));
 
               const handleAdd = () => {
-                const allCombinations = filteredProducts.flatMap(p => ['S', 'M', 'L', 'XL'].map(size => ({
-                  key: `${p.id}_${size}`,
-                  label: `${p.name} - ${size}`,
-                  productId: p.id,
-                  size,
-                  imageUrl: p.imageUrl
-                })));
+                const allCombinations = filteredProducts.flatMap(p =>
+                  ['S', 'M', 'L', 'XL'].map(size => ({
+                    key: `${p.id}_${size}`,
+                    label: `${p.name} - ${size}`,
+                    productId: p.id,
+                    size,
+                    imageUrl: p.imageUrl
+                  }))
+                );
                 const available = allCombinations.find(c => !usedKeys.has(c.key));
-
                 if (!available) {
                   message.warning('Đã thêm tất cả sản phẩm với các size');
                   return;
                 }
-
                 add({ productId: available.productId, size: available.size, quantity: 1, imageUrl: available.imageUrl });
               };
 
               return (
                 <>
+                  <h4>Sản phẩm chính</h4>
                   {fields.map(({ key, name, ...restField }) => (
                     <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
-                      <Form.Item {...restField} name={[name, 'productId']} rules={[{ required: true }]} >
+                      <Form.Item {...restField} name={[name, 'productId']} rules={[{ required: true }]}>
                         <Select placeholder="Chọn sản phẩm" style={{ width: 250 }}>
                           {filteredProducts.map(product => (
                             <Option key={product.id} value={product.id}>{product.name}</Option>
@@ -429,8 +493,44 @@ const ManagerComboList = () => {
               );
             }}
           </Form.List>
+
+          {/* Extra Items (Không có size) */}
+          <Form.List name="extraItems">
+            {(fields, { add, remove }) => (
+              <>
+                <h4>Sản phẩm Extra</h4>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'productId']}
+                      rules={[{ required: true, message: 'Chọn sản phẩm' }]}
+                    >
+                      <Select placeholder="Chọn sản phẩm extra" style={{ width: 250 }}>
+                        {extraProducts.map(product => (
+                          <Option key={product.id} value={product.id}>{product.name}</Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'quantity']}
+                      rules={[{ required: true, message: 'Nhập số lượng' }]}
+                    >
+                      <InputNumber min={1} />
+                    </Form.Item>
+                    <Button danger onClick={() => remove(name)}>Xóa</Button>
+                  </Space>
+                ))}
+                <Form.Item>
+                  <Button type="dashed" onClick={() => add()} block>Thêm Extra</Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
         </Form>
       </Modal>
+
 
       <Modal title="Chi tiết combo" open={isDetailModalVisible} onCancel={() => setIsDetailModalVisible(false)} footer={null} width={750}>
         {selectedCombo && (
@@ -448,7 +548,11 @@ const ManagerComboList = () => {
                   <Card key={idx} style={{ width: 150, margin: 8 }}>
                     <img src={item.imageUrl} alt={item.productName} style={{ width: '100%', height: 100, objectFit: 'cover' }} />
                     <div>{item.productName}</div>
-                    <div>SL: {item.quantity} - Size: {item.size}</div>
+                    <div>
+                      SL: {item.quantity}
+                      {item.size !== 'EXTRA' && <> - Size: {item.size}</>}
+                    </div>
+
                   </Card>
                 ))}
               </div>
