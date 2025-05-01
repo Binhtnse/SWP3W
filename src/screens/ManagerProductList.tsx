@@ -247,11 +247,12 @@ const ManagerProductScreen: React.FC = () => {
 
   const filteredData = data.filter((item) => {
     const matchName = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = !filter.status || item.status === filter.status;
+    const matchStatus = !filter.status || item.status.toLowerCase() === filter.status.toLowerCase();
     const matchCategory = !filter.categoryId || item.categoryId === filter.categoryId;
     const matchType = !filter.productType || item.productType === filter.productType;
     return matchName && matchStatus && matchCategory && matchType;
   });
+  
 
   const columns = [
     {
@@ -322,7 +323,7 @@ const ManagerProductScreen: React.FC = () => {
             style={{ width: 200 }}
           >
             <Select.Option value="ACTIVE">Đang hoạt động</Select.Option>
-            <Select.Option value="INACTIVE">Ngừng hoạt động</Select.Option>
+            <Select.Option value="DELETED">Ngừng hoạt động</Select.Option>
           </Select>
           <Select
             value={pageSize}

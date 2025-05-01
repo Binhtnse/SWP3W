@@ -195,47 +195,47 @@ const ManagerExtraScreen: React.FC = () => {
     setSelectedProduct(null);
   };
 
- const handleOk = async () => {
-  try {
-    const values = await form.validateFields();
-    const isEditing = editingProduct !== null;
+  const handleOk = async () => {
+    try {
+      const values = await form.validateFields();
+      const isEditing = editingProduct !== null;
 
-    if (!getAuthHeader()) return;
+      if (!getAuthHeader()) return;
 
-    if (!isEditing || (editingProduct &&
+      if (!isEditing || (editingProduct &&
         (values.productCode.toLowerCase() !== editingProduct.productCode.toLowerCase() ||
-         values.name.toLowerCase() !== editingProduct.name.toLowerCase()))) {
-      const existsCode = data.some(item => item.productCode.toLowerCase() === values.productCode.toLowerCase());
-      const existsName = data.some(item => item.name.toLowerCase() === values.name.toLowerCase());
-      if (existsCode) {
-        form.setFields([{ name: 'productCode', errors: ['Mã sản phẩm đã tồn tại'] }]);
-        return;
+          values.name.toLowerCase() !== editingProduct.name.toLowerCase()))) {
+        const existsCode = data.some(item => item.productCode.toLowerCase() === values.productCode.toLowerCase());
+        const existsName = data.some(item => item.name.toLowerCase() === values.name.toLowerCase());
+        if (existsCode) {
+          form.setFields([{ name: 'productCode', errors: ['Mã sản phẩm đã tồn tại'] }]);
+          return;
+        }
+        if (existsName) {
+          form.setFields([{ name: 'name', errors: ['Tên sản phẩm đã tồn tại'] }]);
+          return;
+        }
       }
-      if (existsName) {
-        form.setFields([{ name: 'name', errors: ['Tên sản phẩm đã tồn tại'] }]);
-        return;
+
+      const productData = {
+        ...values,
+        productType: 'SINGLE',
+        productUsage: 'EXTRA',
+      };
+
+      if (isEditing && editingProduct) {
+        await updateProduct({ ...editingProduct, ...productData });
+      } else {
+        await createProduct(productData);
       }
+
+      fetchProducts();
+      form.resetFields();
+      setIsModalVisible(false);
+    } catch (error) {
+      message.error('Không thể lưu sản phẩm');
     }
-
-    const productData = {
-      ...values,
-      productType: 'SINGLE',
-      productUsage: 'EXTRA',
-    };
-
-    if (isEditing && editingProduct) {
-      await updateProduct({ ...editingProduct, ...productData });
-    } else {
-      await createProduct(productData);
-    }
-
-    fetchProducts();
-    form.resetFields();
-    setIsModalVisible(false);
-  } catch (error) {
-    message.error('Không thể lưu sản phẩm');
-  }
-};
+  };
 
 
 
@@ -250,11 +250,12 @@ const ManagerExtraScreen: React.FC = () => {
 
   const filteredData = data.filter((item) => {
     const matchName = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = !filter.status || item.status === filter.status;
+    const matchStatus = !filter.status || item.status.toLowerCase() === filter.status.toLowerCase();
     const matchCategory = !filter.categoryId || item.categoryId === filter.categoryId;
     const matchType = !filter.productType || item.productType === filter.productType;
     return matchName && matchStatus && matchCategory && matchType;
   });
+
 
   const columns = [
     {
@@ -328,8 +329,9 @@ const ManagerExtraScreen: React.FC = () => {
             style={{ width: 200 }}
           >
             <Select.Option value="ACTIVE">Đang hoạt động</Select.Option>
-            <Select.Option value="INACTIVE">Ngừng hoạt động</Select.Option>
+            <Select.Option value="DELETED">Ngừng hoạt động</Select.Option>
           </Select>
+
           <Select
             value={pageSize}
             onChange={handlePageSizeChange}
@@ -419,15 +421,15 @@ const ManagerExtraScreen: React.FC = () => {
             name="categoryId"
             rules={[{ required: true, message: 'Vui lòng chọn danh mục!' }]}
           ><Select>
-          {categories
-            .filter((category) => category.name !== 'Đồ uống')
-            .map((category) => (
-              <Select.Option key={category.id} value={category.id}>
-                {category.name}
-              </Select.Option>
-            ))}
-        </Select>
-      </Form.Item>
+              {categories
+                .filter((category) => category.name !== 'Đồ uống')
+                .map((category) => (
+                  <Select.Option key={category.id} value={category.id}>
+                    {category.name}
+                  </Select.Option>
+                ))}
+            </Select>
+          </Form.Item>
         </Form>
       </Modal>
 
