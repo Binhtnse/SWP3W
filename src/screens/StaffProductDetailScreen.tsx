@@ -72,6 +72,7 @@ import {
   ComboItemName,
   ComboItemMeta,
 } from "../components/styled components/StaffProductDetailStyles";
+import Cart from "../components/Cart";
 
 const { Title, Text, Paragraph } = Typography;
 const { Group: RadioGroup } = Radio;
@@ -153,9 +154,11 @@ const StaffProductDetailScreen: React.FC = () => {
   const [selectedIce, setSelectedIce] = useState<string>("100%");
   const [selectedToppings, setSelectedToppings] = useState<number[]>([]);
   const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
-  const [optionsModalVisible, setOptionsModalVisible] = useState<boolean>(false);
+  const [optionsModalVisible, setOptionsModalVisible] =
+    useState<boolean>(false);
   const [isAddingToOrder, setIsAddingToOrder] = useState<boolean>(false);
   const [orderSuccess, setOrderSuccess] = useState<boolean>(false);
+  const [cartVisible, setCartVisible] = useState<boolean>(false);
 
   const getAuthAxios = () => {
     const accessToken = localStorage.getItem("accessToken");
@@ -259,6 +262,14 @@ const StaffProductDetailScreen: React.FC = () => {
     }
   };
 
+  const showCart = () => {
+    setCartVisible(true);
+  };
+
+  const hideCart = () => {
+    setCartVisible(false);
+  };
+
   const handleSizeChange = (e: RadioChangeEvent) => {
     setSelectedSize(e.target.value);
   };
@@ -321,16 +332,17 @@ const StaffProductDetailScreen: React.FC = () => {
 
       if (product.isCombo) {
         // For combo products - simplified without customizations
-        const childItems = product.comboItems?.map((comboItem) => {
-          return {
-            productId: comboItem.productId,
-            quantity: comboItem.quantity || 1,
-            size: comboItem.size || "M",
-            note: "",
-            isCombo: false,
-            childItems: [], // Combo items don't have their own child items
-          };
-        }) || [];
+        const childItems =
+          product.comboItems?.map((comboItem) => {
+            return {
+              productId: comboItem.productId,
+              quantity: comboItem.quantity || 1,
+              size: comboItem.size || "M",
+              note: "",
+              isCombo: false,
+              childItems: [], // Combo items don't have their own child items
+            };
+          }) || [];
 
         requestBody = {
           parentItems: [
@@ -401,6 +413,9 @@ const StaffProductDetailScreen: React.FC = () => {
           : "Đã thêm vào đơn hàng thành công!",
         icon: <CheckCircleFilled style={{ color: "#52c41a" }} />,
       });
+      setTimeout(() => {
+        showCart();
+      }, 1000);
     } catch (error) {
       console.error("Error adding to order:", error);
 
@@ -614,7 +629,8 @@ const StaffProductDetailScreen: React.FC = () => {
               {product.isCombo ? (
                 <div>
                   <Text strong>
-                    Combo được bán theo giá cố định, không thể tùy chỉnh từng món.
+                    Combo được bán theo giá cố định, không thể tùy chỉnh từng
+                    món.
                   </Text>
                 </div>
               ) : (
@@ -924,6 +940,30 @@ const StaffProductDetailScreen: React.FC = () => {
           ))}
         </RecommendationsGrid>
       </RecommendationsSection>
+
+      <Button
+        type="primary"
+        icon={<ShoppingCartOutlined />}
+        size="large"
+        onClick={showCart}
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          right: "20px",
+          height: "48px",
+          borderRadius: "24px",
+          padding: "0 24px",
+          display: "flex",
+          alignItems: "center",
+          zIndex: 1000,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        }}
+      >
+        Xem giỏ hàng
+      </Button>
+
+      {/* Add the Cart component */}
+      <Cart visible={cartVisible} onClose={hideCart} />
     </PageContainer>
   );
 };

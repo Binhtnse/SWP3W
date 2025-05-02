@@ -1,11 +1,39 @@
 import React, { useState, useEffect } from "react";
-import { Tag, Input, Spin, message, Col, Badge, Pagination, Button, Dropdown, Menu, Tabs } from "antd";
 import {
-  ShoppingOutlined, AppstoreOutlined, UnorderedListOutlined, DownOutlined,
+  Tag,
+  Input,
+  Spin,
+  message,
+  Col,
+  Badge,
+  Pagination,
+  Button,
+  Dropdown,
+  Menu,
+  Tabs,
+} from "antd";
+import {
+  ShoppingOutlined,
+  AppstoreOutlined,
+  UnorderedListOutlined,
+  DownOutlined,
+  ShoppingCartOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
-import { useNavigate } from 'react-router-dom';
-import { StyledHeader, HeaderContent, LogoSection, IconContainer, TitleContainer, SearchContainer, FilterSection, FilterContent, Separator, FilterControls, ViewControls, StyledTabs ,
+import { useNavigate } from "react-router-dom";
+import {
+  StyledHeader,
+  HeaderContent,
+  LogoSection,
+  IconContainer,
+  TitleContainer,
+  SearchContainer,
+  FilterSection,
+  FilterContent,
+  Separator,
+  FilterControls,
+  ViewControls,
+  StyledTabs,
   ProductContainer,
   ProductGrid,
   ProductCol,
@@ -19,8 +47,10 @@ import { StyledHeader, HeaderContent, LogoSection, IconContainer, TitleContainer
   ProductDescription,
   ComboDetails,
   ListViewCard,
-  PaginationContainer } from "../components/styled components/StaffProductStyles";
-  import { useAuthState } from "../hooks/useAuthState";
+  PaginationContainer,
+} from "../components/styled components/StaffProductStyles";
+import { useAuthState } from "../hooks/useAuthState";
+import Cart from "../components/Cart";
 
 interface Category {
   id: number;
@@ -83,10 +113,11 @@ const StaffProductScreen: React.FC = () => {
   const [sortParam, setSortParam] = useState<string>("name");
   const [totalElements, setTotalElements] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
-  console.log(totalPages)
+  console.log(totalPages);
   const [categories, setCategories] = useState<Category[]>([]);
-  console.log(categories)
+  console.log(categories);
   const [activeTab, setActiveTab] = useState<string>("drinks");
+  const [cartVisible, setCartVisible] = useState<boolean>(false);
   const navigate = useNavigate();
   const { isLoggedIn, role } = useAuthState();
 
@@ -97,18 +128,18 @@ const StaffProductScreen: React.FC = () => {
       navigate("/login");
       return;
     }
-    
+
     fetchCategories();
     fetchProducts();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize, sortParam, activeTab, isLoggedIn, role, navigate]);
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem("accessToken");
     return {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     };
   };
 
@@ -122,7 +153,7 @@ const StaffProductScreen: React.FC = () => {
     } catch (error) {
       console.error("Error fetching categories:", error);
       message.error("Không thể tải danh mục sản phẩm");
-      
+
       // Handle unauthorized access
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại");
@@ -138,26 +169,30 @@ const StaffProductScreen: React.FC = () => {
     try {
       setLoading(true);
       const response = await axios.get<ApiResponse>(
-        `https://beautiful-unity-production.up.railway.app/api/products?page=${currentPage - 1}&size=${pageSize}&sort=${sortParam}`,
+        `https://beautiful-unity-production.up.railway.app/api/products?page=${
+          currentPage - 1
+        }&size=${pageSize}&sort=${sortParam}`,
         getAuthHeaders()
       );
-      
+
       setProducts(response.data.data);
-      
+
       // Filter only active products before setting the total count
-      const activeProducts = response.data.data.filter(product => product.status === "ACTIVE");
+      const activeProducts = response.data.data.filter(
+        (product) => product.status === "ACTIVE"
+      );
       setTotalElements(activeProducts.length);
-      
+
       // If you need to adjust total pages based on active products
       const calculatedTotalPages = Math.ceil(activeProducts.length / pageSize);
       setTotalPages(calculatedTotalPages > 0 ? calculatedTotalPages : 1);
-      
+
       setLoading(false);
     } catch (error) {
       console.error("Error fetching products:", error);
       message.error("Không thể tải danh sách sản phẩm");
       setLoading(false);
-      
+
       // Handle unauthorized access
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại");
@@ -175,8 +210,16 @@ const StaffProductScreen: React.FC = () => {
   };
 
   const handleProductClick = (productId: number, productType: string) => {
-    console.log(productType)
+    console.log(productType);
     navigate(`/staff/products/${productId}`);
+  };
+
+  const showCart = () => {
+    setCartVisible(true);
+  };
+
+  const hideCart = () => {
+    setCartVisible(false);
   };
 
   const handleSortChange = (value: string) => {
@@ -202,20 +245,32 @@ const StaffProductScreen: React.FC = () => {
         .toLowerCase()
         .includes(searchText.toLowerCase());
       const isActive = product.status === "ACTIVE";
-      
+
       if (activeTab === "drinks") {
-        return matchesSearch && isActive && product.categoryName === "Đồ uống" && product.productType === "SINGLE";
+        return (
+          matchesSearch &&
+          isActive &&
+          product.categoryName === "Đồ uống" &&
+          product.productType === "SINGLE"
+        );
       } else if (activeTab === "toppings") {
-        return matchesSearch && isActive && product.categoryName === "Topping" && product.productType === "SINGLE";
+        return (
+          matchesSearch &&
+          isActive &&
+          product.categoryName === "Topping" &&
+          product.productType === "SINGLE"
+        );
       } else if (activeTab === "combos") {
         return matchesSearch && isActive && product.productType === "COMBO";
       }
-      
+
       return false;
     });
 
     if (filterCategory !== "all" && activeTab !== "combos") {
-      filtered = filtered.filter(product => product.categoryName === filterCategory);
+      filtered = filtered.filter(
+        (product) => product.categoryName === filterCategory
+      );
     }
 
     return filtered;
@@ -262,13 +317,12 @@ const StaffProductScreen: React.FC = () => {
               >
                 <ProductCard
                   hoverable
-                  onClick={() => handleProductClick(product.id, product.productType)}
+                  onClick={() =>
+                    handleProductClick(product.id, product.productType)
+                  }
                 >
                   <ProductImage>
-                    <img
-                      alt={product.name}
-                      src={product.imageUrl}
-                    />
+                    <img alt={product.name} src={product.imageUrl} />
                     {product.productType === "COMBO" && (
                       <ProductTag>
                         <Tag color="blue">Combo</Tag>
@@ -278,12 +332,13 @@ const StaffProductScreen: React.FC = () => {
                   <div>
                     <ProductName>{product.name}</ProductName>
                     <ProductCategory>
-                      {product.categoryName || 'Không có danh mục'}
+                      {product.categoryName || "Không có danh mục"}
                     </ProductCategory>
                     <ProductPrice>
                       {formatCurrency(product.basePrice)}
                     </ProductPrice>
-                    {product.productType === "COMBO" && renderComboDetails(product)}
+                    {product.productType === "COMBO" &&
+                      renderComboDetails(product)}
                     <ProductDescription>
                       {product.description}
                     </ProductDescription>
@@ -300,16 +355,18 @@ const StaffProductScreen: React.FC = () => {
       </ProductGrid>
     );
   };
-  
+
   const renderListView = () => {
     return (
       <div>
         {filteredProducts.length > 0 ? (
           filteredProducts.map((product) => (
-            <ListViewCard 
-              key={product.id} 
+            <ListViewCard
+              key={product.id}
               hoverable
-              onClick={() => handleProductClick(product.id, product.productType)}
+              onClick={() =>
+                handleProductClick(product.id, product.productType)
+              }
             >
               <div className="flex flex-col sm:flex-row">
                 <div className="relative w-full sm:w-64 h-64 flex-shrink-0">
@@ -333,14 +390,17 @@ const StaffProductScreen: React.FC = () => {
                           {product.categoryName}
                         </ProductCategory>
                       </div>
-                      <Tag color={product.status === "ACTIVE" ? "green" : "red"}>
+                      <Tag
+                        color={product.status === "ACTIVE" ? "green" : "red"}
+                      >
                         {product.status === "ACTIVE" ? "Đang bán" : "Ngừng bán"}
                       </Tag>
                     </div>
                     <ProductPrice>
                       {formatCurrency(product.basePrice)}
                     </ProductPrice>
-                    {product.productType === "COMBO" && renderComboDetails(product)}
+                    {product.productType === "COMBO" &&
+                      renderComboDetails(product)}
                     <ProductDescription>
                       {product.description}
                     </ProductDescription>
@@ -383,7 +443,7 @@ const StaffProductScreen: React.FC = () => {
                 <ShoppingOutlined />
               </IconContainer>
               <TitleContainer>
-              <h1>Milk Tea Shop</h1>
+                <h1>Milk Tea Shop</h1>
                 <p>
                   <span>Danh mục sản phẩm</span>
                 </p>
@@ -411,7 +471,6 @@ const StaffProductScreen: React.FC = () => {
         <FilterSection>
           <FilterContent className="mb-6">
             <FilterControls>
-
               <Dropdown overlay={sortMenu}>
                 <Button>
                   Sắp xếp theo:{" "}
@@ -475,6 +534,30 @@ const StaffProductScreen: React.FC = () => {
             </>
           )}
         </FilterSection>
+
+        <Button
+          type="primary"
+          shape="circle"
+          icon={<ShoppingCartOutlined />}
+          size="large"
+          onClick={showCart}
+          style={{
+            position: "fixed",
+            bottom: "20px",
+            right: "20px",
+            width: "60px",
+            height: "60px",
+            fontSize: "24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          }}
+        />
+
+        {/* Add the Cart component */}
+        <Cart visible={cartVisible} onClose={hideCart} />
       </div>
     </div>
   );
