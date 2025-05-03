@@ -12,15 +12,17 @@ import {
   Modal,
   Radio,
   Input,
-  Space
+  Space,
+  InputNumber,
+  Alert,
 } from "antd";
 import {
   ShoppingCartOutlined,
   DeleteOutlined,
   CreditCardOutlined,
-  MinusCircleOutlined,
   DollarOutlined,
-  MobileOutlined
+  MobileOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 import {
   OrderSummary,
@@ -28,6 +30,8 @@ import {
   SummaryActions,
   LoadingContainer,
   ActionButton,
+  CartItemContainer,
+  CartItemActions,
 } from "../components/styled components/StaffCartStyles";
 import axios from "axios";
 
@@ -75,18 +79,25 @@ interface CartProps {
 
 const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
   const [order, setOrder] = useState<Order | null>(null);
-  console.log(order)
+  console.log(order);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  console.log(error)
+  console.log(error);
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
-  const [paymentJustCompleted, setPaymentJustCompleted] = useState<boolean>(false);
-  
-  // New state variables for payment modal
-  const [paymentModalVisible, setPaymentModalVisible] = useState<boolean>(false);
+  const [paymentJustCompleted, setPaymentJustCompleted] =
+    useState<boolean>(false);
+  const [paymentModalVisible, setPaymentModalVisible] =
+    useState<boolean>(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("MOMO");
   const [cashNote, setCashNote] = useState<string>("");
+  const [updateModalVisible, setUpdateModalVisible] = useState<boolean>(false);
+  const [currentItem, setCurrentItem] = useState<OrderItem | null>(null);
+  const [updatedQuantity, setUpdatedQuantity] = useState<number>(1);
+  const [updatedSize, setUpdatedSize] = useState<string>("");
+  const [cashAmount, setCashAmount] = useState<number | null>(null);
+  const [cashError, setCashError] = useState<string | null>(null);
+  const [changeAmount, setChangeAmount] = useState<number | null>(null);
 
   const getAuthAxios = () => {
     const accessToken = localStorage.getItem("accessToken");
@@ -178,16 +189,16 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
     const urlParams = new URLSearchParams(window.location.search);
     const status = urlParams.get("status");
     const resultCode = urlParams.get("resultCode");
-  
+
     if (status === "success" && resultCode === "0") {
       message.success("Thanh toán thành công!");
       localStorage.removeItem("currentOrderId");
-      
+
       // Set states to empty
       setOrder(null);
       setOrderItems([]);
       setPaymentJustCompleted(true);
-      
+
       // Remove the query parameters from the URL without triggering a reload
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -249,6 +260,45 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
     }
   };
 
+  const showUpdateModal = (item: OrderItem) => {
+    setCurrentItem(item);
+    setUpdatedQuantity(item.quantity);
+    setUpdatedSize(item.size || "NONE"); // Set the current size
+    setUpdateModalVisible(true);
+  };
+
+  // Function to update an item in the cart
+  const handleUpdateItem = async () => {
+    if (!currentItem) return;
+
+    try {
+      const currentOrderId = localStorage.getItem("currentOrderId");
+      if (!currentOrderId) {
+        message.error("Không tìm thấy thông tin đơn hàng");
+        return;
+      }
+
+      setLoading(true);
+      const authAxios = getAuthAxios();
+
+      // Use the correct API URL with query parameters
+      await authAxios.put(
+        `/api/v2/orders/${currentOrderId}/details/${currentItem.id}/update?size=${updatedSize}&quantity=${updatedQuantity}`
+      );
+
+      message.success("Đã cập nhật sản phẩm trong giỏ hàng");
+      setUpdateModalVisible(false);
+
+      // Refresh the order details
+      setRefreshTrigger((prev) => prev + 1);
+    } catch (error) {
+      console.error("Error updating item in cart:", error);
+      message.error("Không thể cập nhật sản phẩm. Vui lòng thử lại sau.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Helper function to render order items recursively
   const renderOrderItems = (
     items: OrderItemChild[],
@@ -257,14 +307,14 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
     return items.map((item, index) => (
       <div
         key={`${item.id}-${index}`}
-        className={index > 0 ? "mt-2 pt-2 border-t border-gray-200" : ""}
+        className={index > 0 ? "mt-3 pt-3 border-t border-gray-200" : ""}
       >
         <div
           className={`${level > 0 ? "ml-4" : ""} flex flex-col`}
           style={{ paddingLeft: level * 12 }}
         >
-          <div className="flex justify-between items-center mb-1">
-            <div className="flex items-center">
+          <div className="flex justify-between items-center mb-2 w-full">
+            <div className="flex items-center flex-grow">
               {level > 0 && (
                 <Tag color="purple" style={{ marginRight: 8 }}>
                   Topping
@@ -275,30 +325,43 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
                   Combo
                 </Tag>
               )}
-              <span className="font-medium">{item.productName} x{item.quantity}</span>
+              <span className="font-medium">
+                {item.productName} x{item.quantity}
+              </span>
             </div>
-  
+
             {level === 0 && (
-              <Popconfirm
-                title="Xóa sản phẩm"
-                description="Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?"
-                onConfirm={() => handleRemoveItem(item.id)}
-                okText="Xóa"
-                cancelText="Hủy"
-                okButtonProps={{ danger: true }}
-              >
+              <CartItemActions>
                 <Button
-                  type="text"
-                  danger
-                  icon={<MinusCircleOutlined />}
+                  type="primary"
+                  icon={<EditOutlined />}
                   size="small"
+                  onClick={() => showUpdateModal(item)}
+                  style={{ marginRight: 8 }}
                 >
-                  Xóa
+                  Sửa
                 </Button>
-              </Popconfirm>
+                <Popconfirm
+                  title="Xóa sản phẩm"
+                  description="Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?"
+                  onConfirm={() => handleRemoveItem(item.id)}
+                  okText="Xóa"
+                  cancelText="Hủy"
+                  okButtonProps={{ danger: true }}
+                >
+                  <Button
+                    type="primary"
+                    danger
+                    icon={<DeleteOutlined />}
+                    size="small"
+                  >
+                    Xóa
+                  </Button>
+                </Popconfirm>
+              </CartItemActions>
             )}
           </div>
-          
+
           <div
             className={`text-sm text-gray-500 ${level > 0 ? "ml-4" : ""}`}
             style={{ paddingLeft: level > 0 ? 0 : 0 }}
@@ -308,9 +371,9 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
             {item.note && `, Ghi chú: ${item.note}`}
           </div>
         </div>
-        
+
         {item.childItems && item.childItems.length > 0 && (
-          <div className="mt-1">
+          <div className="mt-2">
             {renderOrderItems(item.childItems, level + 1)}
           </div>
         )}
@@ -356,16 +419,34 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
       message.warning("Không có đơn hàng để thanh toán");
       return;
     }
-    
+
     setPaymentModalVisible(true);
     setPaymentMethod("MOMO"); // Default to MOMO
     setCashNote(""); // Reset cash note
+    setCashAmount(null); // Reset cash amount
+    setCashError(null); // Reset cash error
+    setChangeAmount(null); // Reset change amount
   };
 
-  // Handle payment based on selected method
+  // Process cash payment
   const handlePaymentConfirm = async () => {
+    // For cash payment, validate the amount first
+    if (paymentMethod === "CASH") {
+      const totalAmount = calculateTotalAmount();
+
+      if (!cashAmount) {
+        message.error("Vui lòng nhập số tiền thanh toán");
+        return;
+      }
+
+      if (cashAmount < totalAmount) {
+        message.error("Số tiền không đủ để thanh toán");
+        return;
+      }
+    }
+
     setPaymentModalVisible(false);
-    
+
     if (paymentMethod === "CASH") {
       processCashPayment();
     } else {
@@ -384,21 +465,24 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
 
       setLoading(true);
       const authAxios = getAuthAxios();
-      console.log(authAxios)
 
       const requestBody = {
         orderId: parseInt(currentOrderId),
         paymentMethod: "CASH",
-        note: cashNote
+        note:
+          cashNote ||
+          `Thanh toán tiền mặt: ${formatCurrency(
+            cashAmount || 0
+          )}. Tiền thừa: ${formatCurrency(changeAmount || 0)}`,
       };
-      console.log(requestBody)
 
-      // This is a placeholder - you'll need to implement the actual API endpoint
-      // await authAxios.post("/api/payment/cash", requestBody);
-      
-      // For demonstration, just show success message
-      message.success("Đã đặt hàng thành công! Vui lòng thanh toán khi nhận hàng.");
-      
+      // Make the actual API call to the cash payment endpoint
+      await authAxios.post("/api/payment/cash", requestBody);
+
+      message.success(
+        "Đã đặt hàng thành công! Vui lòng thanh toán khi nhận hàng."
+      );
+
       // Clear the cart
       localStorage.removeItem("currentOrderId");
       setOrder(null);
@@ -406,7 +490,9 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
       setLoading(false);
     } catch (error) {
       console.error("Error processing cash payment:", error);
-      message.error("Không thể xử lý thanh toán tiền mặt. Vui lòng thử lại sau.");
+      message.error(
+        "Không thể xử lý thanh toán tiền mặt. Vui lòng thử lại sau."
+      );
       setLoading(false);
     }
   };
@@ -418,7 +504,7 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
       message.warning("Không có đơn hàng để thanh toán");
       return;
     }
-  
+
     try {
       setLoading(true);
       const authAxios = getAuthAxios();
@@ -426,19 +512,23 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
         orderId: parseInt(currentOrderId),
         paymentMethod: "MOMO",
       };
-  
+
       try {
         // Call the payment API to get the payment URL
-        const paymentResponse = await authAxios.post("/api/payment", requestBody);
-  
+        const paymentResponse = await authAxios.post(
+          "/api/payment",
+          requestBody
+        );
+
         // Extract the payment URL from the response
         const payUrl = paymentResponse.data.payUrl;
-  
+
         if (payUrl) {
           // Open the payment URL in a new window
           window.open(payUrl, "_blank");
           message.success({
-            content: "Đã mở cổng thanh toán MOMO. Vui lòng hoàn tất thanh toán.",
+            content:
+              "Đã mở cổng thanh toán MOMO. Vui lòng hoàn tất thanh toán.",
             duration: 5,
           });
         } else {
@@ -448,15 +538,19 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
         if (axios.isAxiosError(error) && error.response?.status === 409) {
           // If we get a 409 error, call the re-momo API with the same request body
           try {
-            const reMomoResponse = await authAxios.post("/api/payment/re-momo", requestBody);
+            const reMomoResponse = await authAxios.post(
+              "/api/payment/re-momo",
+              requestBody
+            );
             const payUrl = reMomoResponse.data.payUrl;
-            
+
             if (payUrl) {
               // Open the payment URL in a new window
               window.open(payUrl, "_blank");
-  
+
               message.success({
-                content: "Đã mở cổng thanh toán MOMO. Vui lòng hoàn tất thanh toán.",
+                content:
+                  "Đã mở cổng thanh toán MOMO. Vui lòng hoàn tất thanh toán.",
                 duration: 5,
               });
             } else {
@@ -464,18 +558,20 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
             }
           } catch (reMomoError) {
             console.error("Error with re-momo payment:", reMomoError);
-            message.error("Không thể khởi tạo lại thanh toán. Vui lòng thử lại sau.");
+            message.error(
+              "Không thể khởi tạo lại thanh toán. Vui lòng thử lại sau."
+            );
           }
         } else {
           throw error; // Re-throw the error to be caught by the outer catch block
         }
       }
-  
+
       setLoading(false);
     } catch (error) {
       setLoading(false);
       console.error("Error initiating payment:", error);
-  
+
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
           message.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
@@ -515,6 +611,26 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
     }, 0);
   };
 
+  const handleCashAmountChange = (value: number | null) => {
+    setCashAmount(value);
+
+    if (value === null) {
+      setCashError("Vui lòng nhập số tiền");
+      setChangeAmount(null);
+      return;
+    }
+
+    const totalAmount = calculateTotalAmount();
+
+    if (value < totalAmount) {
+      setCashError("Số tiền không đủ để thanh toán");
+      setChangeAmount(null);
+    } else {
+      setCashError(null);
+      setChangeAmount(value - totalAmount);
+    }
+  };
+
   const hasOrder = orderItems.length > 0;
 
   if (loading) {
@@ -539,14 +655,16 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
       <Drawer
         title={
           <div className="flex items-center">
-            <ShoppingCartOutlined style={{ fontSize: '20px', marginRight: '10px' }} />
+            <ShoppingCartOutlined
+              style={{ fontSize: "20px", marginRight: "10px" }}
+            />
             <span>Giỏ hàng</span>
           </div>
         }
         placement="right"
         onClose={onClose}
         open={visible}
-        width={500}
+        width={650}
         footer={
           hasOrder ? (
             <div className="p-4 border-t">
@@ -568,7 +686,9 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
                     icon={<DeleteOutlined />}
                     onClick={() => {
                       if (
-                        window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này?")
+                        window.confirm(
+                          "Bạn có chắc chắn muốn hủy đơn hàng này?"
+                        )
                       ) {
                         handleCancelOrder();
                       }
@@ -593,12 +713,12 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
         {hasOrder ? (
           <div className="cart-items">
             {orderItems.map((item, index) => (
-              <div 
-                key={item.id} 
-                className={index > 0 ? "pt-4 mt-4 border-t border-gray-200" : ""}
+              <CartItemContainer
+                key={item.id}
+                className={index > 0 ? "border-t" : ""}
               >
                 {renderOrderItems([item])}
-              </div>
+              </CartItemContainer>
             ))}
             <Divider />
           </div>
@@ -618,42 +738,159 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
         onCancel={() => setPaymentModalVisible(false)}
         okText="Xác nhận"
         cancelText="Hủy"
+        okButtonProps={{
+          disabled:
+            paymentMethod === "CASH" &&
+            (cashError !== null || cashAmount === null),
+        }}
       >
         <div className="payment-options">
-          <Radio.Group 
-            onChange={(e) => setPaymentMethod(e.target.value)} 
+          <Radio.Group
+            onChange={(e) => {
+              setPaymentMethod(e.target.value);
+              // Reset cash-related states when switching payment methods
+              if (e.target.value !== "CASH") {
+                setCashAmount(null);
+                setCashError(null);
+                setChangeAmount(null);
+              }
+            }}
             value={paymentMethod}
-            style={{ width: '100%' }}
+            style={{ width: "100%" }}
           >
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Radio value="MOMO" style={{ marginBottom: '16px' }}>
+            <Space direction="vertical" style={{ width: "100%" }}>
+              <Radio value="MOMO" style={{ marginBottom: "16px" }}>
                 <div className="flex items-center">
-                  <MobileOutlined style={{ color: '#ae2070', fontSize: '20px', marginRight: '8px' }} />
+                  <MobileOutlined
+                    style={{
+                      color: "#ae2070",
+                      fontSize: "20px",
+                      marginRight: "8px",
+                    }}
+                  />
                   <span>Thanh toán qua MOMO</span>
                 </div>
               </Radio>
-              
+
               <Radio value="CASH">
                 <div className="flex items-center">
-                  <DollarOutlined style={{ color: '#52c41a', fontSize: '20px', marginRight: '8px' }} />
+                  <DollarOutlined
+                    style={{
+                      color: "#52c41a",
+                      fontSize: "20px",
+                      marginRight: "8px",
+                    }}
+                  />
                   <span>Thanh toán tiền mặt khi nhận hàng</span>
                 </div>
               </Radio>
-              
+
               {paymentMethod === "CASH" && (
-                <div style={{ marginTop: '12px', marginLeft: '32px' }}>
+                <div style={{ marginTop: "12px", marginLeft: "32px" }}>
+                  <div className="mb-3">
+                    <Text strong>Tổng tiền cần thanh toán: </Text>
+                    <Text type="danger" strong>
+                      {formatCurrency(calculateTotalAmount())}
+                    </Text>
+                  </div>
+
+                  <div className="mb-3">
+                    <Text>Số tiền khách đưa:</Text>
+                    <InputNumber
+                      style={{ width: "100%", marginTop: "8px" }}
+                      min={0}
+                      step={1000}
+                      formatter={(value) =>
+                        `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                      }
+                      parser={(value) =>
+                        value ? Number(value.replace(/\$\s?|(,*)/g, "")) : 0
+                      }
+                      value={cashAmount}
+                      onChange={handleCashAmountChange}
+                      placeholder="Nhập số tiền khách đưa"
+                    />
+                    {cashError && (
+                      <Alert
+                        message={cashError}
+                        type="error"
+                        showIcon
+                        style={{ marginTop: "8px" }}
+                      />
+                    )}
+                  </div>
+
+                  {changeAmount !== null && changeAmount > 0 && (
+                    <div className="mb-3">
+                      <Text strong>Tiền thừa: </Text>
+                      <Text type="success" strong>
+                        {formatCurrency(changeAmount)}
+                      </Text>
+                    </div>
+                  )}
+
                   <TextArea
                     placeholder="Ghi chú cho đơn hàng (tùy chọn)"
                     value={cashNote}
                     onChange={(e) => setCashNote(e.target.value)}
                     rows={3}
-                    style={{ width: '100%' }}
+                    style={{ width: "100%", marginTop: "8px" }}
                   />
                 </div>
               )}
             </Space>
           </Radio.Group>
         </div>
+      </Modal>
+
+      {/* Update Item Modal */}
+      <Modal
+        title="Cập nhật sản phẩm"
+        open={updateModalVisible}
+        onOk={handleUpdateItem}
+        onCancel={() => setUpdateModalVisible(false)}
+        okText="Cập nhật"
+        cancelText="Hủy"
+      >
+        {currentItem && (
+          <div>
+            <div className="mb-4">
+              <Text strong>Sản phẩm: </Text>
+              <Text>{currentItem.productName}</Text>
+            </div>
+
+            {/* Add size selection */}
+            <div className="mb-4">
+              <Text strong>Kích cỡ:</Text>
+              <div className="mt-2">
+                <Radio.Group
+                  value={updatedSize}
+                  onChange={(e) => setUpdatedSize(e.target.value)}
+                >
+                  <Radio value="NONE">Mặc định</Radio>
+                  <Radio value="S">Size S</Radio>
+                  <Radio value="M">Size M</Radio>
+                  <Radio value="L">Size L</Radio>
+                </Radio.Group>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <Text strong>Số lượng:</Text>
+              <div className="mt-2">
+                <Input
+                  type="number"
+                  min={1}
+                  value={updatedQuantity}
+                  onChange={(e) =>
+                    setUpdatedQuantity(parseInt(e.target.value) || 1)
+                  }
+                  style={{ width: "100%" }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </>
   );

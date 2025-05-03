@@ -143,3 +143,27 @@ export const BackButton = styled(Button)`
   display: flex !important;
   align-items: center !important;
 `;
+
+export const CartItemContainer = styled.div`
+  padding: 16px 0 !important;
+  margin-bottom: 8px !important;
+  border-radius: 8px !important;
+  transition: background-color 0.2s !important;
+  
+  &:hover {
+    background-color: #f9fafb !important;
+  }
+  
+  &.border-t {
+    border-top: 1px solid #e5e7eb !important;
+    margin-top: 8px !important;
+  }
+`;
+
+export const CartItemActions = styled.div`
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-left: auto !important; /* This pushes the actions to the right */
+  justify-content: flex-end !important;
+`;
