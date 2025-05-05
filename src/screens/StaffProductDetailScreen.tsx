@@ -356,6 +356,20 @@ const StaffProductDetailScreen: React.FC = () => {
             },
           ],
         };
+      } else if (product.category === "Topping") {
+        // For topping products - no customizations
+        requestBody = {
+          parentItems: [
+            {
+              productId: product.id,
+              quantity: quantity,
+              size: "NONE", // No size for toppings
+              note: "",
+              childItems: [],
+              isCombo: false,
+            },
+          ],
+        };
       } else {
         // For regular products - child items are the toppings
         const toppingItems = selectedToppings.map((toppingId) => {
@@ -415,6 +429,7 @@ const StaffProductDetailScreen: React.FC = () => {
       });
       setTimeout(() => {
         showCart();
+        setOrderSuccess(false);
       }, 1000);
     } catch (error) {
       console.error("Error adding to order:", error);
@@ -439,12 +454,6 @@ const StaffProductDetailScreen: React.FC = () => {
       }
     } finally {
       setIsAddingToOrder(false);
-      // Reset success state after 3 seconds
-      if (orderSuccess) {
-        setTimeout(() => {
-          setOrderSuccess(false);
-        }, 3000);
-      }
     }
   };
 
@@ -455,10 +464,18 @@ const StaffProductDetailScreen: React.FC = () => {
     }).format(amount);
   };
 
-  const showOptionsModal = () => {
-    setOptionsModalVisible(true);
+  const shouldShowOptions = () => {
+    // Don't show options for combos or toppings
+    return product ? !product.isCombo && product.category !== "Topping" : false;
   };
 
+  const showOptionsModal = () => {
+    // Don't show options modal for combos or toppings
+    if (!product || product.isCombo || product.category === "Topping") {
+      return;
+    }
+    setOptionsModalVisible(true);
+  };
   const handleOptionsModalCancel = () => {
     setOptionsModalVisible(false);
   };
@@ -614,9 +631,13 @@ const StaffProductDetailScreen: React.FC = () => {
             <OptionsSummary>
               <div className="flex justify-between items-center mb-3">
                 <Title level={4} className="mb-0">
-                  {product.isCombo ? "Thông tin combo" : "Tùy chọn đã chọn"}
+                  {product.isCombo
+                    ? "Thông tin combo"
+                    : product.category === "Topping"
+                    ? "Thông tin topping"
+                    : "Tùy chọn đã chọn"}
                 </Title>
-                {!product.isCombo && (
+                {shouldShowOptions() && (
                   <OptionsButton
                     icon={<SettingOutlined />}
                     onClick={showOptionsModal}
@@ -631,6 +652,12 @@ const StaffProductDetailScreen: React.FC = () => {
                   <Text strong>
                     Combo được bán theo giá cố định, không thể tùy chỉnh từng
                     món.
+                  </Text>
+                </div>
+              ) : product.category === "Topping" ? (
+                <div>
+                  <Text strong>
+                    Topping được bán theo giá cố định, không có tùy chọn thêm.
                   </Text>
                 </div>
               ) : (

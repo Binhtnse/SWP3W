@@ -36,7 +36,6 @@ import {
 import axios from "axios";
 
 const { Text } = Typography;
-const { TextArea } = Input;
 
 interface OrderItemChild {
   id: number;
@@ -169,6 +168,18 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
 
       setLoading(false);
     }
+  };
+
+  const calculateItemTotal = (item: OrderItemChild): number => {
+    // Base price for the item itself
+    const basePrice = item.unitPrice * item.quantity;
+    
+    // Add up prices of all child items (toppings)
+    const toppingsTotal = item.childItems.reduce((sum, childItem) => {
+      return sum + (childItem.unitPrice * childItem.quantity);
+    }, 0);
+    
+    return basePrice + toppingsTotal;
   };
 
   useEffect(() => {
@@ -325,11 +336,16 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
                   Combo
                 </Tag>
               )}
-              <span className="font-medium">
-                {item.productName} x{item.quantity}
-              </span>
+              <span className="font-medium text-lg text-primary" style={{ 
+  fontWeight: 600, 
+  color: '#1890ff',
+  display: 'block',
+  marginBottom: '4px'
+}}>
+  {item.productName}
+</span>
             </div>
-
+  
             {level === 0 && (
               <CartItemActions>
                 <Button
@@ -361,22 +377,59 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
               </CartItemActions>
             )}
           </div>
-
+  
           <div
-            className={`text-sm text-gray-500 ${level > 0 ? "ml-4" : ""}`}
+            className={`text-sm ${level > 0 ? "ml-4" : ""}`}
             style={{ paddingLeft: level > 0 ? 0 : 0 }}
           >
-            {item.size && item.size !== "NONE" && `Size: ${item.size}`}
-            {item.unitPrice && `, Đơn giá: ${formatCurrency(item.unitPrice)}`}
-            {item.note && `, Ghi chú: ${item.note}`}
+            {/* Display information in separate rows */}
+            {item.size && item.size !== "NONE" && (
+              <div className="text-gray-600 mb-1">
+                <strong>Size:</strong> {item.size}
+              </div>
+            )}
+            <div className="text-gray-600 mb-1">
+              <strong>Số lượng:</strong> {item.quantity}
+            </div>
+            {item.unitPrice && (
+              <div className="text-gray-600 mb-1">
+                <strong>Đơn giá:</strong> {formatCurrency(item.unitPrice)}
+              </div>
+            )}
+            {item.note && (
+              <div className="text-gray-600 mb-1">
+                <strong>Ghi chú:</strong> {item.note}
+              </div>
+            )}
           </div>
+  
+          {/* Render child items (toppings) */}
+          {item.childItems && item.childItems.length > 0 && (
+            <div className="mt-2">
+              {renderOrderItems(item.childItems, level + 1)}
+            </div>
+          )}
+          
+          {/* Add total price for main items (level 0) AFTER the toppings */}
+          {level === 0 && (
+            <div 
+              className="mt-3 pt-2 border-t border-dashed border-gray-200 flex justify-between items-center"
+              style={{ marginTop: '8px' }}
+            >
+              <Text strong style={{ fontSize: '15px' }}>Thành tiền:</Text>
+              <Text 
+                type="danger" 
+                strong 
+                style={{ 
+                  fontSize: '16px',
+                  marginLeft: 'auto'
+                }}
+              >
+                {formatCurrency(calculateItemTotal(item))}
+              </Text>
+            </div>
+          )}
         </div>
-
-        {item.childItems && item.childItems.length > 0 && (
-          <div className="mt-2">
-            {renderOrderItems(item.childItems, level + 1)}
-          </div>
-        )}
       </div>
     ));
   };
@@ -828,14 +881,6 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
                       </Text>
                     </div>
                   )}
-
-                  <TextArea
-                    placeholder="Ghi chú cho đơn hàng (tùy chọn)"
-                    value={cashNote}
-                    onChange={(e) => setCashNote(e.target.value)}
-                    rows={3}
-                    style={{ width: "100%", marginTop: "8px" }}
-                  />
                 </div>
               )}
             </Space>
@@ -855,9 +900,17 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
         {currentItem && (
           <div>
             <div className="mb-4">
-              <Text strong>Sản phẩm: </Text>
-              <Text>{currentItem.productName}</Text>
-            </div>
+  <Text strong>Sản phẩm: </Text>
+  <Text style={{ 
+    fontSize: '16px', 
+    fontWeight: 600, 
+    color: '#1890ff',
+    display: 'inline-block',
+    marginLeft: '8px'
+  }}>
+    {currentItem.productName}
+  </Text>
+</div>
 
             {/* Add size selection */}
             <div className="mb-4">
