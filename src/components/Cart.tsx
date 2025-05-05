@@ -173,12 +173,12 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
   const calculateItemTotal = (item: OrderItemChild): number => {
     // Base price for the item itself
     const basePrice = item.unitPrice * item.quantity;
-    
+
     // Add up prices of all child items (toppings)
     const toppingsTotal = item.childItems.reduce((sum, childItem) => {
-      return sum + (childItem.unitPrice * childItem.quantity);
+      return sum + childItem.unitPrice * childItem.quantity;
     }, 0);
-    
+
     return basePrice + toppingsTotal;
   };
 
@@ -336,16 +336,19 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
                   Combo
                 </Tag>
               )}
-              <span className="font-medium text-lg text-primary" style={{ 
-  fontWeight: 600, 
-  color: '#1890ff',
-  display: 'block',
-  marginBottom: '4px'
-}}>
-  {item.productName}
-</span>
+              <span
+                className="font-medium text-lg text-primary"
+                style={{
+                  fontWeight: 600,
+                  color: "#1890ff",
+                  display: "block",
+                  marginBottom: "4px",
+                }}
+              >
+                {item.productName}
+              </span>
             </div>
-  
+
             {level === 0 && (
               <CartItemActions>
                 <Button
@@ -377,7 +380,7 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
               </CartItemActions>
             )}
           </div>
-  
+
           <div
             className={`text-sm ${level > 0 ? "ml-4" : ""}`}
             style={{ paddingLeft: level > 0 ? 0 : 0 }}
@@ -402,27 +405,29 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
               </div>
             )}
           </div>
-  
+
           {/* Render child items (toppings) */}
           {item.childItems && item.childItems.length > 0 && (
             <div className="mt-2">
               {renderOrderItems(item.childItems, level + 1)}
             </div>
           )}
-          
+
           {/* Add total price for main items (level 0) AFTER the toppings */}
           {level === 0 && (
-            <div 
+            <div
               className="mt-3 pt-2 border-t border-dashed border-gray-200 flex justify-between items-center"
-              style={{ marginTop: '8px' }}
+              style={{ marginTop: "8px" }}
             >
-              <Text strong style={{ fontSize: '15px' }}>Thành tiền:</Text>
-              <Text 
-                type="danger" 
-                strong 
-                style={{ 
-                  fontSize: '16px',
-                  marginLeft: 'auto'
+              <Text strong style={{ fontSize: "15px" }}>
+                Thành tiền:
+              </Text>
+              <Text
+                type="danger"
+                strong
+                style={{
+                  fontSize: "16px",
+                  marginLeft: "auto",
                 }}
               >
                 {formatCurrency(calculateItemTotal(item))}
@@ -900,17 +905,19 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
         {currentItem && (
           <div>
             <div className="mb-4">
-  <Text strong>Sản phẩm: </Text>
-  <Text style={{ 
-    fontSize: '16px', 
-    fontWeight: 600, 
-    color: '#1890ff',
-    display: 'inline-block',
-    marginLeft: '8px'
-  }}>
-    {currentItem.productName}
-  </Text>
-</div>
+              <Text strong>Sản phẩm: </Text>
+              <Text
+                style={{
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#1890ff",
+                  display: "inline-block",
+                  marginLeft: "8px",
+                }}
+              >
+                {currentItem.productName}
+              </Text>
+            </div>
 
             {/* Add size selection */}
             <div className="mb-4">
@@ -919,6 +926,7 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
                 <Radio.Group
                   value={updatedSize}
                   onChange={(e) => setUpdatedSize(e.target.value)}
+                  disabled={currentItem?.size === "NONE"} // Disable the entire group if size is NONE
                 >
                   <Radio value="NONE">Mặc định</Radio>
                   <Radio value="S">Size S</Radio>
@@ -926,6 +934,14 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
                   <Radio value="L">Size L</Radio>
                 </Radio.Group>
               </div>
+              {currentItem?.size === "NONE" && (
+                <Text
+                  type="secondary"
+                  style={{ display: "block", marginTop: "8px" }}
+                >
+                  Sản phẩm này không hỗ trợ thay đổi kích cỡ
+                </Text>
+              )}
             </div>
 
             <div className="mb-4">
