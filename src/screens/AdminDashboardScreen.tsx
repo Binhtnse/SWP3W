@@ -23,6 +23,7 @@ const AdminDashboardScreen: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [soldData, setSoldData] = useState<any>(null);
   const [highlightedSegment, setHighlightedSegment] = useState<string | null>(null);
+  const [paymentStats, setPaymentStats] = useState<any>(null); // New state for payment stats
 
   const getAuthHeader = () => {
     const token = localStorage.getItem('accessToken');
@@ -94,27 +95,6 @@ const AdminDashboardScreen: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchAggregatedData(filterType);
-    fetchTopProducts();
-  }, [filterType]);
-
-  const formatPeriod = (date: string, filterType: string) => {
-    const momentDate = moment(date);
-    switch (filterType) {
-      case 'daily':
-        return momentDate.format('DD/MM/YYYY');
-      case 'weekly':
-        return `Tuần ${momentDate.week()}`;
-      case 'monthly':
-        return momentDate.format('MM/YYYY');
-      case 'yearly':
-        return date;
-      default:
-        return date;
-    }
-  };
-
   const fetchSoldData = async () => {
     try {
       const headers = getAuthHeader();
@@ -132,11 +112,45 @@ const AdminDashboardScreen: React.FC = () => {
     }
   };
 
+  const fetchPaymentStats = async () => {
+    try {
+      const headers = getAuthHeader();
+      if (!headers) return;
+
+      const response = await axios.get('https://beautiful-unity-production.up.railway.app/api/v1/dashboard/payment-stats', {
+        headers,
+      });
+      const data = response.data;
+
+      setPaymentStats(data);
+    } catch (error) {
+      console.error("Error fetching payment stats:", error);
+      message.error('Không thể tải dữ liệu thanh toán');
+    }
+  };
+
   useEffect(() => {
     fetchAggregatedData(filterType);
     fetchTopProducts();
     fetchSoldData();
+    fetchPaymentStats();  // Fetch payment stats
   }, [filterType]);
+
+  const formatPeriod = (date: string, filterType: string) => {
+    const momentDate = moment(date);
+    switch (filterType) {
+      case 'daily':
+        return momentDate.format('DD/MM/YYYY');
+      case 'weekly':
+        return `Tuần ${momentDate.week()}`;
+      case 'monthly':
+        return momentDate.format('MM/YYYY');
+      case 'yearly':
+        return date;
+      default:
+        return date;
+    }
+  };
 
   const columns = [
     { title: 'Thời gian', dataIndex: 'period', key: 'period' },
@@ -161,10 +175,14 @@ const AdminDashboardScreen: React.FC = () => {
     console.log(index);
   };
 
+  // Payment stats chart data
+  const paymentChartData = [
+    { name: 'Momo', total: paymentStats?.momo.total || 0, count: paymentStats?.momo.count || 0 },
+    { name: 'Cash', total: paymentStats?.cash.total || 0, count: paymentStats?.cash.count || 0 },
+  ];
+
   return (
     <div style={{ padding: 24 }}>
-
-
       <div style={{ padding: 24 }}>
         <Title level={2}>📊 Quản lý tổng quan</Title>
 
@@ -316,6 +334,35 @@ const AdminDashboardScreen: React.FC = () => {
         </Col>
       </Row>
 
+      {/* Payment Stats Chart */}
+      <Card title="Thống kê hình thức thanh toán" style={{ marginBottom: 24 }}>
+      <ResponsiveContainer width="100%" height={300}>
+  <BarChart data={paymentChartData}>
+    <CartesianGrid strokeDasharray="3 3" />
+    <XAxis dataKey="name" />
+    <YAxis />
+    <Tooltip 
+      content={({ payload }) => {
+        if (payload && payload.length) {
+          const { name, total, count } = payload[0].payload;
+          return (
+            <div style={{ backgroundColor: 'white', padding: '10px', borderRadius: '4px' }}>
+              <strong>{name}</strong>
+              <div>Số tiền: {total.toLocaleString('vi-VN')}VND</div>
+              <div>Số lần thanh toán : {count} lần </div>
+            </div>
+          );
+        }
+        return null;
+      }}
+    />
+    <Legend />
+    <Bar dataKey="count" fill="#82ca9d" name="Số lượng giao dịch" />
+  </BarChart>
+</ResponsiveContainer>
+</Card>
+
+      {/* Period Filter */}
       <Card style={{ marginBottom: 24 }}>
         <span style={{ marginRight: 12 }}>Xem theo:</span>
         <Select value={filterType} onChange={(val) => setFilterType(val)} style={{ width: 200 }}>
@@ -345,16 +392,16 @@ const AdminDashboardScreen: React.FC = () => {
 
           {/* Data Table */}
           <Table
-                            columns={columns}
-                            dataSource={aggregatedData.map((item, idx) => ({
-                                key: idx,
-                                period: filterType === 'daily' ? formatPeriod(item.orderDate, filterType) :
-                                    filterType === 'weekly' ? `Tuần ${item.week}` :
-                                        filterType === 'monthly' ? formatPeriod(item.month, filterType) :
-                                            formatPeriod(item.year, filterType),
-                                income: item.totalRevenue,
-                            }))}
-                            pagination={false}
+            columns={columns}
+            dataSource={aggregatedData.map((item, idx) => ({
+              key: idx,
+              period: filterType === 'daily' ? formatPeriod(item.orderDate, filterType) :
+                filterType === 'weekly' ? `Tuần ${item.week}` :
+                  filterType === 'monthly' ? formatPeriod(item.month, filterType) :
+                    formatPeriod(item.year, filterType),
+              income: item.totalRevenue,
+            }))}
+            pagination={false}
           />
         </>
       )}
