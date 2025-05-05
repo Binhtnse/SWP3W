@@ -222,11 +222,13 @@ const StaffProductDetailScreen: React.FC = () => {
           "/api/products/filter?page=0&size=20&categoryName=Topping"
         );
 
-        const toppingsData = toppingsResponse.data.data.map((item) => ({
-          id: item.id,
-          name: item.name,
-          price: item.basePrice,
-        }));
+        const toppingsData = toppingsResponse.data.data
+          .filter((item) => item.status === "ACTIVE") // Only include active toppings
+          .map((item) => ({
+            id: item.id,
+            name: item.name,
+            price: item.basePrice,
+          }));
 
         setToppings(toppingsData);
 
