@@ -442,22 +442,21 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
   const handleCancelOrder = async () => {
     try {
       const currentOrderId = localStorage.getItem("currentOrderId");
-
+  
       if (!currentOrderId) {
         message.warning("Không có đơn hàng để hủy");
         return;
       }
-
+  
       setLoading(true);
       const authAxios = getAuthAxios();
-
-      // Remove each item individually
-      const removePromises = orderItems.map((item) =>
-        authAxios.delete(`/api/v2/orders/${currentOrderId}/details/${item.id}`)
+  
+      // Instead of removing each item individually, change the order status to CANCELLED
+      await authAxios.put(
+        `/api/v2/orders/${currentOrderId}/status?status=CANCELLED`,
+        {},
       );
-
-      await Promise.all(removePromises);
-
+  
       localStorage.removeItem("currentOrderId");
       setOrder(null);
       setOrderItems([]);
@@ -469,6 +468,8 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
       setLoading(false);
     }
   };
+  
+  
 
   // Show payment method selection modal
   const showPaymentModal = () => {

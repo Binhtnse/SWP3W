@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout, Typography, Space, Button, message } from 'antd';
-import { PhoneOutlined, LogoutOutlined } from '@ant-design/icons';
+import { PhoneOutlined, LogoutOutlined, ShoppingOutlined } from '@ant-design/icons';
 import styled from 'styled-components'; 
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from '../hooks/useAuthState';
@@ -45,7 +45,7 @@ const ActionSection = styled.div`
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, setIsLoggedIn, setRole, setUserName} = useAuthState();
+  const { isLoggedIn, setIsLoggedIn, setRole, setUserName, role} = useAuthState();
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
@@ -62,6 +62,10 @@ const Header: React.FC = () => {
 
   };
 
+  const navigateToStaffOrders = () => {
+    navigate('/staff/orders');
+  };
+
   return (
     <StyledHeader className="shadow-md z-10 relative">
       <LogoSection>
@@ -74,6 +78,18 @@ const Header: React.FC = () => {
             <PhoneOutlined className="text-amber-800 text-xl mr-2" />
             <span className="text-amber-800 font-medium">Đặt Hàng: 123-456-7890</span>
           </div>
+
+          {isLoggedIn && role === 'STAFF' && (
+            <Button 
+              type="default" 
+              icon={<ShoppingOutlined />}
+              size="large"
+              onClick={navigateToStaffOrders}
+              className="border-amber-700 text-amber-800 hover:bg-amber-100 mr-2"
+            >
+              Quản lý đơn hàng
+            </Button>
+          )}
           
           {isLoggedIn && (
             <Button 

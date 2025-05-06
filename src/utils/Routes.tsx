@@ -12,6 +12,7 @@ import AdminAccountListScreen from "../screens/AdminAccountListScreen";
 import ManagerProductList from "../screens/ManagerProductList";
 import ManagerComboList from "../screens/ManagerComboList";
 import ManagerExtraScreen from "../screens/ManagerExtraScreen";
+import StaffProccessingOrdersScreen from "../screens/StaffProccessingOrdersScreen";
 
 const Layout = lazy(() => import("../components/MainLayout"));
 const ProtectedRoute = lazy(() => import("../utils/ProtectedRoutes"));
@@ -46,6 +47,16 @@ export const AppRoutes = createBrowserRouter([
             <Layout>
                 <ProtectedRoute allowedRoles={["STAFF"]}>
                     <StaffCartScreen />
+                </ProtectedRoute>
+            </Layout>
+        ),
+    },
+    {
+        path: "/staff/orders",
+        element: (
+            <Layout>
+                <ProtectedRoute allowedRoles={["STAFF"]}>
+                    <StaffProccessingOrdersScreen />
                 </ProtectedRoute>
             </Layout>
         ),
