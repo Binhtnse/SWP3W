@@ -14,7 +14,7 @@ import {
   Input,
   Space,
   InputNumber,
-  Alert,
+  Alert,Tooltip,
 } from "antd";
 import {
   ShoppingCartOutlined,
@@ -22,7 +22,8 @@ import {
   CreditCardOutlined,
   DollarOutlined,
   MobileOutlined,
-  EditOutlined,
+  EditOutlined,ExclamationCircleOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import {
   OrderSummary,
@@ -71,6 +72,17 @@ interface Order {
   items?: OrderItem[];
 }
 
+interface CashDrawer {
+  id: number;
+  date: string;
+  openingBalance: number;
+  currentBalance: number;
+  openedAt: string;
+  closedAt: string | null;
+  note: string | null;
+  open: boolean;
+}
+
 interface CartProps {
   visible: boolean;
   onClose: () => void;
@@ -97,6 +109,9 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
   const [cashAmount, setCashAmount] = useState<number | null>(null);
   const [cashError, setCashError] = useState<string | null>(null);
   const [changeAmount, setChangeAmount] = useState<number | null>(null);
+  const [cashDrawerBalance, setCashDrawerBalance] = useState<number | null>(null);
+  const [cashDrawerError, setCashDrawerError] = useState<boolean>(false);
+  console.log(cashDrawerError)
 
   const getAuthAxios = () => {
     const accessToken = localStorage.getItem("accessToken");
@@ -106,6 +121,17 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
         Authorization: `Bearer ${accessToken}`,
       },
     });
+  };
+
+  const fetchCashDrawerBalance = async () => {
+    try {
+      const authAxios = getAuthAxios();
+      const response = await authAxios.get<CashDrawer>('/api/v1/cash-drawer/current');
+      setCashDrawerBalance(response.data.currentBalance);
+    } catch (error) {
+      console.error("Error fetching cash drawer balance:", error);
+      setCashDrawerError(true);
+    }
   };
 
   const fetchOrderDetails = async () => {
@@ -185,6 +211,7 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
   useEffect(() => {
     if (visible) {
       fetchOrderDetails();
+      fetchCashDrawerBalance();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, refreshTrigger, paymentJustCompleted]);
@@ -686,7 +713,13 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
       setChangeAmount(null);
     } else {
       setCashError(null);
-      setChangeAmount(value - totalAmount);
+      const change = value - totalAmount;
+      setChangeAmount(change);
+      
+      // Check if there's enough money in the cash drawer for change
+      if (cashDrawerBalance !== null && change > cashDrawerBalance) {
+        setCashError("Không đủ tiền trong két để trả lại tiền thừa");
+      }
     }
   };
 
@@ -840,7 +873,7 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
                       marginRight: "8px",
                     }}
                   />
-                  <span>Thanh toán tiền mặt khi nhận hàng</span>
+                  <span>Thanh toán tiền mặt</span>
                 </div>
               </Radio>
 
@@ -854,7 +887,14 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
                   </div>
 
                   <div className="mb-3">
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
                     <Text>Số tiền khách đưa:</Text>
+                      {cashDrawerBalance !== null && (
+                        <Tooltip title={`Số dư két tiền hiện tại: ${formatCurrency(cashDrawerBalance)}`}>
+                          <InfoCircleOutlined style={{ marginLeft: '8px', color: '#1890ff' }} />
+                        </Tooltip>
+                      )}
+                    </div>
                     <InputNumber
                       style={{ width: "100%", marginTop: "8px" }}
                       min={0}
@@ -881,10 +921,18 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
 
                   {changeAmount !== null && changeAmount > 0 && (
                     <div className="mb-3">
-                      <Text strong>Tiền thừa: </Text>
-                      <Text type="success" strong>
-                        {formatCurrency(changeAmount)}
-                      </Text>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <Text strong>Tiền thừa: </Text>
+                        <Text type="success" strong style={{ marginLeft: '4px' }}>
+                          {formatCurrency(changeAmount)}
+                        </Text>
+                        
+                        {cashDrawerBalance !== null && changeAmount > cashDrawerBalance && (
+                          <Tooltip title="Không đủ tiền trong két để trả lại tiền thừa">
+                            <ExclamationCircleOutlined style={{ marginLeft: '8px', color: '#ff4d4f' }} />
+                          </Tooltip>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
