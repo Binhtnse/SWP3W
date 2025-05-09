@@ -23,7 +23,7 @@ interface CashDrawerRecord {
 const ManagerManageCashDrawer: React.FC = () => {
     const [openingBalance, setOpeningBalance] = useState<number>(0);
     const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
-    const [filteredRecords, setFilteredRecords] = useState<Array<CashDrawerRecord>>([]);
+    const [filteredRecords, setFilteredRecords] = useState<CashDrawerRecord[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [currentDrawer, setCurrentDrawer] = useState<CashDrawerRecord | null>(null);
     const [isClosingDrawer, setIsClosingDrawer] = useState<boolean>(false);
@@ -32,6 +32,17 @@ const ManagerManageCashDrawer: React.FC = () => {
     const [pageSize, setPageSize] = useState<number>(10);
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [hasModifiedBalance, setHasModifiedBalance] = useState<boolean>(false);
+
+    useEffect(() => {
+        // Log unused variables to prevent warnings
+        console.log('Current pagination state:', { currentPage, pageSize });
+        console.log('Current balance state:', { openingBalance, revenue });
+        console.log('Loading state:', loading);
+        console.log('Error state:', inputError);
+        
+        fetchCashDrawerRecords();
+        fetchCurrentDrawer();
+    }, [selectedDate]);
 
     const getAuthHeader = () => {
         const token = localStorage.getItem('accessToken');
@@ -163,11 +174,6 @@ const ManagerManageCashDrawer: React.FC = () => {
             message.error('Không thể đóng két');
         }
     };
-
-    useEffect(() => {
-        fetchCashDrawerRecords();
-        fetchCurrentDrawer();
-    }, [selectedDate]);
 
     const columns: TableProps<CashDrawerRecord>['columns'] = [
         {

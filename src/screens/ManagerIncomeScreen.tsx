@@ -21,7 +21,6 @@ const ManagerIncomeScreen: React.FC = () => {
     const [aggregatedData, setAggregatedData] = useState<any[]>([]);
     const [totalIncome, setTotalIncome] = useState(0);
     const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
-    const [openingBalance, setOpeningBalance] = useState<number>(0);  
 
     const getAuthHeader = () => {
         const token = localStorage.getItem('accessToken');
@@ -92,23 +91,6 @@ const ManagerIncomeScreen: React.FC = () => {
         }
     };
 
-     const openCashDrawer = async (openingBalance: number) => {
-        try {
-            const headers = getAuthHeader();
-            if (!headers) return;
-
-            const response = await axios.post(
-                'https://your-api-endpoint/api/v1/cash-drawer/open', 
-                null, 
-                { params: { openingBalance }, headers }
-            );
-
-            message.success('Két được mở thành công');
-        } catch (error) {
-            console.error('Error opening cash drawer:', error);
-            message.error('Không thể mở két');
-        }
-    };
 
     useEffect(() => {
         fetchAggregatedData(filterType);
