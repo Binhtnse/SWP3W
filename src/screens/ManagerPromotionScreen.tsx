@@ -654,25 +654,22 @@ const ManagerPromotionScreen: React.FC = () => {
                                     }
                                     return current && current < dayjs().startOf('day');
                                 }}
-                                disabledTime={() => {
+                                disabledTime={(current) => {
+                                    if (!current || !current.isSame(dayjs(), 'day')) {
+                                        return {}; // Không có giới hạn thời gian nếu là ngày trong tương lai
+                                    }
+                                    
                                     const now = dayjs();
                                     return {
-                                        disabledHours: () => {
-                                            if (dayjs().isSame(now, 'day')) {
-                                                return Array.from({ length: now.hour() }, (_, i) => i);
-                                            }
-                                            return [];
-                                        },
+                                        disabledHours: () => Array.from({ length: now.hour() }, (_, i) => i),
                                         disabledMinutes: (selectedHour) => {
-                                            if (dayjs().isSame(now, 'day') && selectedHour === now.hour()) {
+                                            if (selectedHour === now.hour()) {
                                                 return Array.from({ length: now.minute() }, (_, i) => i);
                                             }
                                             return [];
                                         },
                                         disabledSeconds: (selectedHour, selectedMinute) => {
-                                            if (dayjs().isSame(now, 'day') && 
-                                                selectedHour === now.hour() && 
-                                                selectedMinute === now.minute()) {
+                                            if (selectedHour === now.hour() && selectedMinute === now.minute()) {
                                                 return Array.from({ length: now.second() }, (_, i) => i);
                                             }
                                             return [];
