@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import { Card, Table, Button, Form, Input, InputNumber, DatePicker, message, Modal, Spin, Switch, Select, Space } from 'antd';
 import { Typography } from 'antd';
@@ -6,7 +7,6 @@ import dayjs, { Dayjs } from 'dayjs';
 import type { TablePaginationConfig } from 'antd/es/table';
 import type { TableProps } from 'antd/es/table';
 import ManagerLayout from '../components/ManagerLayout';
-import ErrorBoundary from '../components/ErrorBoundary';
 import { ReloadOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -64,7 +64,7 @@ const DATE_FORMAT = 'DD/MM/YYYY HH:mm:ss';
 
 const API_DATE_FORMAT = 'YYYY/MM/DD HH:mm:ss';
 
-const ManagerPromotionContent: React.FC = () => {
+const ManagerPromotionScreen: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [promotions, setPromotions] = useState<Promotion[]>([]);
     const [pagination, setPagination] = useState<PaginationType>({
@@ -754,12 +754,4 @@ const ManagerPromotionContent: React.FC = () => {
     );
 };
 
-const ManagerPromotionScreen: React.FC = () => {
-    return (
-        <ErrorBoundary>
-            <ManagerPromotionContent />
-        </ErrorBoundary>
-    );
-};
-
-export default ManagerPromotionScreen; 
+export default ManagerPromotionScreen;
