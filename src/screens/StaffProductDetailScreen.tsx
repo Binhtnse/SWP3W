@@ -135,6 +135,12 @@ interface ProductDetail {
     quantity: number;
   }[];
   status: "active" | "inactive";
+  defaultToppings?: {
+    toppingId: number;
+    toppingName: string;
+    toppingImage: string;
+    quantity: number;
+  }[];
 }
 
 interface Topping {
@@ -191,7 +197,9 @@ const StaffProductDetailScreen: React.FC = () => {
           return;
         }
 
-        const response = await authAxios.get(`/api/products/${productId}`);
+        const response = await authAxios.get(
+          `/api/v2/products/${productId}/default-topping/product`
+        );
 
         const productData = response.data;
 
@@ -204,6 +212,14 @@ const StaffProductDetailScreen: React.FC = () => {
           productData.comboItems = comboData.itemsResponse || [];
         }
 
+        const defaultToppings = productData.defaultToppings || [];
+
+        // Pre-select default toppings
+        if (defaultToppings.length > 0) {
+          setSelectedToppings(
+            defaultToppings.map((topping: { toppingId: number; }) => topping.toppingId)          );
+        }
+
         const transformedProduct: ProductDetail = {
           id: productData.id,
           name: productData.name,
@@ -214,6 +230,7 @@ const StaffProductDetailScreen: React.FC = () => {
           isCombo: productData.productType === "COMBO",
           comboItems: productData.comboItems,
           status: productData.status === "ACTIVE" ? "active" : "inactive",
+          defaultToppings: defaultToppings,
         };
 
         setProduct(transformedProduct);
@@ -377,9 +394,15 @@ const StaffProductDetailScreen: React.FC = () => {
         const toppingItems = selectedToppings.map((toppingId) => {
           const topping = toppings.find((t) => t.id === toppingId);
           console.log(topping);
+          // Check if this is a default topping
+          const defaultTopping = product.defaultToppings?.find(
+            (dt) => dt.toppingId === toppingId
+          );
+          const quantity = defaultTopping ? defaultTopping.quantity : 1;
+
           return {
             productId: toppingId,
-            quantity: 1,
+            quantity: quantity,
             size: "NONE",
             note: "",
             isCombo: false,
@@ -677,7 +700,28 @@ const StaffProductDetailScreen: React.FC = () => {
 
                   <div className="mb-2">
                     <Text strong>Topping: </Text>
-                    {getSelectedToppingNames().length > 0 ? (
+                    {product.defaultToppings &&
+                    product.defaultToppings.length > 0 ? (
+                      <>
+                        {product.defaultToppings.map((topping, index) => (
+                          <OptionTag key={index} color="purple">
+                            {topping.toppingName} (Mặc định)
+                          </OptionTag>
+                        ))}
+                        {getSelectedToppingNames()
+                          .filter(
+                            (name) =>
+                              !product.defaultToppings?.some(
+                                (dt) => dt.toppingName === name
+                              )
+                          )
+                          .map((name, index) => (
+                            <OptionTag key={`selected-${index}`} color="purple">
+                              {name}
+                            </OptionTag>
+                          ))}
+                      </>
+                    ) : getSelectedToppingNames().length > 0 ? (
                       getSelectedToppingNames().map((name, index) => (
                         <OptionTag key={index} color="purple">
                           {name}

@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Button, Tag } from 'antd';
 import styled from 'styled-components';
 
 export const StyledHeader = styled.div`
@@ -166,4 +166,60 @@ export const CartItemActions = styled.div`
   gap: 8px !important;
   margin-left: auto !important; /* This pushes the actions to the right */
   justify-content: flex-end !important;
+`;
+
+export const PromotionButton = styled(Button)`
+  display: flex !important;
+  align-items: center !important;
+  margin-top: 8px !important;
+  margin-bottom: 8px !important;
+  width: 100% !important;
+  border: 1px dashed #7c3aed !important;
+  color: #7c3aed !important;
+  
+  &:hover {
+    background-color: #f9f4ff !important;
+    border-color: #7c3aed !important;
+  }
+`;
+
+export const PromotionTag = styled(Tag)`
+  margin-left: 8px !important;
+  font-weight: 500 !important;
+`;
+
+export const PromotionModalContent = styled.div`
+  max-height: 400px !important;
+  overflow-y: auto !important;
+  padding-right: 8px !important;
+`;
+
+export const PromotionItem = styled.div`
+  padding: 12px !important;
+  border-radius: 8px !important;
+  margin-bottom: 12px !important;
+  border: 1px solid #f0f0f0 !important;
+  transition: all 0.3s ease !important;
+  
+  &:hover {
+    border-color: #7c3aed !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  &.selected {
+    border-color: #7c3aed !important;
+    background-color: #f9f4ff !important;
+  }
+`;
+
+export const PromotionSummary = styled.div`
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding: 8px 12px !important;
+  background-color: #f9f4ff !important;
+  border-radius: 8px !important;
+  border: 1px dashed #7c3aed !important;
+  margin-bottom: 12px !important;
 `;

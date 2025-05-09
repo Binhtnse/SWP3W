@@ -26,15 +26,22 @@ import {
   EditOutlined,
   ExclamationCircleOutlined,
   InfoCircleOutlined,
+  CloseCircleOutlined,
+  TagOutlined,
+  GiftOutlined,
 } from "@ant-design/icons";
 import {
   OrderSummary,
-  SummaryInfo,
   SummaryActions,
   LoadingContainer,
   ActionButton,
   CartItemContainer,
   CartItemActions,
+  PromotionButton,
+  PromotionTag,
+  PromotionModalContent,
+  PromotionItem,
+  PromotionSummary
 } from "../components/styled components/StaffCartStyles";
 import axios from "axios";
 
@@ -147,6 +154,7 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
   const [promotionValidationLoading, setPromotionValidationLoading] =
     useState<boolean>(false);
   const [promotionError, setPromotionError] = useState<string | null>(null);
+  const [promotionModalVisible, setPromotionModalVisible] = useState<boolean>(false);
   console.log(cashDrawerError);
 
   const getAuthAxios = () => {
@@ -355,60 +363,122 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
     return totalAmount;
   };
 
-  const renderPromotions = () => {
-    if (loadingPromotions) {
-      return <Spin size="small" />;
-    }
+  const showPromotionModal = () => {
+  if (orderItems.length > 0) {
+    const totalAmount = calculateTotalAmount();
+    fetchAvailablePromotions(totalAmount);
+    setPromotionModalVisible(true);
+  } else {
+    message.warning("Không có sản phẩm nào trong giỏ hàng để áp dụng khuyến mãi");
+  }
+};
 
-    if (availablePromotions.length === 0) {
-      return <Text type="secondary">Không có khuyến mãi khả dụng</Text>;
-    }
+const clearSelectedPromotion = () => {
+  setSelectedPromotion(null);
+  setPromotionError(null);
+};
 
-    return (
-      <div className="promotions-container">
-        {promotionError && (
-        <Alert 
-          message={promotionError} 
-          type="error" 
-          showIcon 
-          style={{ marginBottom: 10 }}
-        />
-      )}
-        <Radio.Group
-          onChange={(e) => handlePromotionSelect(e.target.value)}
-          value={selectedPromotion?.id}
-          disabled={promotionValidationLoading}
-        >
-          <Space direction="vertical" style={{ width: "100%" }}>
-            {availablePromotions.map((promotion) => (
-              <Radio key={promotion.id} value={promotion.id}>
-                <div>
-                  <Text strong>{promotion.name}</Text>
-                  <Tag color="green" style={{ marginLeft: 8 }}>
-                    {promotion.code}
-                  </Tag>
-                  <div>
-                    <Text type="secondary">{promotion.description}</Text>
-                  </div>
-                  <div>
-                    <Text type="secondary">
-                      Giảm: {promotion.discountPercent}%
-                    </Text>
-                  </div>
-                </div>
-              </Radio>
-            ))}
-          </Space>
-        </Radio.Group>
-        {promotionValidationLoading && (
-        <div style={{ marginTop: 10, textAlign: 'center' }}>
-          <Spin size="small" />
-          <Text style={{ marginLeft: 8 }}>Đang xác thực mã khuyến mãi...</Text>
+const renderPromotionModal = () => {
+  return (
+    <Modal
+      title={
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <TagOutlined style={{ color: "#7c3aed", marginRight: 8 }} />
+          <span>Chọn mã khuyến mãi</span>
         </div>
-      )}
-      </div>
-    );
-  };
+      }
+      open={promotionModalVisible}
+      onCancel={() => setPromotionModalVisible(false)}
+      footer={[
+        <Button 
+          key="clear" 
+          danger
+          onClick={clearSelectedPromotion}
+          disabled={!selectedPromotion}
+          icon={<CloseCircleOutlined />}
+        >
+          Xóa khuyến mãi
+        </Button>,
+        <Button key="cancel" onClick={() => setPromotionModalVisible(false)}>
+          Hủy
+        </Button>,
+        <Button
+          key="apply"
+          type="primary"
+          onClick={() => {
+            setPromotionModalVisible(false);
+          }}
+          style={{ backgroundColor: "#7c3aed", borderColor: "#7c3aed" }}
+        >
+          Áp dụng
+        </Button>,
+      ]}
+      width={500}
+    >
+      <PromotionModalContent>
+        {promotionError && (
+          <Alert 
+            message={promotionError} 
+            type="error" 
+            showIcon 
+            style={{ marginBottom: 16 }}
+          />
+        )}
+        
+        {loadingPromotions ? (
+          <div style={{ textAlign: "center", padding: "20px 0" }}>
+            <Spin size="default" />
+            <div style={{ marginTop: 8 }}>Đang tải khuyến mãi...</div>
+          </div>
+        ) : availablePromotions.length === 0 ? (
+          <Empty 
+            description="Không có khuyến mãi khả dụng" 
+            image={Empty.PRESENTED_IMAGE_SIMPLE} 
+          />
+        ) : (
+          <Radio.Group
+            onChange={(e) => handlePromotionSelect(e.target.value)}
+            value={selectedPromotion?.id}
+            style={{ width: "100%" }}
+            disabled={promotionValidationLoading}
+          >
+            <Space direction="vertical" style={{ width: "100%" }}>
+              {availablePromotions.map((promotion) => (
+                <Radio key={promotion.id} value={promotion.id} style={{ width: "100%", marginRight: 0 }}>
+                  <PromotionItem className={selectedPromotion?.id === promotion.id ? "selected" : ""}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
+                        <Text strong>{promotion.name}</Text>
+                        <Tag color="green" style={{ marginLeft: 8 }}>
+                          {promotion.code}
+                        </Tag>
+                      </div>
+                      <div>
+                        <Text type="secondary">{promotion.description}</Text>
+                      </div>
+                      <div>
+                        <Text type="secondary">
+                          Giảm: <Text strong type="danger">{promotion.discountPercent}%</Text>
+                        </Text>
+                      </div>
+                    </div>
+                  </PromotionItem>
+                </Radio>
+              ))}
+            </Space>
+          </Radio.Group>
+        )}
+        
+        {promotionValidationLoading && (
+          <div style={{ marginTop: 16, textAlign: "center" }}>
+            <Spin size="small" />
+            <Text style={{ marginLeft: 8 }}>Đang xác thực mã khuyến mãi...</Text>
+          </div>
+        )}
+      </PromotionModalContent>
+    </Modal>
+  );
+};
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -949,84 +1019,86 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
         width={650}
         footer={
           hasOrder ? (
-            <div className="p-4 border-t">
-              <OrderSummary>
-                <SummaryInfo>
-                  <Text style={{ marginRight: "0.5rem" }}>Tổng cộng:</Text>
-                  <Text strong>{orderItems.length}</Text>
-                  <Text style={{ margin: "0 0.5rem" }}>sản phẩm</Text>
-                  <Text
-                    strong
-                    style={{ marginLeft: "1rem", fontSize: "1.125rem" }}
-                  >
-                    {formatCurrency(calculateTotalAmount())}
-                  </Text>
-                  <div style={{ marginBottom: "10px" }}>
-                    <Text strong>Khuyến mãi:</Text>
-                    {renderPromotions()}
-                  </div>
-
-                  {selectedPromotion && (
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        marginBottom: "5px",
-                      }}
-                    >
-                      <Text>
-                        Giảm giá ({selectedPromotion.discountPercent}%):
-                      </Text>
-                      <Text type="danger">
-                        -
-                        {formatCurrency(
-                          (calculateTotalAmount() *
-                            selectedPromotion.discountPercent) /
-                            100
-                        )}
-                      </Text>
-                    </div>
-                  )}
-
-                  <Divider style={{ margin: "10px 0" }} />
-
-                  <div
-                    style={{ display: "flex", justifyContent: "space-between" }}
-                  >
-                    <Text strong>Thành tiền:</Text>
-                    <Text strong style={{ fontSize: "1.125rem" }}>
-                      {formatCurrency(calculateDiscountedTotal())}
-                    </Text>
-                  </div>
-                </SummaryInfo>
-                <SummaryActions>
-                  <Button
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          "Bạn có chắc chắn muốn hủy đơn hàng này?"
-                        )
-                      ) {
-                        handleCancelOrder();
-                      }
-                    }}
-                  >
-                    Hủy đơn hàng
-                  </Button>
-                  <ActionButton
-                    type="primary"
-                    icon={<CreditCardOutlined />}
-                    onClick={showPaymentModal}
-                    className="green"
-                  >
-                    Thanh toán
-                  </ActionButton>
-                </SummaryActions>
-              </OrderSummary>
-            </div>
-          ) : null
+    <div className="p-4 border-t">
+      <OrderSummary>
+        <div style={{ width: "100%" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+            <Text>Tổng cộng:</Text>
+            <Text>
+              <Text strong>{orderItems.length}</Text> sản phẩm
+            </Text>
+          </div>
+          
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+            <Text>Tạm tính:</Text>
+            <Text strong>{formatCurrency(calculateTotalAmount())}</Text>
+          </div>
+          
+          {selectedPromotion ? (
+            <PromotionSummary>
+              <div>
+                <Text strong>Khuyến mãi:</Text>
+                <PromotionTag color="purple">{selectedPromotion.code}</PromotionTag>
+                <Text type="secondary" style={{ marginLeft: 8 }}>
+                  (-{selectedPromotion.discountPercent}%)
+                </Text>
+              </div>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <Text type="danger">
+                  -{formatCurrency((calculateTotalAmount() * selectedPromotion.discountPercent) / 100)}
+                </Text>
+                <Button 
+                  type="text" 
+                  size="small" 
+                  icon={<CloseCircleOutlined />} 
+                  onClick={clearSelectedPromotion}
+                  style={{ marginLeft: 8, color: "#ff4d4f" }}
+                />
+              </div>
+            </PromotionSummary>
+          ) : (
+            <PromotionButton 
+              icon={<GiftOutlined />} 
+              onClick={showPromotionModal}
+            >
+              Chọn mã khuyến mãi
+            </PromotionButton>
+          )}
+          
+          <Divider style={{ margin: "12px 0" }} />
+          
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+            <Text strong style={{ fontSize: "16px" }}>Thành tiền:</Text>
+            <Text strong type="danger" style={{ fontSize: "18px" }}>
+              {formatCurrency(calculateDiscountedTotal())}
+            </Text>
+          </div>
+          
+          <SummaryActions>
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => {
+                if (window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này?")) {
+                  handleCancelOrder();
+                }
+              }}
+            >
+              Hủy đơn hàng
+            </Button>
+            <ActionButton
+              type="primary"
+              icon={<CreditCardOutlined />}
+              onClick={showPaymentModal}
+              className="green"
+            >
+              Thanh toán
+            </ActionButton>
+          </SummaryActions>
+        </div>
+      </OrderSummary>
+    </div>
+  ) : null
         }
       >
         {hasOrder ? (
@@ -1259,6 +1331,7 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
           </div>
         )}
       </Modal>
+      {renderPromotionModal()}
     </>
   );
 };
