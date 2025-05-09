@@ -23,6 +23,11 @@ const ManagerSidebar: React.FC = () => {
       label: 'Tổng Quan',
     },
     {
+      key: '/manager/CashDrawer',
+      icon: <PlusCircleOutlined />,
+      label: 'Quản Lý Két',
+    },
+    {
       key: '/manager/orderList',
       icon: <ShoppingCartOutlined />,
       label: 'Quản Lý Đơn Hàng',

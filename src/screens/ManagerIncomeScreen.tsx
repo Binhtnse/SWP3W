@@ -91,6 +91,7 @@ const ManagerIncomeScreen: React.FC = () => {
         }
     };
 
+
     useEffect(() => {
         fetchAggregatedData(filterType);
         fetchTopProducts();
