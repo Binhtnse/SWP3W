@@ -14,7 +14,8 @@ import {
   Input,
   Space,
   InputNumber,
-  Alert,Tooltip,
+  Alert,
+  Tooltip,
 } from "antd";
 import {
   ShoppingCartOutlined,
@@ -22,7 +23,8 @@ import {
   CreditCardOutlined,
   DollarOutlined,
   MobileOutlined,
-  EditOutlined,ExclamationCircleOutlined,
+  EditOutlined,
+  ExclamationCircleOutlined,
   InfoCircleOutlined,
 } from "@ant-design/icons";
 import {
@@ -83,6 +85,27 @@ interface CashDrawer {
   open: boolean;
 }
 
+interface Promotion {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+  minTotal: number;
+  discountPercent: number;
+  dateOpen: string;
+  dateEnd: string;
+  status: string;
+}
+
+interface PromotionResponse {
+  data: Promotion[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
+
 interface CartProps {
   visible: boolean;
   onClose: () => void;
@@ -102,6 +125,7 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
     useState<boolean>(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("MOMO");
   const [cashNote, setCashNote] = useState<string>("");
+  console.log(cashNote);
   const [updateModalVisible, setUpdateModalVisible] = useState<boolean>(false);
   const [currentItem, setCurrentItem] = useState<OrderItem | null>(null);
   const [updatedQuantity, setUpdatedQuantity] = useState<number>(1);
@@ -109,9 +133,21 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
   const [cashAmount, setCashAmount] = useState<number | null>(null);
   const [cashError, setCashError] = useState<string | null>(null);
   const [changeAmount, setChangeAmount] = useState<number | null>(null);
-  const [cashDrawerBalance, setCashDrawerBalance] = useState<number | null>(null);
+  const [cashDrawerBalance, setCashDrawerBalance] = useState<number | null>(
+    null
+  );
   const [cashDrawerError, setCashDrawerError] = useState<boolean>(false);
-  console.log(cashDrawerError)
+  const [availablePromotions, setAvailablePromotions] = useState<Promotion[]>(
+    []
+  );
+  const [selectedPromotion, setSelectedPromotion] = useState<Promotion | null>(
+    null
+  );
+  const [loadingPromotions, setLoadingPromotions] = useState<boolean>(false);
+  const [promotionValidationLoading, setPromotionValidationLoading] =
+    useState<boolean>(false);
+  const [promotionError, setPromotionError] = useState<string | null>(null);
+  console.log(cashDrawerError);
 
   const getAuthAxios = () => {
     const accessToken = localStorage.getItem("accessToken");
@@ -126,11 +162,38 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
   const fetchCashDrawerBalance = async () => {
     try {
       const authAxios = getAuthAxios();
-      const response = await authAxios.get<CashDrawer>('/api/v1/cash-drawer/current');
+      const response = await authAxios.get<CashDrawer>(
+        "/api/v1/cash-drawer/current"
+      );
       setCashDrawerBalance(response.data.currentBalance);
     } catch (error) {
       console.error("Error fetching cash drawer balance:", error);
       setCashDrawerError(true);
+    }
+  };
+
+  const fetchAvailablePromotions = async (totalPrice: number) => {
+    try {
+      setLoadingPromotions(true);
+      const authAxios = getAuthAxios();
+      const response = await authAxios.get<PromotionResponse>(
+        `/api/v1/promotions/all?page=0&size=20&price=${totalPrice}`
+      );
+
+      setAvailablePromotions(response.data.data);
+
+      // If there are promotions available and none selected yet, select the first one
+      if (response.data.data.length > 0 && !selectedPromotion) {
+        setSelectedPromotion(response.data.data[0]);
+      } else if (response.data.data.length === 0) {
+        // If no promotions are available, clear the selected promotion
+        setSelectedPromotion(null);
+      }
+    } catch (error) {
+      console.error("Error fetching promotions:", error);
+      message.error("Không thể tải khuyến mãi. Vui lòng thử lại sau.");
+    } finally {
+      setLoadingPromotions(false);
     }
   };
 
@@ -196,6 +259,57 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
     }
   };
 
+  const validatePromotion = async (promotionId: number) => {
+    try {
+      setPromotionValidationLoading(true);
+      setPromotionError(null);
+      
+      const currentOrderId = localStorage.getItem("currentOrderId");
+      if (!currentOrderId) {
+        setPromotionError("Không tìm thấy thông tin đơn hàng");
+        return false;
+      }
+      
+      const authAxios = getAuthAxios();
+      const response = await authAxios.get(
+        `/api/v1/promotions/check?promotionId=${promotionId}&orderId=${currentOrderId}`
+      );
+      console.log(response)
+      
+      return true;
+    } catch (error) {
+      console.error("Error validating promotion:", error);
+      
+      if (axios.isAxiosError(error) && error.response?.data) {
+        setPromotionError(error.response.data.details || error.response.data.message || "Mã khuyến mãi không hợp lệ");
+      } else {
+        setPromotionError("Không thể xác thực mã khuyến mãi. Vui lòng thử lại sau.");
+      }
+      
+      return false;
+    } finally {
+      setPromotionValidationLoading(false);
+    }
+  };
+
+  const handlePromotionSelect = async (promotionId: number) => {
+    const promotion = availablePromotions.find(promo => promo.id === promotionId) || null;
+    
+    if (promotion) {
+      const isValid = await validatePromotion(promotion.id);
+      if (isValid) {
+        setSelectedPromotion(promotion);
+        setPromotionError(null);
+      } else {
+        // If validation fails, don't select the promotion
+        setSelectedPromotion(null);
+      }
+    } else {
+      setSelectedPromotion(null);
+      setPromotionError(null);
+    }
+  };
+
   const calculateItemTotal = (item: OrderItemChild): number => {
     // Base price for the item itself
     const basePrice = item.unitPrice * item.quantity;
@@ -210,7 +324,13 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
 
   useEffect(() => {
     if (visible) {
-      fetchOrderDetails();
+      fetchOrderDetails().then(() => {
+        // After fetching order details, fetch promotions based on the total amount
+        if (orderItems.length > 0) {
+          const totalAmount = calculateTotalAmount();
+          fetchAvailablePromotions(totalAmount);
+        }
+      });
       fetchCashDrawerBalance();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -221,6 +341,73 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
       style: "currency",
       currency: "VND",
     }).format(amount);
+  };
+
+  const calculateDiscountedTotal = () => {
+    const totalAmount = calculateTotalAmount();
+
+    if (selectedPromotion) {
+      const discountAmount =
+        (totalAmount * selectedPromotion.discountPercent) / 100;
+      return totalAmount - discountAmount;
+    }
+
+    return totalAmount;
+  };
+
+  const renderPromotions = () => {
+    if (loadingPromotions) {
+      return <Spin size="small" />;
+    }
+
+    if (availablePromotions.length === 0) {
+      return <Text type="secondary">Không có khuyến mãi khả dụng</Text>;
+    }
+
+    return (
+      <div className="promotions-container">
+        {promotionError && (
+        <Alert 
+          message={promotionError} 
+          type="error" 
+          showIcon 
+          style={{ marginBottom: 10 }}
+        />
+      )}
+        <Radio.Group
+          onChange={(e) => handlePromotionSelect(e.target.value)}
+          value={selectedPromotion?.id}
+          disabled={promotionValidationLoading}
+        >
+          <Space direction="vertical" style={{ width: "100%" }}>
+            {availablePromotions.map((promotion) => (
+              <Radio key={promotion.id} value={promotion.id}>
+                <div>
+                  <Text strong>{promotion.name}</Text>
+                  <Tag color="green" style={{ marginLeft: 8 }}>
+                    {promotion.code}
+                  </Tag>
+                  <div>
+                    <Text type="secondary">{promotion.description}</Text>
+                  </div>
+                  <div>
+                    <Text type="secondary">
+                      Giảm: {promotion.discountPercent}%
+                    </Text>
+                  </div>
+                </div>
+              </Radio>
+            ))}
+          </Space>
+        </Radio.Group>
+        {promotionValidationLoading && (
+        <div style={{ marginTop: 10, textAlign: 'center' }}>
+          <Spin size="small" />
+          <Text style={{ marginLeft: 8 }}>Đang xác thực mã khuyến mãi...</Text>
+        </div>
+      )}
+      </div>
+    );
   };
 
   useEffect(() => {
@@ -469,21 +656,21 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
   const handleCancelOrder = async () => {
     try {
       const currentOrderId = localStorage.getItem("currentOrderId");
-  
+
       if (!currentOrderId) {
         message.warning("Không có đơn hàng để hủy");
         return;
       }
-  
+
       setLoading(true);
       const authAxios = getAuthAxios();
-  
+
       // Instead of removing each item individually, change the order status to CANCELLED
       await authAxios.put(
         `/api/v2/orders/${currentOrderId}/status?status=CANCELLED`,
-        {},
+        {}
       );
-  
+
       localStorage.removeItem("currentOrderId");
       setOrder(null);
       setOrderItems([]);
@@ -495,8 +682,6 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
       setLoading(false);
     }
   };
-  
-  
 
   // Show payment method selection modal
   const showPaymentModal = () => {
@@ -518,7 +703,7 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
   const handlePaymentConfirm = async () => {
     // For cash payment, validate the amount first
     if (paymentMethod === "CASH") {
-      const totalAmount = calculateTotalAmount();
+      const totalAmount = calculateDiscountedTotal(); 
 
       if (!cashAmount) {
         message.error("Vui lòng nhập số tiền thanh toán");
@@ -527,6 +712,14 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
 
       if (cashAmount < totalAmount) {
         message.error("Số tiền không đủ để thanh toán");
+        return;
+      }
+    }
+
+    if (selectedPromotion) {
+      const isValid = await validatePromotion(selectedPromotion.id);
+      if (!isValid) {
+        message.error("Mã khuyến mãi không hợp lệ. Vui lòng chọn mã khác hoặc tiếp tục không dùng khuyến mãi.");
         return;
       }
     }
@@ -555,11 +748,7 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
       const requestBody = {
         orderId: parseInt(currentOrderId),
         paymentMethod: "CASH",
-        note:
-          cashNote ||
-          `Thanh toán tiền mặt: ${formatCurrency(
-            cashAmount || 0
-          )}. Tiền thừa: ${formatCurrency(changeAmount || 0)}`,
+        promotionId: selectedPromotion?.id || null,
       };
 
       // Make the actual API call to the cash payment endpoint
@@ -597,6 +786,7 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
       const requestBody = {
         orderId: parseInt(currentOrderId),
         paymentMethod: "MOMO",
+        promotionId: selectedPromotion?.id || null,
       };
 
       try {
@@ -706,7 +896,7 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
       return;
     }
 
-    const totalAmount = calculateTotalAmount();
+    const totalAmount = calculateDiscountedTotal(); 
 
     if (value < totalAmount) {
       setCashError("Số tiền không đủ để thanh toán");
@@ -715,7 +905,7 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
       setCashError(null);
       const change = value - totalAmount;
       setChangeAmount(change);
-      
+
       // Check if there's enough money in the cash drawer for change
       if (cashDrawerBalance !== null && change > cashDrawerBalance) {
         setCashError("Không đủ tiền trong két để trả lại tiền thừa");
@@ -771,6 +961,43 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
                   >
                     {formatCurrency(calculateTotalAmount())}
                   </Text>
+                  <div style={{ marginBottom: "10px" }}>
+                    <Text strong>Khuyến mãi:</Text>
+                    {renderPromotions()}
+                  </div>
+
+                  {selectedPromotion && (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: "5px",
+                      }}
+                    >
+                      <Text>
+                        Giảm giá ({selectedPromotion.discountPercent}%):
+                      </Text>
+                      <Text type="danger">
+                        -
+                        {formatCurrency(
+                          (calculateTotalAmount() *
+                            selectedPromotion.discountPercent) /
+                            100
+                        )}
+                      </Text>
+                    </div>
+                  )}
+
+                  <Divider style={{ margin: "10px 0" }} />
+
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <Text strong>Thành tiền:</Text>
+                    <Text strong style={{ fontSize: "1.125rem" }}>
+                      {formatCurrency(calculateDiscountedTotal())}
+                    </Text>
+                  </div>
                 </SummaryInfo>
                 <SummaryActions>
                   <Button
@@ -837,6 +1064,15 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
         }}
       >
         <div className="payment-options">
+        {selectedPromotion && (
+      <Alert
+        message={`Áp dụng khuyến mãi: ${selectedPromotion.name} (${selectedPromotion.code})`}
+        description={`Giảm ${selectedPromotion.discountPercent}% tổng hóa đơn`}
+        type="success"
+        showIcon
+        style={{ marginBottom: 16 }}
+      />
+    )}
           <Radio.Group
             onChange={(e) => {
               setPaymentMethod(e.target.value);
@@ -882,16 +1118,22 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
                   <div className="mb-3">
                     <Text strong>Tổng tiền cần thanh toán: </Text>
                     <Text type="danger" strong>
-                      {formatCurrency(calculateTotalAmount())}
+                    {formatCurrency(calculateDiscountedTotal())}
                     </Text>
                   </div>
 
                   <div className="mb-3">
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <Text>Số tiền khách đưa:</Text>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <Text>Số tiền khách đưa:</Text>
                       {cashDrawerBalance !== null && (
-                        <Tooltip title={`Số dư két tiền hiện tại: ${formatCurrency(cashDrawerBalance)}`}>
-                          <InfoCircleOutlined style={{ marginLeft: '8px', color: '#1890ff' }} />
+                        <Tooltip
+                          title={`Số dư két tiền hiện tại: ${formatCurrency(
+                            cashDrawerBalance
+                          )}`}
+                        >
+                          <InfoCircleOutlined
+                            style={{ marginLeft: "8px", color: "#1890ff" }}
+                          />
                         </Tooltip>
                       )}
                     </div>
@@ -921,17 +1163,24 @@ const Cart: React.FC<CartProps> = ({ visible, onClose }) => {
 
                   {changeAmount !== null && changeAmount > 0 && (
                     <div className="mb-3">
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <div style={{ display: "flex", alignItems: "center" }}>
                         <Text strong>Tiền thừa: </Text>
-                        <Text type="success" strong style={{ marginLeft: '4px' }}>
+                        <Text
+                          type="success"
+                          strong
+                          style={{ marginLeft: "4px" }}
+                        >
                           {formatCurrency(changeAmount)}
                         </Text>
-                        
-                        {cashDrawerBalance !== null && changeAmount > cashDrawerBalance && (
-                          <Tooltip title="Không đủ tiền trong két để trả lại tiền thừa">
-                            <ExclamationCircleOutlined style={{ marginLeft: '8px', color: '#ff4d4f' }} />
-                          </Tooltip>
-                        )}
+
+                        {cashDrawerBalance !== null &&
+                          changeAmount > cashDrawerBalance && (
+                            <Tooltip title="Không đủ tiền trong két để trả lại tiền thừa">
+                              <ExclamationCircleOutlined
+                                style={{ marginLeft: "8px", color: "#ff4d4f" }}
+                              />
+                            </Tooltip>
+                          )}
                       </div>
                     </div>
                   )}
