@@ -13,6 +13,7 @@ import ManagerProductList from "../screens/ManagerProductList";
 import ManagerComboList from "../screens/ManagerComboList";
 import ManagerExtraScreen from "../screens/ManagerExtraScreen";
 import StaffProccessingOrdersScreen from "../screens/StaffProccessingOrdersScreen";
+import ManagerManageCashDrawer from "../screens/ManagerManageCashDrawer";
 
 const Layout = lazy(() => import("../components/MainLayout"));
 const ProtectedRoute = lazy(() => import("../utils/ProtectedRoutes"));
@@ -107,6 +108,16 @@ export const AppRoutes = createBrowserRouter([
             <Layout>
                 <ProtectedRoute allowedRoles={["MANAGER"]}>
                     <ManagerExtraScreen />
+                </ProtectedRoute>
+            </Layout>
+        ),
+    },
+    {
+        path: "/manager/CashDrawer",
+        element: (
+            <Layout>
+                <ProtectedRoute allowedRoles={["MANAGER"]}>
+                    <ManagerManageCashDrawer />
                 </ProtectedRoute>
             </Layout>
         ),

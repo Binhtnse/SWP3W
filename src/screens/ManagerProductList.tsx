@@ -46,7 +46,6 @@ const ManagerProductScreen: React.FC = () => {
   const [pageSize, setPageSize] = useState<number>(10);
   const navigate = useNavigate();
   const [extraProducts, setExtraProducts] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [loadingToppings, setLoadingToppings] = useState<boolean>(false);
 
   const getAuthHeader = () => {
