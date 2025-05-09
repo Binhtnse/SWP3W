@@ -34,7 +34,7 @@ const ManagerManageCashDrawer: React.FC = () => {
     const [hasModifiedBalance, setHasModifiedBalance] = useState<boolean>(false);
 
     useEffect(() => {
-        // Log unused variables to prevent warnings
+
         console.log('Current pagination state:', { currentPage, pageSize });
         console.log('Current balance state:', { openingBalance, revenue });
         console.log('Loading state:', loading);

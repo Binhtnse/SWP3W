@@ -6,6 +6,7 @@ import {
   AppstoreAddOutlined, 
   AppstoreOutlined, 
   PlusCircleOutlined,
+  TagOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -21,6 +22,11 @@ const ManagerSidebar: React.FC = () => {
       key: '/manager/manageIncome',
       icon: <DashboardOutlined />,
       label: 'Tổng Quan',
+    },
+    {
+      key: '/manager/Promotion',
+      icon: <TagOutlined />,
+      label: 'Quản Lý Khuyến Mãi',
     },
     {
       key: '/manager/CashDrawer',
