@@ -486,7 +486,7 @@ const ManagerComboList = () => {
         <Form
           form={form}
           layout="vertical"
-          onValuesChange={(changed, all) => {
+          onValuesChange={(_changed, all) => {
             if (all.comboItems && all.comboItems.length > 0) {
               setMainProductError('');
             }
@@ -498,7 +498,7 @@ const ManagerComboList = () => {
             validateTrigger="onBlur"
             rules={[
               { required: true, message: 'Vui lòng nhập mã sản phẩm!' },
-              ({ getFieldValue }) => ({
+              () => ({
                 validator(_, value) {
                   if (!value) return Promise.resolve();
                   const isEditing = editingCombo !== null;
@@ -520,7 +520,7 @@ const ManagerComboList = () => {
             validateTrigger="onBlur"
             rules={[
               { required: true, message: 'Vui lòng nhập tên combo!' },
-              ({ getFieldValue }) => ({
+              () => ({
                 validator(_, value) {
                   if (!value) return Promise.resolve();
                   const isEditing = editingCombo !== null;
