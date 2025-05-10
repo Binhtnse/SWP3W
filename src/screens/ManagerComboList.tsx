@@ -53,6 +53,7 @@ const ManagerComboList = () => {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
+  const [mainProductError, setMainProductError] = useState('');
 
 
   const getAuthHeader = () => {
@@ -96,7 +97,7 @@ const ManagerComboList = () => {
         })
       );
   
-      setCombos(updatedCombos); // ✅ chỉ gọi cái này thôi
+      setCombos(updatedCombos); 
     } catch (error) {
       message.error('Không thể tải danh sách combo');
     } finally {
@@ -228,10 +229,14 @@ const ManagerComboList = () => {
         const detail = res.data;
         form.setFieldsValue({
           ...detail,
-          comboItems: (detail.itemsResponse || []).map((item: ComboItem) => ({
+          comboItems: (detail.itemsResponse || []).filter((item: ComboItem) => item.size !== 'EXTRA').map((item: ComboItem) => ({
             productId: item.productId,
             quantity: item.quantity,
             size: item.size
+          })),
+          extraItems: (detail.itemsResponse || []).filter((item: ComboItem) => item.size === 'EXTRA').map((item: ComboItem) => ({
+            productId: item.productId,
+            quantity: item.quantity
           })),
           basePrice: detail.basePrice,
         });
@@ -280,11 +285,17 @@ const ManagerComboList = () => {
         const values = await form.validateFields();
         const isEditing = editingCombo !== null;
 
-        // Ensure we have the auth token
-        const headers = getAuthHeader();
-        if (!headers) return;  // If no token, stop further execution
+        if (!values.comboItems || values.comboItems.length === 0) {
+          setMainProductError('Vui lòng thêm sản phẩm chính vào combo!');
+          return;
+        } else {
+          setMainProductError('');
+        }
 
-        // Only check for duplicate product code/name if it's a new combo (not being edited) or if the product code or name is changed
+        const headers = getAuthHeader();
+        if (!headers) return; 
+
+   
         if (!isEditing || (isEditing && (
             values.productCode.toLowerCase() !== editingCombo.productCode.toLowerCase() ||
             values.name.toLowerCase() !== editingCombo.name.toLowerCase()
@@ -311,7 +322,6 @@ const ManagerComboList = () => {
             }
         }
 
-        // Proceed with the creation or update process
         const comboItems: ComboItem[] = values.comboItems || [];
         const extraItems: ComboItem[] = values.extraItems || [];
 
@@ -350,11 +360,9 @@ const ManagerComboList = () => {
         };
 
         if (editingCombo) {
-            // If editing an existing combo
             await axios.put(`https://beautiful-unity-production.up.railway.app/api/products/v2/${editingCombo.id}/combo`, payload, { headers });
             message.success('Combo đã được cập nhật');
         } else {
-            // If creating a new combo
             await axios.post('https://beautiful-unity-production.up.railway.app/api/products/v2', payload, { headers });
             message.success('Combo đã được tạo');
         }
@@ -367,7 +375,6 @@ const ManagerComboList = () => {
         message.error('Thao tác thất bại');
     }
 };
-
 
   return (
     <ManagerLayout>
@@ -476,12 +483,33 @@ const ManagerComboList = () => {
         ]}
       >
 
-        <Form form={form} layout="vertical">
+        <Form
+          form={form}
+          layout="vertical"
+          onValuesChange={(changed, all) => {
+            if (all.comboItems && all.comboItems.length > 0) {
+              setMainProductError('');
+            }
+          }}
+        >
           <Form.Item
             name="productCode"
             label="Mã sản phẩm"
+            validateTrigger="onBlur"
             rules={[
               { required: true, message: 'Vui lòng nhập mã sản phẩm!' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value) return Promise.resolve();
+                  const isEditing = editingCombo !== null;
+                  const currentCode = isEditing ? editingCombo.productCode : null;
+                  const exists = combos.some(combo => combo.productCode.toLowerCase() === value.toLowerCase() && value.toLowerCase() !== (currentCode ? currentCode.toLowerCase() : ''));
+                  if (exists) {
+                    return Promise.reject('Mã sản phẩm đã tồn tại');
+                  }
+                  return Promise.resolve();
+                }
+              })
             ]}
           >
             <Input />
@@ -489,8 +517,21 @@ const ManagerComboList = () => {
           <Form.Item
             name="name"
             label="Tên combo"
+            validateTrigger="onBlur"
             rules={[
               { required: true, message: 'Vui lòng nhập tên combo!' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value) return Promise.resolve();
+                  const isEditing = editingCombo !== null;
+                  const currentName = isEditing ? editingCombo.name : null;
+                  const exists = combos.some(combo => combo.name.toLowerCase() === value.toLowerCase() && value.toLowerCase() !== (currentName ? currentName.toLowerCase() : ''));
+                  if (exists) {
+                    return Promise.reject('Tên combo đã tồn tại');
+                  }
+                  return Promise.resolve();
+                }
+              })
             ]}
           >
             <Input />
@@ -567,6 +608,9 @@ const ManagerComboList = () => {
                   ))}
                   <Form.Item>
                     <Button type="dashed" onClick={handleAdd} block>Thêm sản phẩm</Button>
+                    {mainProductError && (
+                      <div style={{ color: 'red', marginTop: 4 }}>{mainProductError}</div>
+                    )}
                   </Form.Item>
                 </>
               );
