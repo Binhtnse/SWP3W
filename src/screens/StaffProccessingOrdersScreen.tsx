@@ -17,7 +17,7 @@ import {
   CloseCircleOutlined,
   CheckCircleOutlined,
   EyeOutlined,
-  ArrowLeftOutlined
+  ArrowLeftOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -51,6 +51,9 @@ interface Order {
   userId: number;
   userName: string;
   paymentMethod: string | null;
+  amountPaid: string | null;
+  discountCode: string | null;
+  discountPercent: number | null;
 }
 
 interface OrderDetail {
@@ -312,6 +315,20 @@ const StaffProccessingOrdersScreen: React.FC = () => {
       sorter: (a: Order, b: Order) => a.totalPrice - b.totalPrice,
     },
     {
+      title: "Số tiền thanh toán",
+      dataIndex: "amountPaid",
+      key: "amountPaid",
+      render: (amount: string | null) =>
+        amount ? formatCurrency(Number(amount)) : "Chưa thanh toán",
+    },
+    {
+      title: "Mã giảm giá",
+      dataIndex: "discountCode",
+      key: "discountCode",
+      render: (code: string | null, record: Order) =>
+        code ? `${code} (${record.discountPercent}%)` : "Không có",
+    },
+    {
       title: "Phương thức thanh toán",
       dataIndex: "paymentMethod",
       key: "paymentMethod",
@@ -382,10 +399,10 @@ const StaffProccessingOrdersScreen: React.FC = () => {
 
   return (
     <Container>
-      <div style={{ marginBottom: '16px' }}>
-        <StyledButton 
-          icon={<ArrowLeftOutlined />} 
-          onClick={() => navigate('/staff/products')}
+      <div style={{ marginBottom: "16px" }}>
+        <StyledButton
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate("/staff/products")}
         >
           Quay lại trang sản phẩm
         </StyledButton>
@@ -528,6 +545,17 @@ const StaffProccessingOrdersScreen: React.FC = () => {
               <Descriptions.Item label="Tổng tiền">
                 {formatCurrency(selectedOrder.totalPrice)}
               </Descriptions.Item>
+              {selectedOrder.discountCode && (
+                <Descriptions.Item label="Mã giảm giá">
+                  {selectedOrder.discountCode} ({selectedOrder.discountPercent}
+                  %)
+                </Descriptions.Item>
+              )}
+              {selectedOrder.amountPaid && (
+                <Descriptions.Item label="Số tiền thanh toán">
+                  {formatCurrency(Number(selectedOrder.amountPaid))}
+                </Descriptions.Item>
+              )}
               <Descriptions.Item label="Trạng thái">
                 <StatusTag status={selectedOrder.status}>
                   {getStatusText(selectedOrder.status)}
@@ -625,7 +653,8 @@ const StaffProccessingOrdersScreen: React.FC = () => {
                           ) || 0;
                         const totalPrice = price * quantity + extraPrice;
                         return formatCurrency(totalPrice);
-                      },                    },
+                      },
+                    },
                     {
                       title: "Ghi chú",
                       dataIndex: "note",
@@ -639,7 +668,7 @@ const StaffProccessingOrdersScreen: React.FC = () => {
                   size="small"
                   style={{ marginTop: 16 }}
                 >
-                  <Descriptions.Item label="Tổng hóa đơn">
+                  <Descriptions.Item label="Tổng hóa đơn trước giảm giá">
                     <strong>
                       {formatCurrency(
                         orderDetails.reduce(
@@ -656,6 +685,23 @@ const StaffProccessingOrdersScreen: React.FC = () => {
                           0
                         )
                       )}
+                    </strong>
+                  </Descriptions.Item>
+
+                  {selectedOrder?.discountCode && (
+                    <Descriptions.Item label="Giảm giá">
+                      <strong>
+                        {selectedOrder.discountCode} (
+                        {selectedOrder.discountPercent}%)
+                      </strong>
+                    </Descriptions.Item>
+                  )}
+
+                  <Descriptions.Item label="Tổng hóa đơn sau giảm giá">
+                    <strong>
+                      {selectedOrder?.amountPaid
+                        ? formatCurrency(Number(selectedOrder.amountPaid))
+                        : formatCurrency(selectedOrder?.totalPrice || 0)}
                     </strong>
                   </Descriptions.Item>
                 </Descriptions>
