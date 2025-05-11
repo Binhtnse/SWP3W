@@ -70,13 +70,19 @@ const ManagerManageCashDrawer: React.FC = () => {
                 const filtered = allRecords.filter((record: CashDrawerRecord) => 
                     dayjs(record.date).format('YYYY-MM-DD') === selectedDate.format('YYYY-MM-DD')
                 );
-                setFilteredRecords(filtered);
+                const sortedRecords = filtered.sort((a: CashDrawerRecord, b: CashDrawerRecord) => 
+                    dayjs(b.openedAt).valueOf() - dayjs(a.openedAt).valueOf()
+                );
+                setFilteredRecords(sortedRecords);
                 
                 if (filtered.length === 0) {
                     message.info(`Không có lịch sử két tiền cho ngày ${selectedDate.format('DD/MM/YYYY')}`);
                 }
             } else {
-                setFilteredRecords(allRecords);
+                const sortedRecords = allRecords.sort((a: CashDrawerRecord, b: CashDrawerRecord) => 
+                    dayjs(b.openedAt).valueOf() - dayjs(a.openedAt).valueOf()
+                );
+                setFilteredRecords(sortedRecords);
             }
         } catch (error) {
             console.error('Error fetching cash drawer records:', error);

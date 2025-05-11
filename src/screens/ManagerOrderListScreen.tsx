@@ -31,6 +31,7 @@ interface Order {
   createAt: string;
   updateAt: string;
   userName: string;
+  discountPercent: number;
 }
 
 const ManagerOrderListScreen: React.FC = () => {
@@ -66,6 +67,7 @@ const ManagerOrderListScreen: React.FC = () => {
           size: size,
           status: filterStatus,
           staffName: filterUserName || undefined,
+          sort: 'updateAt,desc'
         },
         headers,
       });
@@ -141,6 +143,21 @@ const ManagerOrderListScreen: React.FC = () => {
       render: (amount: number) => formatCurrency(amount),
     },
     {
+      title: 'Giảm giá',
+      dataIndex: 'discountPercent',
+      key: 'discountPercent',
+      render: (percent: number) => percent > 0 ? `${percent}%` : '-',
+    },
+    {
+      title: 'Giá sau KM',
+      key: 'finalPrice',
+      render: (_: any, record: Order) => {
+        const discountAmount = record.totalPrice * (record.discountPercent / 100);
+        const finalPrice = record.totalPrice - discountAmount;
+        return formatCurrency(finalPrice);
+      },
+    },
+    {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
@@ -148,6 +165,8 @@ const ManagerOrderListScreen: React.FC = () => {
         const color = {
           PENDING: 'orange',
           PAID: 'green',
+          DELIVERED: 'blue',
+          CANCELLED: 'red',
         }[status] || 'default';
         return <Tag color={color}>{status.toUpperCase()}</Tag>;
       },
